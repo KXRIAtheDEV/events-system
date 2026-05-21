@@ -3,49 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EventHub - Event Management System{% endblock %}</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome 6 (Free Icons) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>{% block title %}EventHub{% endblock %}</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    
-    {% block extra_css %}{% endblock %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    
-    <div class="floating-bg">
-        <div class="floating-bg-circle animate-float" style="top: 5rem; left: 2rem; width: 18rem; height: 18rem; background: rgba(248, 29, 29, 0.04);"></div>
-        <div class="floating-bg-circle animate-float" style="bottom: 5rem; right: 2rem; width: 24rem; height: 24rem; background: rgba(255, 208, 69, 0.04);"></div>
-    </div>
-    
-    <!-- Hide navbar on auth pages -->
-    {% if not hide_navbar %}
-        {% include 'components/navbar.html' %}
-    {% endif %}
-    
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-        <div class="message {{ message.tags }}">
-            {{ message }}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">EventHub</a>
         </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    
-    <main>
-        {% block content %}{% endblock %}
+    </nav>
+
+    <main class="container mt-4">
+        {% block content %}
+        {% endblock %}
     </main>
-    
-    <!-- Hide footer on auth pages -->
-    {% if not hide_footer %}
-        {% include 'components/footer.html' %}
-    {% endif %}
-    
-    {% block extra_js %}{% endblock %}
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <p>&copy; 2025 EventHub. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
