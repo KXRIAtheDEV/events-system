@@ -15,6 +15,9 @@
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    {% if request.user.is_authenticated and request.user.role == 'organizer' %}
+                        <li class="nav-item"><a class="nav-link" href="/organizer/dashboard/">Organizer Dashboard</a></li>
+                    {% endif %}
                     <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
                 </ul>
             </div>

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Organizer Dashboard - EventHub{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-4 shadow-sm p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h1 class="h2 mb-1">Organizer Dashboard</h1>
+            <p class="text-muted mb-0">Overview of your events, sales, attendees, and upcoming tasks.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="#create-event" class="btn btn-primary">Create Event</a>
+            <a href="#sales-analytics" class="btn btn-outline-secondary">View Analytics</a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Events</small>
+                <h3 class="mt-3 mb-2">{{ metrics.events_count }}</h3>
+                <p class="text-muted mb-0">Live + draft events</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Tickets Sold</small>
+                <h3 class="mt-3 mb-2">{{ metrics.tickets_sold }}</h3>
+                <p class="text-muted mb-0">Total bookings processed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Revenue</small>
+                <h3 class="mt-3 mb-2">${{ metrics.revenue }}</h3>
+                <p class="text-muted mb-0">Estimated earnings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <small class="text-uppercase text-muted">Attendees</small>
+                <h3 class="mt-3 mb-2">{{ metrics.attendees }}</h3>
+                <p class="text-muted mb-0">Active registered guests</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="list-group list-group-flush mt-3">
+                    <a href="#create-event" class="list-group-item list-group-item-action py-3">Create a new event</a>
+                    <a href="#manage-events" class="list-group-item list-group-item-action py-3">Manage existing events</a>
+                    <a href="#sales-analytics" class="list-group-item list-group-item-action py-3">View sales analytics</a>
+                    <a href="#attendee-management" class="list-group-item list-group-item-action py-3">Attendee management</a>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow-sm mt-4 border-0">
+            <div class="card-body">
+                <h5 class="card-title">Performance Snapshot</h5>
+                <p class="text-muted">Keep an eye on your top performing event and current payout status.</p>
+                <div class="row text-center mt-4">
+                    <div class="col-6 border-end">
+                        <h6 class="mb-1">Top Event</h6>
+                        <p class="fs-5 mb-0">{{ metrics.top_event }}</p>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="mb-1">Payout</h6>
+                        <p class="fs-5 mb-0">${{ metrics.pending_payout }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Upcoming Events</h5>
+                    <a href="#manage-events" class="small text-decoration-none">View all events</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small text-uppercase">
+                                <th>Event</th>
+                                <th>Tickets Sold</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>Summer Festival</strong><br>
+                                    <small class="text-muted">June 14 · 250 capacity</small>
+                                </td>
+                                <td>120</td>
+                                <td><span class="badge bg-success">Live</span></td>
+                                <td><a href="#" class="btn btn-sm btn-outline-primary">Manage</a></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Tech Meetup</strong><br>
+                                    <small class="text-muted">July 2 · 150 capacity</small>
+                                </td>
+                                <td>82</td>
+                                <td><span class="badge bg-warning text-dark">Draft</span></td>
+                                <td><a href="#" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Design Workshop</strong><br>
+                                    <small class="text-muted">August 5 · 100 capacity</small>
+                                </td>
+                                <td>45</td>
+                                <td><span class="badge bg-info text-dark">Planning</span></td>
+                                <td><a href="#" class="btn btn-sm btn-outline-primary">Details</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Sales Trends</h5>
+                        <p class="text-muted mb-4">Track ticket sales and revenue growth over time.</p>
+                        <div class="bg-light rounded-3 p-4 text-center text-muted" style="min-height: 220px;">
+                            <span class="fs-5">Chart placeholder</span><br>
+                            <small>Connect your event data to render sales charts here.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Upcoming Tasks</h5>
+                        <ul class="list-group list-group-flush mt-3">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Review registrations
+                                <span class="badge bg-secondary">Today</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Finalize venue details
+                                <span class="badge bg-secondary">Tomorrow</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Send attendee email
+                                <span class="badge bg-secondary">2d</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="create-event" class="row g-4 mt-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title">Event Management</h5>
+                <p class="text-muted">Create new events, set ticket pricing, and publish them directly from your dashboard.</p>
+                <a href="#" class="btn btn-outline-primary">Create Event</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title">Organizer tips</h5>
+                <ul class="mb-0 ps-3">
+                    <li>Promote early bird pricing</li>
+                    <li>Keep event details up to date</li>
+                    <li>Send reminders 3 days before</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
