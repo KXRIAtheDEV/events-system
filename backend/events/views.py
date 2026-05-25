@@ -48,14 +48,14 @@ def organizer_dashboard(request):
 
 def organizer_dashboard_stats(request):
     metrics = {
-        'events_count': 6,
-        'tickets_sold': 418,
-        'revenue': 83600.00,
-        'attendees': 354,
-        'top_event': 'Tech Innovations Conference 2026',
-        'conversion_rate': 72,
-        'new_followers': 48,
-        'pending_payout': 24500.00,
+        'events_count': 0,
+        'tickets_sold': 0,
+        'revenue': 0.00,
+        'attendees': 0,
+        'top_event': 'No events yet',
+        'conversion_rate': 0,
+        'new_followers': 0,
+        'pending_payout': 0.00,
     }
 
     return JsonResponse(metrics)

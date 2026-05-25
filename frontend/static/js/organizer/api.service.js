@@ -130,72 +130,16 @@ class OrganizerAPIService {
         const storageKeys = {
             events: 'eventhub_organizer_events_db',
             stats: 'eventhub_organizer_stats_db',
-            initialized: 'eventhub_organizer_initialized_db'
+            initialized: 'eventhub_organizer_initialized_v2'
         };
 
         if (!localStorage.getItem(storageKeys.initialized)) {
-            const defaultEvents = [
-                {
-                    id: 1,
-                    name: "Tech Innovations Summit 2026",
-                    date: "2026-06-12T09:00",
-                    location: "Nairobi Convention Centre",
-                    capacity: 500,
-                    price: 2500,
-                    sold: 380,
-                    revenue: 950000,
-                    category: "Technology",
-                    status: "active"
-                },
-                {
-                    id: 2,
-                    name: "Vibrant Afro-Beat Night",
-                    date: "2026-06-20T19:00",
-                    location: "Mombasa Beach Club",
-                    capacity: 800,
-                    price: 1500,
-                    sold: 520,
-                    revenue: 780000,
-                    category: "Music",
-                    status: "active"
-                },
-                {
-                    id: 3,
-                    name: "Global Business & Leaders Forum",
-                    date: "2026-06-30T10:00",
-                    location: "Kisumu Acacia Hotel",
-                    capacity: 250,
-                    price: 4500,
-                    sold: 140,
-                    revenue: 630000,
-                    category: "Business",
-                    status: "active"
-                },
-                {
-                    id: 4,
-                    name: "Corporate Health & Yoga Retreat",
-                    date: "2026-07-05T07:00",
-                    location: "Nairobi Karura Forest",
-                    capacity: 100,
-                    price: 1200,
-                    sold: 68,
-                    revenue: 81600,
-                    category: "Health",
-                    status: "pending"
-                },
-                {
-                    id: 5,
-                    name: "Design & UX Masterclass",
-                    date: "2026-07-15T14:00",
-                    location: "Virtual / Zoom",
-                    capacity: 300,
-                    price: 800,
-                    sold: 125,
-                    revenue: 100000,
-                    category: "Technology",
-                    status: "draft"
-                }
-            ];
+            // Clear any old data from previous versions
+            localStorage.removeItem('eventhub_organizer_initialized_db');
+            localStorage.removeItem('eventhub_initialized');
+
+            // Start fresh with zero events and zero tickets
+            const defaultEvents = [];
             
             localStorage.setItem(storageKeys.events, JSON.stringify(defaultEvents));
             localStorage.setItem(storageKeys.initialized, 'true');
