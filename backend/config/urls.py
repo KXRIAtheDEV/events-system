@@ -35,7 +35,7 @@ def admin_login_submit(request):
         if user is not None and user.is_staff:
             login(request, user)
             messages.success(request, f'Welcome back, {user.username}!')
-            return redirect('/admin-portal/dashboard/')
+            return redirect('/admin/dashboard/')
         else:
             messages.error(request, 'Invalid credentials or you do not have admin access.')
             return redirect('/admin/login/')
@@ -221,7 +221,7 @@ def api_notifications_mark_all_read(request):
 
 urlpatterns = [
     # Django Admin
-    path('admin/', admin.site.urls),
+    path('django-admin/', admin.site.urls),
     
     # Admin Login URLs
     path('admin/login/', admin_login_page, name='admin_login'),
@@ -290,7 +290,7 @@ urlpatterns = [
     path('organizer/', include('config.organizer_urls')),
     
     # ============ ADMIN PORTAL ============
-    path('admin-portal/', include('config.admin_urls')),
+    path('admin/', include('config.admin_urls')),
 ]
 
 # Serve static and media files in development
