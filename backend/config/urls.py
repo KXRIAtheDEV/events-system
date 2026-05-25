@@ -48,6 +48,12 @@ def admin_logout_view(request):
     messages.success(request, 'You have been logged out.')
     return redirect('/admin/login/')
 
+def user_logout_view(request):
+    """User logout"""
+    logout(request)
+    messages.success(request, 'You have been logged out.')
+    return redirect('/login/')
+
 # ============ API VIEWS ============
 
 @csrf_exempt
@@ -235,7 +241,7 @@ urlpatterns = [
     path('reset-password/', TemplateView.as_view(template_name='shared/auth/reset_password.html'), name='reset_password'),
     path('2fa/', TemplateView.as_view(template_name='shared/auth/2fa.html'), name='two_factor'),
     path('verify-email/', TemplateView.as_view(template_name='shared/auth/email_verify.html'), name='verify_email'),
-    path('logout/', LogoutView.as_view(next_page='/'), name='logout'),
+    path('logout/', user_logout_view, name='logout'),
     
     # API Endpoints
     path('api/', include('accounts.urls')),

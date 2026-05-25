@@ -41,7 +41,7 @@
                 </div>
             </div>
             
-            <div class="user-menu">
+            <div class="user-menu" id="userMenuBtn" onclick="toggleUserMenu(event)">
                 <div class="user-avatar">
                     <span id="userInitial">U</span>
                 </div>
@@ -50,7 +50,7 @@
                     <span class="user-role">Attendee</span>
                 </div>
                 <i class="fas fa-chevron-down"></i>
-                <div class="user-dropdown">
+                <div class="user-dropdown" id="userDropdown" onclick="event.stopPropagation()">
                     <a href="/attendee/dashboard/"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                     <a href="/attendee/profile/"><i class="fas fa-user"></i> My Profile</a>
                     <a href="/attendee/tickets/"><i class="fas fa-ticket-alt"></i> My Tickets</a>
@@ -84,6 +84,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 badge.style.display = 'inline-block';
             }
         }).catch(console.error);
+    }
+});
+
+// User Menu Click Toggle Function
+function toggleUserMenu(e) {
+    e.stopPropagation();
+    const userDropdown = document.getElementById('userDropdown');
+    if (userDropdown) {
+        userDropdown.classList.toggle('open');
+        
+        // Close notifications panel if it's open
+        const notifPanel = document.getElementById('notificationsPanel');
+        if (notifPanel && notifPanel.classList.contains('open')) {
+            notifPanel.classList.remove('open');
+        }
+    }
+}
+
+// Close dropdown when clicking anywhere outside
+document.addEventListener('click', function(e) {
+    const userDropdown = document.getElementById('userDropdown');
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    if (userDropdown && userDropdown.classList.contains('open') && userMenuBtn && !userMenuBtn.contains(e.target)) {
+        userDropdown.classList.remove('open');
     }
 });
 </script>

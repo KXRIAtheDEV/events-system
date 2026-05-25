@@ -39,7 +39,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="/login/submit/" id="loginForm">
+            <form method="POST" action="/api/auth/login/" id="loginForm">
                 {% csrf_token %}
                 <input type="hidden" name="role" id="roleInput" value="">
                 <div class="auth-input-wrapper">
@@ -93,20 +93,37 @@
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
         
         fetch(form.action, {
             method: 'POST',
-            body: formData,
+            body: JSON.stringify(data),
             headers: {
+                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = data.redirect_url;
+        .then(response => response.json().then(data => ({status: response.status, body: data})))
+        .then(({status, body}) => {
+            if (status === 200 || status === 201) {
+                // Determine prefix based on role returned from the server
+                const prefix = body.user.role === 'organizer' ? 'organizer' : 'attendee';
+                
+                // Store tokens and user profile
+                localStorage.setItem(`${prefix}_access_token`, body.access);
+                localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
+                localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
+                
+                // Redirect user based on their role
+                if (body.user.role === 'organizer') {
+                    window.location.href = '/organizer/';
+                } else if (body.user.role === 'attendee') {
+                    window.location.href = '/attendee/';
+                } else {
+                    window.location.href = '/';
+                }
             } else {
-                showToast(data.error || 'Invalid credentials', 'error');
+                showToast(body.error || 'Invalid credentials', 'error');
             }
         })
         .catch(error => {

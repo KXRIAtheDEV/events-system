@@ -313,20 +313,20 @@
 
 .user-dropdown {
     position: absolute;
-    top: 100%;
+    top: calc(100% + var(--spacing-sm));
     right: 0;
     width: 220px;
     background: white;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
     display: none;
-    margin-top: var(--spacing-sm);
     z-index: 200;
     border: 1px solid var(--border);
 }
 
-.user-menu:hover .user-dropdown {
+.user-dropdown.open {
     display: block;
+    animation: slideDown 0.2s ease;
 }
 
 .user-dropdown a {
