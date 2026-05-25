@@ -15,6 +15,7 @@ from django.contrib.auth.views import LogoutView
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from events.views import organizer_dashboard_stats
 import json
 
 # ============ ADMIN LOGIN VIEWS ============
@@ -237,6 +238,9 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(next_page='/'), name='logout'),
     
     # API Endpoints
+    path('api/', include('accounts.urls')),
+    path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
+    path('api/organizer/', include('accounts.urls')),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
     path('api/events/categories/', get_categories_list, name='api_categories'),
     path('newsletter/subscribe/', newsletter_subscribe, name='newsletter_subscribe'),
