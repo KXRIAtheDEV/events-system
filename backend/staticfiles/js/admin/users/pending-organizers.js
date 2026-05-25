@@ -1,4 +1,8 @@
-// Pending Organizers Approval JavaScript
+/* ============================================
+   PENDING ORGANIZERS APPROVAL - COMPLETE
+   EventHub Admin - Organizer Approval Workflow
+   ============================================ */
+
 let currentPage = 1;
 let totalPages = 1;
 let currentOrganizerId = null;
@@ -11,15 +15,20 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadStats() {
     try {
         const data = await apiRequest('/api/admin/organizers/pending/stats/');
-        document.getElementById('pendingCount').textContent = data.stats?.pending || 0;
-        document.getElementById('approvedCount').textContent = data.stats?.approved_this_month || 0;
+        if (data.stats) {
+            const pendingCount = document.getElementById('pendingCount');
+            const approvedCount = document.getElementById('approvedCount');
+            
+            if (pendingCount) pendingCount.textContent = data.stats.pending || 0;
+            if (approvedCount) approvedCount.textContent = data.stats.approved_this_month || 0;
+        }
     } catch (error) {
         console.error('Error loading stats:', error);
     }
 }
 
 async function loadPendingOrganizers() {
-    Loader.show('Loading pending applications...');
+    if (typeof Loader !== 'undefined') Loader.show('Loading pending applications...');
     
     try {
         const params = new URLSearchParams({ page: currentPage });
@@ -33,15 +42,19 @@ async function loadPendingOrganizers() {
         }
     } catch (error) {
         console.error('Error loading pending organizers:', error);
-        document.getElementById('pendingOrganizersList').innerHTML = 
-            '<div class="empty-state">Failed to load applications</div>';
+        const container = document.getElementById('pendingOrganizersList');
+        if (container) {
+            container.innerHTML = '<div class="empty-state">Failed to load applications</div>';
+        }
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 function displayPendingOrganizers(organizers) {
     const container = document.getElementById('pendingOrganizersList');
+    
+    if (!container) return;
     
     if (!organizers || organizers.length === 0) {
         container.innerHTML = `
@@ -93,32 +106,36 @@ async function viewDocuments(organizerId) {
         const data = await apiRequest(`/api/admin/organizers/${organizerId}/`);
         const org = data.organizer;
         
-        document.getElementById('reviewModalBody').innerHTML = `
-            <div class="organizer-details">
-                <h4>Business Information</h4>
-                <div class="info-row"><span>Business Name:</span><strong>${escapeHtml(org.business_name)}</strong></div>
-                <div class="info-row"><span>Contact Person:</span><span>${escapeHtml(org.contact_name)}</span></div>
-                <div class="info-row"><span>Email:</span><span>${escapeHtml(org.email)}</span></div>
-                <div class="info-row"><span>Phone:</span><span>${escapeHtml(org.phone)}</span></div>
-                <div class="info-row"><span>Tax ID:</span><span>${escapeHtml(org.tax_id || 'N/A')}</span></div>
-                
-                <h4 style="margin-top: 20px;">Business Documents</h4>
-                <div class="document-preview">
-                    <a href="${org.document_url}" target="_blank" class="btn-outline">
-                        <i class="fas fa-file-pdf"></i> View Business License
-                    </a>
+        const modalBody = document.getElementById('reviewModalBody');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="organizer-details">
+                    <h4>Business Information</h4>
+                    <div class="info-row"><span>Business Name:</span><strong>${escapeHtml(org.business_name)}</strong></div>
+                    <div class="info-row"><span>Contact Person:</span><span>${escapeHtml(org.contact_name)}</span></div>
+                    <div class="info-row"><span>Email:</span><span>${escapeHtml(org.email)}</span></div>
+                    <div class="info-row"><span>Phone:</span><span>${escapeHtml(org.phone)}</span></div>
+                    <div class="info-row"><span>Tax ID:</span><span>${escapeHtml(org.tax_id || 'N/A')}</span></div>
+                    
+                    <h4 style="margin-top: 20px;">Business Documents</h4>
+                    <div class="document-preview">
+                        <a href="${org.document_url}" target="_blank" class="btn-outline">
+                            <i class="fas fa-file-pdf"></i> View Business License
+                        </a>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
         
-        document.getElementById('reviewModal').style.display = 'flex';
+        const reviewModal = document.getElementById('reviewModal');
+        if (reviewModal) reviewModal.style.display = 'flex';
     } catch (error) {
         showToast('Failed to load organizer details', 'error');
     }
 }
 
 async function approveOrganizer(organizerId) {
-    Loader.show('Approving organizer...');
+    if (typeof Loader !== 'undefined') Loader.show('Approving organizer...');
     
     try {
         await apiRequest(`/api/admin/organizers/${organizerId}/approve/`, 'POST');
@@ -129,7 +146,7 @@ async function approveOrganizer(organizerId) {
     } catch (error) {
         showToast('Failed to approve organizer', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
@@ -137,7 +154,7 @@ async function rejectOrganizer(organizerId) {
     const reason = prompt('Please provide a reason for rejection:');
     if (!reason) return;
     
-    Loader.show('Rejecting application...');
+    if (typeof Loader !== 'undefined') Loader.show('Rejecting application...');
     
     try {
         await apiRequest(`/api/admin/organizers/${organizerId}/reject/`, 'POST', { reason: reason });
@@ -148,7 +165,7 @@ async function rejectOrganizer(organizerId) {
     } catch (error) {
         showToast('Failed to reject application', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
@@ -159,17 +176,26 @@ function refreshPending() {
 }
 
 function closeReviewModal() {
-    document.getElementById('reviewModal').style.display = 'none';
+    const reviewModal = document.getElementById('reviewModal');
+    if (reviewModal) reviewModal.style.display = 'none';
     currentOrganizerId = null;
 }
 
 function renderPagination(current, total) {
     const container = document.getElementById('pagination');
-    if (!container || total <= 1) { if(container) container.innerHTML = ''; return; }
-    let html = `<button ${current === 1 ? 'disabled' : ''} onclick="changePage(${current-1})">&laquo;</button>`;
-    for (let i = Math.max(1, current-2); i <= Math.min(total, current+2); i++)
+    if (!container || total <= 1) {
+        if (container) container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    html += `<button ${current === 1 ? 'disabled' : ''} onclick="changePage(${current - 1})">&laquo;</button>`;
+    
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
         html += `<button class="${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-    html += `<button ${current === total ? 'disabled' : ''} onclick="changePage(${current+1})">&raquo;</button>`;
+    }
+    
+    html += `<button ${current === total ? 'disabled' : ''} onclick="changePage(${current + 1})">&raquo;</button>`;
     container.innerHTML = html;
 }
 
@@ -194,13 +220,13 @@ function escapeHtml(text) {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'success-message';
-    toast.style.borderLeftColor = type === 'success' ? '#10b981' : '#ef4444';
+    toast.className = `admin-toast ${type === 'error' ? 'toast-error' : ''}`;
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${message}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
+// Make functions global
 window.viewDocuments = viewDocuments;
 window.approveOrganizer = approveOrganizer;
 window.rejectOrganizer = rejectOrganizer;

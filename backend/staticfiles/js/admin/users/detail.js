@@ -1,4 +1,8 @@
-// User Detail JavaScript
+/* ============================================
+   USER DETAIL - COMPLETE
+   EventHub Admin - User Detail View with Actions
+   ============================================ */
+
 let userId = null;
 let userType = null;
 
@@ -13,13 +17,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function loadUserDetail() {
-    Loader.show('Loading user details...');
+    if (typeof Loader !== 'undefined') Loader.show('Loading user details...');
     
     try {
         const data = await apiRequest(`/api/admin/users/${userId}/`);
         const user = data.user;
         
-        document.getElementById('userTypeLabel').textContent = user.role === 'organizer' ? 'Organizer Details' : 'User Details';
+        const userTypeLabel = document.getElementById('userTypeLabel');
+        if (userTypeLabel) {
+            userTypeLabel.textContent = user.role === 'organizer' ? 'Organizer Details' : 'User Details';
+        }
         
         const content = `
             <div class="detail-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
@@ -46,7 +53,7 @@ async function loadUserDetail() {
                     <div class="card-body" style="padding: 1.5rem;">
                         <div class="info-row"><span>Joined:</span><span>${formatDateTime(user.created_at)}</span></div>
                         <div class="info-row"><span>Last Login:</span><span>${user.last_login ? formatDateTime(user.last_login) : 'Never'}</span></div>
-                        <div class="info-row"><span>Email Verified:</span><span>${user.email_verified ? '<span class="status-badge status-verified">Yes</span>' : '<span class="status-badge status-pending">No</span>'}</span></div>
+                        <div class="info-row"><span>Email Verified:</span><span>${user.email_verified ? '<span class="status-badge status-verified"><i class="fas fa-check-circle"></i> Yes</span>' : '<span class="status-badge status-pending"><i class="fas fa-clock"></i> No</span>'}</span></div>
                     </div>
                 </div>
                 
@@ -60,7 +67,7 @@ async function loadUserDetail() {
                             <div class="info-row"><span>Business Name:</span><strong>${escapeHtml(user.business_name || 'N/A')}</strong></div>
                             <div class="info-row"><span>Tax ID / PIN:</span><span>${escapeHtml(user.tax_id || 'N/A')}</span></div>
                             <div class="info-row"><span>Business Address:</span><span>${escapeHtml(user.business_address || 'N/A')}</span></div>
-                            <div class="info-row"><span>Verification Status:</span><span>${user.is_verified ? '<span class="status-badge status-verified">Verified</span>' : '<span class="status-badge status-pending">Pending</span>'}</span></div>
+                            <div class="info-row"><span>Verification Status:</span><span>${user.is_verified ? '<span class="status-badge status-verified"><i class="fas fa-check-circle"></i> Verified</span>' : '<span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>'}</span></div>
                         </div>
                     </div>
                     
@@ -77,10 +84,28 @@ async function loadUserDetail() {
                         </div>
                     </div>
                 ` : ''}
+                
+                ${user.role === 'attendee' ? `
+                    <!-- Attendee Statistics -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-ticket-alt"></i> Booking Statistics</h3>
+                        </div>
+                        <div class="card-body" style="padding: 1.5rem;">
+                            <div class="info-row"><span>Total Bookings:</span><span>${user.total_bookings || 0}</span></div>
+                            <div class="info-row"><span>Total Tickets:</span><span>${user.total_tickets || 0}</span></div>
+                            <div class="info-row"><span>Total Spent:</span><span>${formatCurrency(user.total_spent || 0)}</span></div>
+                            <div class="info-row"><span>Favorite Category:</span><span>${escapeHtml(user.favorite_category || 'N/A')}</span></div>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         `;
         
-        document.getElementById('userDetailContent').innerHTML = content;
+        const userDetailContent = document.getElementById('userDetailContent');
+        if (userDetailContent) {
+            userDetailContent.innerHTML = content;
+        }
         
         const suspendBtn = document.getElementById('suspendBtn');
         if (suspendBtn && user.role !== 'admin') {
@@ -100,18 +125,19 @@ async function loadUserDetail() {
         console.error('Error loading user details:', error);
         showToast('Failed to load user details', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 function openSuspendModal() {
-    document.getElementById('suspendModal').style.display = 'flex';
+    const suspendModal = document.getElementById('suspendModal');
+    if (suspendModal) suspendModal.style.display = 'flex';
 }
 
 async function confirmSuspend() {
     const reason = document.getElementById('suspendReason')?.value;
     
-    Loader.show('Suspending user...');
+    if (typeof Loader !== 'undefined') Loader.show('Suspending user...');
     
     try {
         await apiRequest(`/api/admin/users/${userId}/suspend/`, 'POST', {
@@ -123,12 +149,12 @@ async function confirmSuspend() {
     } catch (error) {
         showToast('Failed to suspend user', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 async function reactivateUser() {
-    Loader.show('Reactivating user...');
+    if (typeof Loader !== 'undefined') Loader.show('Reactivating user...');
     
     try {
         await apiRequest(`/api/admin/users/${userId}/reactivate/`, 'POST');
@@ -137,13 +163,15 @@ async function reactivateUser() {
     } catch (error) {
         showToast('Failed to reactivate user', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 function closeSuspendModal() {
-    document.getElementById('suspendModal').style.display = 'none';
-    document.getElementById('suspendReason').value = '';
+    const suspendModal = document.getElementById('suspendModal');
+    if (suspendModal) suspendModal.style.display = 'none';
+    const suspendReason = document.getElementById('suspendReason');
+    if (suspendReason) suspendReason.value = '';
 }
 
 function getRoleBadge(role) {
@@ -182,12 +210,12 @@ function escapeHtml(text) {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'success-message';
-    toast.style.borderLeftColor = type === 'success' ? '#10b981' : '#ef4444';
+    toast.className = `admin-toast ${type === 'error' ? 'toast-error' : ''}`;
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${message}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
+// Make functions global
 window.confirmSuspend = confirmSuspend;
 window.closeSuspendModal = closeSuspendModal;

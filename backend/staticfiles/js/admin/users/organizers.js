@@ -1,4 +1,8 @@
-// Organizer Management JavaScript
+/* ============================================
+   ORGANIZER MANAGEMENT - COMPLETE
+   EventHub Admin - Organizer Management with Enhanced Features
+   ============================================ */
+
 let currentPage = 1;
 let totalPages = 1;
 let currentOrganizerId = null;
@@ -36,21 +40,28 @@ function switchTab(tab) {
     currentTab = tab;
     currentPage = 1;
     
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
     
-    document.getElementById('verifiedTab').classList.remove('active');
-    document.getElementById('pendingTab').classList.remove('active');
-    document.getElementById('suspendedTab').classList.remove('active');
+    const verifiedTab = document.getElementById('verifiedTab');
+    const pendingTab = document.getElementById('pendingTab');
+    const suspendedTab = document.getElementById('suspendedTab');
+    
+    if (verifiedTab) verifiedTab.classList.remove('active');
+    if (pendingTab) pendingTab.classList.remove('active');
+    if (suspendedTab) suspendedTab.classList.remove('active');
     
     if (tab === 'verified') {
-        document.getElementById('verifiedTab').classList.add('active');
+        if (verifiedTab) verifiedTab.classList.add('active');
         loadOrganizers();
     } else if (tab === 'pending') {
-        document.getElementById('pendingTab').classList.add('active');
+        if (pendingTab) pendingTab.classList.add('active');
         loadPendingOrganizers();
     } else if (tab === 'suspended') {
-        document.getElementById('suspendedTab').classList.add('active');
+        if (suspendedTab) suspendedTab.classList.add('active');
         loadSuspendedOrganizers();
     }
 }
@@ -58,10 +69,17 @@ function switchTab(tab) {
 async function loadStats() {
     try {
         const data = await apiRequest('/api/admin/organizers/stats/');
-        document.getElementById('verifiedCount').textContent = data.stats?.verified || 0;
-        document.getElementById('pendingCount').textContent = data.stats?.pending || 0;
-        document.getElementById('totalEvents').textContent = data.stats?.total_events || 0;
-        document.getElementById('totalTickets').textContent = data.stats?.total_tickets || 0;
+        if (data.stats) {
+            const verifiedCount = document.getElementById('verifiedCount');
+            const pendingCount = document.getElementById('pendingCount');
+            const totalEvents = document.getElementById('totalEvents');
+            const totalTickets = document.getElementById('totalTickets');
+            
+            if (verifiedCount) verifiedCount.textContent = data.stats.verified || 0;
+            if (pendingCount) pendingCount.textContent = data.stats.pending || 0;
+            if (totalEvents) totalEvents.textContent = data.stats.total_events || 0;
+            if (totalTickets) totalTickets.textContent = data.stats.total_tickets || 0;
+        }
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -71,7 +89,7 @@ async function loadOrganizers() {
     const search = document.getElementById('searchVerified')?.value || '';
     const status = document.getElementById('statusFilter')?.value || '';
     
-    Loader.show('Loading organizers...');
+    if (typeof Loader !== 'undefined') Loader.show('Loading organizers...');
     
     try {
         const params = new URLSearchParams({
@@ -85,21 +103,31 @@ async function loadOrganizers() {
         
         if (data.pagination) {
             totalPages = data.pagination.total_pages;
-            renderVerifiedPagination(currentPage, totalPages);
+            renderPagination('verifiedPagination', currentPage, totalPages, (page) => {
+                currentPage = page;
+                loadOrganizers();
+            });
         }
     } catch (error) {
         console.error('Error loading organizers:', error);
+        const tbody = document.getElementById('verifiedOrganizersList');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Failed to load organizers</td></tr>';
+        }
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 function displayOrganizers(organizers) {
     const tbody = document.getElementById('verifiedOrganizersList');
+    const recordsSpan = document.getElementById('verifiedRecordsCount');
+    
+    if (!tbody) return;
     
     if (!organizers || organizers.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No organizers found</td></tr>';
-        document.getElementById('verifiedRecordsCount').textContent = 'Showing 0 records';
+        if (recordsSpan) recordsSpan.textContent = 'Showing 0 records';
         return;
     }
     
@@ -110,7 +138,7 @@ function displayOrganizers(organizers) {
             <td>${escapeHtml(org.email)}</td>
             <td>${org.phone || 'N/A'}</td>
             <td>${org.event_count || 0} events</td>
-            <td>${org.status === 'active' ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-suspended">Suspended</span>'}</td>
+            <td>${org.status === 'active' ? '<span class="status-badge status-active"><i class="fas fa-circle"></i> Active</span>' : '<span class="status-badge status-suspended"><i class="fas fa-ban"></i> Suspended</span>'}</td>
             <td class="action-buttons">
                 <button class="action-btn view" onclick="viewOrganizerDetail(${org.id})" title="View Details">
                     <i class="fas fa-eye"></i>
@@ -124,15 +152,15 @@ function displayOrganizers(organizers) {
                         <i class="fas fa-user-check"></i>
                     </button>
                 `}
-             </td>
-        </tr>
+            </td>
+         </tr>
     `).join('');
     
-    document.getElementById('verifiedRecordsCount').textContent = `Showing ${organizers.length} records`;
+    if (recordsSpan) recordsSpan.textContent = `Showing ${organizers.length} records`;
 }
 
 async function loadPendingOrganizers() {
-    Loader.show('Loading pending applications...');
+    if (typeof Loader !== 'undefined') Loader.show('Loading pending applications...');
     
     try {
         const params = new URLSearchParams({ page: currentPage });
@@ -142,19 +170,26 @@ async function loadPendingOrganizers() {
         
         if (data.pagination) {
             totalPages = data.pagination.total_pages;
-            renderPendingPagination(currentPage, totalPages);
+            renderPagination('pendingPagination', currentPage, totalPages, (page) => {
+                currentPage = page;
+                loadPendingOrganizers();
+            });
         }
     } catch (error) {
         console.error('Error loading pending organizers:', error);
-        document.getElementById('pendingOrganizersList').innerHTML = 
-            '<div class="empty-state">Failed to load applications</div>';
+        const container = document.getElementById('pendingOrganizersList');
+        if (container) {
+            container.innerHTML = '<div class="empty-state">Failed to load applications</div>';
+        }
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 function displayPendingOrganizers(organizers) {
     const container = document.getElementById('pendingOrganizersList');
+    
+    if (!container) return;
     
     if (!organizers || organizers.length === 0) {
         container.innerHTML = `
@@ -200,7 +235,7 @@ function displayPendingOrganizers(organizers) {
 }
 
 async function loadSuspendedOrganizers() {
-    Loader.show('Loading suspended organizers...');
+    if (typeof Loader !== 'undefined') Loader.show('Loading suspended organizers...');
     
     try {
         const data = await apiRequest(`/api/admin/organizers/suspended/?page=${currentPage}`);
@@ -209,20 +244,29 @@ async function loadSuspendedOrganizers() {
         
         if (data.pagination) {
             totalPages = data.pagination.total_pages;
-            renderSuspendedPagination(currentPage, totalPages);
+            renderPagination('suspendedPagination', currentPage, totalPages, (page) => {
+                currentPage = page;
+                loadSuspendedOrganizers();
+            });
         }
     } catch (error) {
         console.error('Error loading suspended organizers:', error);
+        const tbody = document.getElementById('suspendedOrganizersList');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Failed to load suspended organizers</td></tr>';
+        }
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 function displaySuspendedOrganizers(organizers) {
     const tbody = document.getElementById('suspendedOrganizersList');
     
+    if (!tbody) return;
+    
     if (!organizers || organizers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No suspended organizers found</td></td>';
+        tbody.innerHTML = '<td><td colspan="5" class="text-center">No suspended organizers found</td></tr>';
         return;
     }
     
@@ -239,8 +283,8 @@ function displaySuspendedOrganizers(organizers) {
                 <button class="action-btn edit" onclick="reactivateOrganizer(${org.id})" title="Reactivate">
                     <i class="fas fa-user-check"></i>
                 </button>
-              </td>
-        </tr>
+             </td>
+         </tr>
     `).join('');
 }
 
@@ -251,28 +295,32 @@ async function viewDocuments(organizerId) {
         const data = await apiRequest(`/api/admin/organizers/${organizerId}/`);
         const org = data.organizer;
         
-        document.getElementById('verifyModalBody').innerHTML = `
-            <div class="organizer-details">
-                <h4>Business Information</h4>
-                <div class="info-row"><span>Business Name:</span><strong>${escapeHtml(org.business_name)}</strong></div>
-                <div class="info-row"><span>Contact Person:</span><span>${escapeHtml(org.contact_name)}</span></div>
-                <div class="info-row"><span>Email:</span><span>${escapeHtml(org.email)}</span></div>
-                <div class="info-row"><span>Phone:</span><span>${escapeHtml(org.phone)}</span></div>
-                <div class="info-row"><span>Tax ID:</span><span>${escapeHtml(org.tax_id || 'N/A')}</span></div>
-                
-                <h4 style="margin-top: 20px;">Business Documents</h4>
-                <div class="document-preview">
-                    <a href="${org.document_url}" target="_blank" class="btn-outline">
-                        <i class="fas fa-file-pdf"></i> View Business License
-                    </a>
+        const modalBody = document.getElementById('verifyModalBody');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="organizer-details">
+                    <h4>Business Information</h4>
+                    <div class="info-row"><span>Business Name:</span><strong>${escapeHtml(org.business_name)}</strong></div>
+                    <div class="info-row"><span>Contact Person:</span><span>${escapeHtml(org.contact_name)}</span></div>
+                    <div class="info-row"><span>Email:</span><span>${escapeHtml(org.email)}</span></div>
+                    <div class="info-row"><span>Phone:</span><span>${escapeHtml(org.phone)}</span></div>
+                    <div class="info-row"><span>Tax ID:</span><span>${escapeHtml(org.tax_id || 'N/A')}</span></div>
+                    
+                    <h4 style="margin-top: 20px;">Business Documents</h4>
+                    <div class="document-preview">
+                        <a href="${org.document_url}" target="_blank" class="btn-outline">
+                            <i class="fas fa-file-pdf"></i> View Business License
+                        </a>
+                    </div>
+                    
+                    <h4 style="margin-top: 20px;">Verification Notes</h4>
+                    <textarea id="verificationNotes" rows="3" class="form-control" placeholder="Add internal notes..."></textarea>
                 </div>
-                
-                <h4 style="margin-top: 20px;">Verification Notes</h4>
-                <textarea id="verificationNotes" rows="3" class="form-control" placeholder="Add internal notes..."></textarea>
-            </div>
-        `;
+            `;
+        }
         
-        document.getElementById('verifyModal').style.display = 'flex';
+        const verifyModal = document.getElementById('verifyModal');
+        if (verifyModal) verifyModal.style.display = 'flex';
     } catch (error) {
         showToast('Failed to load organizer details', 'error');
     }
@@ -281,7 +329,7 @@ async function viewDocuments(organizerId) {
 async function verifyOrganizer(organizerId) {
     const notes = document.getElementById('verificationNotes')?.value;
     
-    Loader.show('Verifying organizer...');
+    if (typeof Loader !== 'undefined') Loader.show('Verifying organizer...');
     
     try {
         await apiRequest(`/api/admin/organizers/${organizerId}/verify/`, 'POST', { notes: notes });
@@ -293,7 +341,7 @@ async function verifyOrganizer(organizerId) {
     } catch (error) {
         showToast('Failed to verify organizer', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
@@ -301,7 +349,7 @@ async function rejectOrganizer(organizerId) {
     const reason = prompt('Please provide a reason for rejection:');
     if (!reason) return;
     
-    Loader.show('Rejecting application...');
+    if (typeof Loader !== 'undefined') Loader.show('Rejecting application...');
     
     try {
         await apiRequest(`/api/admin/organizers/${organizerId}/reject/`, 'POST', { reason: reason });
@@ -311,7 +359,7 @@ async function rejectOrganizer(organizerId) {
     } catch (error) {
         showToast('Failed to reject application', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
@@ -319,7 +367,7 @@ async function suspendOrganizer(organizerId) {
     const reason = prompt('Please provide a reason for suspension:');
     if (!reason) return;
     
-    Loader.show('Suspending organizer...');
+    if (typeof Loader !== 'undefined') Loader.show('Suspending organizer...');
     
     try {
         await apiRequest(`/api/admin/organizers/${organizerId}/suspend/`, 'POST', { reason: reason });
@@ -329,12 +377,12 @@ async function suspendOrganizer(organizerId) {
     } catch (error) {
         showToast('Failed to suspend organizer', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
 async function reactivateOrganizer(organizerId) {
-    Loader.show('Reactivating organizer...');
+    if (typeof Loader !== 'undefined') Loader.show('Reactivating organizer...');
     
     try {
         await apiRequest(`/api/admin/organizers/${organizerId}/reactivate/`, 'POST');
@@ -345,7 +393,7 @@ async function reactivateOrganizer(organizerId) {
     } catch (error) {
         showToast('Failed to reactivate organizer', 'error');
     } finally {
-        Loader.hide();
+        if (typeof Loader !== 'undefined') Loader.hide();
     }
 }
 
@@ -354,7 +402,8 @@ function viewOrganizerDetail(organizerId) {
 }
 
 function closeVerifyModal() {
-    document.getElementById('verifyModal').style.display = 'none';
+    const verifyModal = document.getElementById('verifyModal');
+    if (verifyModal) verifyModal.style.display = 'none';
     currentOrganizerId = null;
 }
 
@@ -364,37 +413,36 @@ function applyFilters() {
 }
 
 function resetFilters() {
-    document.getElementById('searchVerified').value = '';
-    document.getElementById('statusFilter').value = '';
+    const searchVerified = document.getElementById('searchVerified');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (searchVerified) searchVerified.value = '';
+    if (statusFilter) statusFilter.value = '';
     currentPage = 1;
     loadOrganizers();
 }
 
-function renderVerifiedPagination(current, total) {
-    const container = document.getElementById('verifiedPagination');
-    renderPagination(container, current, total, (page) => { currentPage = page; loadOrganizers(); });
-}
-
-function renderPendingPagination(current, total) {
-    const container = document.getElementById('pendingPagination');
-    renderPagination(container, current, total, (page) => { currentPage = page; loadPendingOrganizers(); });
-}
-
-function renderSuspendedPagination(current, total) {
-    const container = document.getElementById('suspendedPagination');
-    renderPagination(container, current, total, (page) => { currentPage = page; loadSuspendedOrganizers(); });
-}
-
-function renderPagination(container, current, total, onPageChange) {
-    if (!container || total <= 1) { if(container) container.innerHTML = ''; return; }
-    let html = `<button ${current === 1 ? 'disabled' : ''} onclick="changePage(${current-1})">&laquo;</button>`;
-    for (let i = Math.max(1, current-2); i <= Math.min(total, current+2); i++)
-        html += `<button class="${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-    html += `<button ${current === total ? 'disabled' : ''} onclick="changePage(${current+1})">&raquo;</button>`;
+function renderPagination(containerId, current, total, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container || total <= 1) {
+        if (container) container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    html += `<button ${current === 1 ? 'disabled' : ''} onclick="window.paginationChange(${current - 1})">&laquo;</button>`;
+    
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+        html += `<button class="${i === current ? 'active' : ''}" onclick="window.paginationChange(${i})">${i}</button>`;
+    }
+    
+    html += `<button ${current === total ? 'disabled' : ''} onclick="window.paginationChange(${current + 1})">&raquo;</button>`;
     container.innerHTML = html;
     
-    window.changePage = function(page) {
-        if (page !== current && page >= 1 && page <= total) onPageChange(page);
+    window.paginationChange = function(page) {
+        if (page !== current && page >= 1 && page <= total) {
+            onPageChange(page);
+        }
     };
 }
 
@@ -412,13 +460,13 @@ function escapeHtml(text) {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'success-message';
-    toast.style.borderLeftColor = type === 'success' ? '#10b981' : '#ef4444';
+    toast.className = `admin-toast ${type === 'error' ? 'toast-error' : ''}`;
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${message}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
+// Make functions global
 window.switchTab = switchTab;
 window.viewDocuments = viewDocuments;
 window.verifyOrganizer = verifyOrganizer;
@@ -429,4 +477,3 @@ window.viewOrganizerDetail = viewOrganizerDetail;
 window.closeVerifyModal = closeVerifyModal;
 window.applyFilters = applyFilters;
 window.resetFilters = resetFilters;
-window.changePage = changePage;

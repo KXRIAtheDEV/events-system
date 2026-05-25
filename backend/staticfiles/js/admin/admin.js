@@ -1,5 +1,5 @@
 /* ============================================
-   ADMIN CORE JAVASCRIPT
+   ADMIN CORE JAVASCRIPT - Complete Working
    EventHub Admin Portal - Core Functionality
    ============================================ */
 
@@ -33,7 +33,7 @@ async function apiRequest(url, method = 'GET', data = null) {
     }
 }
 
-// Get CSRF Token from Cookie
+// Get CSRF Token
 function getCSRFToken() {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -49,12 +49,12 @@ function getCSRFToken() {
     return cookieValue;
 }
 
-// Toast Notification
+// Toast Notification - Bottom Right
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `admin-toast ${type}`;
+    toast.className = `admin-toast ${type === 'error' ? 'toast-error' : ''}`;
     toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <i class="ri-${type === 'success' ? 'checkbox-circle-line' : 'error-warning-line'}"></i>
         <span>${message}</span>
     `;
     document.body.appendChild(toast);
@@ -65,53 +65,9 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// Confirm Dialog
-function showConfirm(message, onConfirm, onCancel) {
-    const modal = document.createElement('div');
-    modal.className = 'confirm-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10001;
-    `;
-    modal.innerHTML = `
-        <div style="background: white; border-radius: 12px; width: 400px; max-width: 90%;">
-            <div style="padding: 20px 20px 0; display: flex; align-items: center; gap: 12px;">
-                <i class="fas fa-question-circle" style="font-size: 24px; color: #f59e0b;"></i>
-                <h3 style="margin: 0;">Confirm Action</h3>
-            </div>
-            <div style="padding: 20px;">
-                <p>${message}</p>
-            </div>
-            <div style="padding: 15px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn-secondary" id="confirmCancel">Cancel</button>
-                <button class="btn-danger" id="confirmOk">Confirm</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    document.getElementById('confirmOk').onclick = () => {
-        modal.remove();
-        if (onConfirm) onConfirm();
-    };
-    document.getElementById('confirmCancel').onclick = () => {
-        modal.remove();
-        if (onCancel) onCancel();
-    };
-}
-
-// Format Currency (KES)
+// Format Currency
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 // Format Date
@@ -133,26 +89,10 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Status Badge Generator
-function getStatusBadge(status) {
-    const badges = {
-        'published': '<span class="status-badge status-published"><i class="fas fa-check-circle"></i> Published</span>',
-        'draft': '<span class="status-badge status-draft"><i class="fas fa-edit"></i> Draft</span>',
-        'pending': '<span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>',
-        'cancelled': '<span class="status-badge status-cancelled"><i class="fas fa-times-circle"></i> Cancelled</span>',
-        'confirmed': '<span class="status-badge status-confirmed"><i class="fas fa-check-circle"></i> Confirmed</span>',
-        'completed': '<span class="status-badge status-completed"><i class="fas fa-check-double"></i> Completed</span>',
-        'refunded': '<span class="status-badge status-refunded"><i class="fas fa-undo-alt"></i> Refunded</span>'
-    };
-    return badges[status] || `<span class="status-badge">${status}</span>`;
-}
-
-// Loader Global Functions
+// Loader
 window.Loader = {
     show: function(message = 'Loading...') {
-        // Remove existing loader
         this.hide();
-        
         const overlay = document.createElement('div');
         overlay.id = 'globalLoader';
         overlay.style.cssText = `
@@ -167,102 +107,79 @@ window.Loader = {
             align-items: center;
             justify-content: center;
             z-index: 99999;
-            transition: all 0.3s ease;
         `;
-        
         const container = document.createElement('div');
         container.style.cssText = 'text-align: center;';
-        
         const spinner = document.createElement('div');
         spinner.style.cssText = `
-            width: 50px;
-            height: 50px;
-            margin: 0 auto 16px;
-            border: 3px solid rgba(245, 158, 11, 0.15);
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 12px;
+            border: 2px solid rgba(245,158,11,0.2);
             border-top-color: #f59e0b;
-            border-right-color: #f59e0b;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         `;
-        
         const msg = document.createElement('div');
         msg.textContent = message;
-        msg.style.cssText = 'color: #f59e0b; font-size: 14px; font-weight: 500;';
-        
+        msg.style.cssText = 'color: #f59e0b; font-size: 13px;';
         container.appendChild(spinner);
         container.appendChild(msg);
         overlay.appendChild(container);
         document.body.appendChild(overlay);
-        
-        // Add animation if not present
-        if (!document.getElementById('loaderAnimations')) {
-            const style = document.createElement('style');
-            style.id = 'loaderAnimations';
-            style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-            document.head.appendChild(style);
-        }
     },
-    
     hide: function() {
         const loader = document.getElementById('globalLoader');
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.remove(), 200);
-        }
+        if (loader) loader.remove();
     }
 };
 
-// Sidebar Toggle Functionality
+// DOM Ready - Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    initSidebar();
+    initDropdowns();
+    initActivePageHighlighting();
+    initNotifications();
+    initPendingCount();
+});
+
+function initSidebar() {
     const sidebar = document.getElementById('adminSidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
     const closeBtn = document.getElementById('sidebarClose');
     const overlay = document.getElementById('sidebarOverlay');
     
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.add('open');
-            if (overlay) overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
+    function openSidebar() {
+        if (sidebar) sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
     
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+    function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
     }
     
-    if (overlay) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    }
+    if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
     
-    // Close on window resize (desktop)
     window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            if (sidebar) sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
+        if (window.innerWidth > 768) closeSidebar();
     });
-    
-    // Dropdown toggles
+}
+
+function initDropdowns() {
     document.querySelectorAll('.nav-dropdown-toggle').forEach(function(toggle) {
         toggle.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             const parent = this.closest('.nav-dropdown');
-            parent.classList.toggle('open');
+            if (parent) parent.classList.toggle('open');
         });
     });
     
-    // Close dropdowns when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.nav-dropdown')) {
             document.querySelectorAll('.nav-dropdown.open').forEach(function(d) {
@@ -270,40 +187,197 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-    
-    // Highlight active page
+}
+
+function initActivePageHighlighting() {
     const currentUrl = window.location.pathname;
+    
     document.querySelectorAll('.dropdown-item, .nav-item').forEach(function(link) {
         const href = link.getAttribute('href');
-        if (href && href !== '#' && currentUrl.includes(href)) {
+        if (href && href !== '#' && href !== '/' && currentUrl.includes(href)) {
             link.classList.add('active');
             const parent = link.closest('.nav-dropdown');
             if (parent) parent.classList.add('open');
         }
     });
-    
-    // Close mobile menu when clicking a link
-    document.querySelectorAll('.nav-item, .dropdown-item').forEach(function(link) {
-        link.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                setTimeout(() => {
-                    if (sidebar) sidebar.classList.remove('open');
-                    if (overlay) overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                }, 150);
-            }
-        });
-    });
-});
+}
 
-// Export global functions
+function initNotifications() {
+    const notificationsBtn = document.getElementById('notificationsBtn');
+    const notificationsPanel = document.getElementById('notificationsPanel');
+    
+    if (notificationsBtn && notificationsPanel) {
+        notificationsBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            notificationsPanel.classList.toggle('open');
+            loadNotifications();
+        });
+        
+        document.addEventListener('click', function() {
+            notificationsPanel.classList.remove('open');
+        });
+        
+        notificationsPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    loadNotifications();
+}
+
+async function loadNotifications() {
+    const container = document.getElementById('notificationsList');
+    if (!container) return;
+    
+    // Show loading state
+    container.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div></div>';
+    
+    try {
+        const response = await fetch('/api/admin/notifications/recent/');
+        if (response.ok) {
+            const data = await response.json();
+            displayNotifications(data.notifications, data.unread_count);
+        } else {
+            throw new Error('API not ready');
+        }
+    } catch (error) {
+        // Show empty state when API is not ready
+        container.innerHTML = '<div class="empty-state"><i class="ri-mail-line"></i><p>No notifications</p></div>';
+        const badge = document.getElementById('notificationBadge');
+        if (badge) badge.style.display = 'none';
+    }
+}
+
+function displayNotifications(notifications, unreadCount) {
+    const container = document.getElementById('notificationsList');
+    if (!container) return;
+    
+    if (!notifications || notifications.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="ri-mail-line"></i><p>No notifications</p></div>';
+    } else {
+        container.innerHTML = notifications.map(n => `
+            <div class="notification-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}">
+                <div class="notification-content">
+                    <div class="notification-title">${escapeHtml(n.title)}</div>
+                    <div class="notification-message">${escapeHtml(n.message)}</div>
+                    <div class="notification-time">${formatRelativeTime(n.created_at)}</div>
+                </div>
+                ${!n.is_read ? `<button class="mark-read" onclick="markNotificationRead(${n.id})">✓</button>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    const badge = document.getElementById('notificationBadge');
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+window.markNotificationRead = async function(notificationId) {
+    try {
+        await fetch(`/api/admin/notifications/${notificationId}/read/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        });
+    } catch (error) {
+        console.error('Error marking as read:', error);
+    }
+    
+    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+    if (item) {
+        item.classList.remove('unread');
+        const markBtn = item.querySelector('.mark-read');
+        if (markBtn) markBtn.remove();
+    }
+    
+    updateNotificationBadge();
+};
+
+window.markAllAsRead = async function() {
+    try {
+        await fetch('/api/admin/notifications/mark-all-read/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        });
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+    }
+    
+    document.querySelectorAll('.notification-item.unread').forEach(function(item) {
+        item.classList.remove('unread');
+        const markBtn = item.querySelector('.mark-read');
+        if (markBtn) markBtn.remove();
+    });
+    
+    const badge = document.getElementById('notificationBadge');
+    if (badge) badge.style.display = 'none';
+};
+
+function updateNotificationBadge() {
+    const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+    const badge = document.getElementById('notificationBadge');
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function initPendingCount() {
+    const badge = document.getElementById('pendingBadge');
+    if (badge) {
+        fetchPendingCount();
+        setInterval(fetchPendingCount, 30000);
+    }
+}
+
+async function fetchPendingCount() {
+    const badge = document.getElementById('pendingBadge');
+    if (!badge) return;
+    
+    try {
+        const response = await fetch('/api/admin/events/pending/count/');
+        if (response.ok) {
+            const data = await response.json();
+            const count = data.count || 0;
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching pending count:', error);
+    }
+}
+
+function formatRelativeTime(dateString) {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMins = Math.floor((now - date) / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return `${Math.floor(diffMins / 1440)}d ago`;
+}
+
+// Export globals
 window.apiRequest = apiRequest;
 window.showToast = showToast;
-window.showConfirm = showConfirm;
 window.formatCurrency = formatCurrency;
 window.formatDate = formatDate;
 window.formatDateTime = formatDateTime;
 window.escapeHtml = escapeHtml;
-window.getStatusBadge = getStatusBadge;
 
-console.log('✅ Admin core JS loaded');
+console.log('✅ Admin JS loaded');

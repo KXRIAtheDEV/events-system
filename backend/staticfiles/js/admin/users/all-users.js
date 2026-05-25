@@ -1,7 +1,12 @@
-// All Users Management JavaScript
+/* ============================================
+   ALL USERS MANAGEMENT - COMPLETE
+   EventHub Admin - Users Management with Role Filtering
+   ============================================ */
+
 let currentPage = 1;
 let totalPages = 1;
 let currentUserId = null;
+let currentRole = 'all';
 
 document.addEventListener('DOMContentLoaded', function() {
     loadUsers();
@@ -22,23 +27,42 @@ function setupEventListeners() {
         });
     }
     
-    const roleFilter = document.getElementById('roleFilter');
-    if (roleFilter) roleFilter.addEventListener('change', () => { currentPage = 1; loadUsers(); });
-    
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) statusFilter.addEventListener('change', () => { currentPage = 1; loadUsers(); });
+    
+    const verificationFilter = document.getElementById('verificationFilter');
+    if (verificationFilter) verificationFilter.addEventListener('change', () => { currentPage = 1; loadUsers(); });
     
     const dateFilter = document.getElementById('dateFilter');
     if (dateFilter) dateFilter.addEventListener('change', () => { currentPage = 1; loadUsers(); });
 }
 
+function filterByRole(role) {
+    currentRole = role;
+    currentPage = 1;
+    
+    document.querySelectorAll('.user-tab').forEach(tab => tab.classList.remove('active'));
+    const activeTab = document.querySelector(`.user-tab[onclick="filterByRole('${role}')"]`);
+    if (activeTab) activeTab.classList.add('active');
+    
+    loadUsers();
+    loadStats();
+}
+
 async function loadStats() {
     try {
         const data = await apiRequest('/api/admin/users/stats/');
-        document.getElementById('totalUsers').textContent = data.stats?.total || 0;
-        document.getElementById('activeUsers').textContent = data.stats?.active || 0;
-        document.getElementById('newUsers').textContent = data.stats?.new_this_month || 0;
-        document.getElementById('organizerCount').textContent = data.stats?.organizers || 0;
+        if (data.stats) {
+            document.getElementById('totalUsers').textContent = data.stats.total || 0;
+            document.getElementById('activeUsers').textContent = data.stats.active || 0;
+            document.getElementById('newUsers').textContent = data.stats.new_this_month || 0;
+            document.getElementById('totalBookings').textContent = data.stats.total_bookings || 0;
+            
+            document.getElementById('allCount').textContent = data.stats.total || 0;
+            document.getElementById('attendeeCount').textContent = data.stats.attendees || 0;
+            document.getElementById('organizerCount').textContent = data.stats.organizers || 0;
+            document.getElementById('adminCount').textContent = data.stats.admins || 0;
+        }
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -46,8 +70,8 @@ async function loadStats() {
 
 async function loadUsers() {
     const search = document.getElementById('searchUsers')?.value || '';
-    const role = document.getElementById('roleFilter')?.value || '';
     const status = document.getElementById('statusFilter')?.value || '';
+    const verification = document.getElementById('verificationFilter')?.value || '';
     const date = document.getElementById('dateFilter')?.value || '';
     
     Loader.show('Loading users...');
@@ -56,8 +80,9 @@ async function loadUsers() {
         const params = new URLSearchParams({
             page: currentPage,
             search: search,
-            role: role,
+            role: currentRole,
             status: status,
+            verification: verification,
             date: date
         });
         const data = await apiRequest(`/api/admin/users/?${params}`);
@@ -71,7 +96,7 @@ async function loadUsers() {
     } catch (error) {
         console.error('Error loading users:', error);
         document.getElementById('usersList').innerHTML = 
-            '<tr><td colspan="8" class="text-center">Failed to load users</td></tr>';
+            '<td><td colspan="9" class="text-center">Failed to load users</td></tr>';
     } finally {
         Loader.hide();
     }
@@ -81,21 +106,22 @@ function displayUsers(users) {
     const tbody = document.getElementById('usersList');
     
     if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No users found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No users found</td></tr>';
         document.getElementById('recordsCount').textContent = 'Showing 0 records';
         return;
     }
     
     tbody.innerHTML = users.map(user => `
         <tr>
-            <td>${user.id}</td>
             <td>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <div style="width: 32px; height: 32px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <span style="color: white; font-size: 0.8rem;">${(user.full_name || user.username).charAt(0).toUpperCase()}</span>
+                <div class="user-cell">
+                    <div class="user-avatar">
+                        <span>${(user.full_name || user.username).charAt(0).toUpperCase()}</span>
                     </div>
                     <div>
                         <strong>${escapeHtml(user.full_name || user.username)}</strong>
+                        <br>
+                        <small class="text-muted">@${escapeHtml(user.username)}</small>
                     </div>
                 </div>
              </td>
@@ -103,7 +129,9 @@ function displayUsers(users) {
             <td>${user.phone || 'N/A'}</td>
             <td>${getRoleBadge(user.role)}</td>
             <td>${getStatusBadge(user.status)}</td>
+            <td>${user.email_verified ? '<span class="status-badge status-verified">✓ Verified</span>' : '<span class="status-badge status-pending">Pending</span>'}</td>
             <td>${formatDate(user.created_at)}</td>
+            <td>${user.last_login ? formatRelativeTime(user.last_login) : 'Never'}</td>
             <td class="action-buttons">
                 <button class="action-btn view" onclick="viewUserDetail(${user.id})" title="View Details">
                     <i class="fas fa-eye"></i>
@@ -112,9 +140,14 @@ function displayUsers(users) {
                     <button class="action-btn edit" onclick="openResetPasswordModal(${user.id})" title="Reset Password">
                         <i class="fas fa-key"></i>
                     </button>
-                    <button class="action-btn suspend" onclick="openSuspendModal(${user.id})" title="Suspend User">
-                        <i class="fas fa-ban"></i>
-                    </button>
+                    ${user.status === 'active' ? 
+                        `<button class="action-btn suspend" onclick="openSuspendModal(${user.id})" title="Suspend User">
+                            <i class="fas fa-ban"></i>
+                        </button>` : 
+                        `<button class="action-btn edit" onclick="activateUser(${user.id})" title="Activate User">
+                            <i class="fas fa-user-check"></i>
+                        </button>`
+                    }
                 ` : ''}
              </td>
         </tr>
@@ -123,57 +156,8 @@ function displayUsers(users) {
     document.getElementById('recordsCount').textContent = `Showing ${users.length} records`;
 }
 
-async function viewUserDetail(userId) {
-    currentUserId = userId;
-    
-    try {
-        const data = await apiRequest(`/api/admin/users/${userId}/`);
-        const user = data.user;
-        
-        document.getElementById('userModalBody').innerHTML = `
-            <div class="info-row"><span>User ID:</span><span>#${user.id}</span></div>
-            <div class="info-row"><span>Full Name:</span><span><strong>${escapeHtml(user.full_name || user.username)}</strong></span></div>
-            <div class="info-row"><span>Email:</span><span>${escapeHtml(user.email)}</span></div>
-            <div class="info-row"><span>Phone:</span><span>${user.phone || 'N/A'}</span></div>
-            <div class="info-row"><span>Role:</span><span>${getRoleBadge(user.role)}</span></div>
-            <div class="info-row"><span>Status:</span><span>${getStatusBadge(user.status)}</span></div>
-            <div class="info-row"><span>Joined:</span><span>${formatDateTime(user.created_at)}</span></div>
-            <div class="info-row"><span>Last Login:</span><span>${user.last_login ? formatDateTime(user.last_login) : 'Never'}</span></div>
-            ${user.role === 'organizer' ? `
-                <div class="info-row"><span>Business Name:</span><span>${escapeHtml(user.business_name || 'N/A')}</span></div>
-                <div class="info-row"><span>Verification Status:</span><span>${user.is_verified ? '<span class="status-badge status-verified">Verified</span>' : '<span class="status-badge status-pending">Pending</span>'}</span></div>
-            ` : ''}
-        `;
-        
-        const resetBtn = document.getElementById('resetPasswordBtn');
-        const suspendBtn = document.getElementById('suspendUserBtn');
-        
-        if (user.role === 'admin') {
-            if (resetBtn) resetBtn.style.display = 'none';
-            if (suspendBtn) suspendBtn.style.display = 'none';
-        } else {
-            if (resetBtn) resetBtn.style.display = 'inline-flex';
-            if (suspendBtn) suspendBtn.style.display = 'inline-flex';
-            
-            if (user.status === 'suspended') {
-                if (suspendBtn) {
-                    suspendBtn.innerHTML = '<i class="fas fa-user-check"></i> Reactivate User';
-                    suspendBtn.className = 'btn-success';
-                    suspendBtn.onclick = () => reactivateUser(userId);
-                }
-            } else {
-                if (suspendBtn) {
-                    suspendBtn.innerHTML = '<i class="fas fa-ban"></i> Suspend User';
-                    suspendBtn.className = 'btn-danger';
-                    suspendBtn.onclick = () => openSuspendModal(userId);
-                }
-            }
-        }
-        
-        document.getElementById('userModal').style.display = 'flex';
-    } catch (error) {
-        showToast('Failed to load user details', 'error');
-    }
+function viewUserDetail(userId) {
+    window.location.href = `/admin-portal/users/detail/?id=${userId}`;
 }
 
 function openResetPasswordModal(userId) {
@@ -183,10 +167,9 @@ function openResetPasswordModal(userId) {
 
 async function confirmResetPassword() {
     Loader.show('Sending reset link...');
-    
     try {
         await apiRequest(`/api/admin/users/${currentUserId}/reset-password/`, 'POST');
-        showToast('Password reset link sent to user\'s email', 'success');
+        showToast('Password reset link sent successfully', 'success');
         closeResetModal();
     } catch (error) {
         showToast('Failed to send reset link', 'error');
@@ -202,18 +185,15 @@ function openSuspendModal(userId) {
 
 async function confirmSuspend() {
     const reason = document.getElementById('suspendReason')?.value;
-    
     Loader.show('Suspending user...');
-    
     try {
-        await apiRequest(`/api/admin/users/${currentUserId}/suspend/`, 'POST', {
-            reason: reason || 'Violation of platform terms'
+        await apiRequest(`/api/admin/users/${currentUserId}/suspend/`, 'POST', { 
+            reason: reason || 'Violation of platform terms' 
         });
         showToast('User suspended successfully', 'success');
         closeSuspendModal();
         loadUsers();
         loadStats();
-        closeUserModal();
     } catch (error) {
         showToast('Failed to suspend user', 'error');
     } finally {
@@ -221,25 +201,18 @@ async function confirmSuspend() {
     }
 }
 
-async function reactivateUser(userId) {
-    Loader.show('Reactivating user...');
-    
+async function activateUser(userId) {
+    Loader.show('Activating user...');
     try {
-        await apiRequest(`/api/admin/users/${userId}/reactivate/`, 'POST');
-        showToast('User reactivated successfully', 'success');
+        await apiRequest(`/api/admin/users/${userId}/activate/`, 'POST');
+        showToast('User activated successfully', 'success');
         loadUsers();
         loadStats();
-        closeUserModal();
     } catch (error) {
-        showToast('Failed to reactivate user', 'error');
+        showToast('Failed to activate user', 'error');
     } finally {
         Loader.hide();
     }
-}
-
-function closeUserModal() {
-    document.getElementById('userModal').style.display = 'none';
-    currentUserId = null;
 }
 
 function closeResetModal() {
@@ -256,22 +229,22 @@ function closeSuspendModal() {
 function applyFilters() {
     currentPage = 1;
     loadUsers();
+    loadStats();
 }
 
 function resetFilters() {
     document.getElementById('searchUsers').value = '';
-    document.getElementById('roleFilter').value = '';
     document.getElementById('statusFilter').value = '';
+    document.getElementById('verificationFilter').value = '';
     document.getElementById('dateFilter').value = '';
-    currentPage = 1;
-    loadUsers();
+    applyFilters();
 }
 
 function exportUsers() {
     const params = new URLSearchParams({
-        search: document.getElementById('searchUsers')?.value || '',
-        role: document.getElementById('roleFilter')?.value || '',
+        role: currentRole,
         status: document.getElementById('statusFilter')?.value || '',
+        search: document.getElementById('searchUsers')?.value || '',
         date: document.getElementById('dateFilter')?.value || ''
     });
     window.open(`/api/admin/users/export/?${params}`, '_blank');
@@ -313,14 +286,20 @@ function getStatusBadge(status) {
     return badges[status] || `<span class="status-badge">${status}</span>`;
 }
 
+function formatRelativeTime(dateString) {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMins = Math.floor((now - date) / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return `${Math.floor(diffMins / 1440)}d ago`;
+}
+
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-KE');
-}
-
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-KE');
 }
 
 function escapeHtml(text) {
@@ -330,21 +309,14 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = 'success-message';
-    toast.style.borderLeftColor = type === 'success' ? '#10b981' : '#ef4444';
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> <span>${message}</span>`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
+// Make functions global
+window.filterByRole = filterByRole;
 window.viewUserDetail = viewUserDetail;
 window.openResetPasswordModal = openResetPasswordModal;
 window.confirmResetPassword = confirmResetPassword;
 window.openSuspendModal = openSuspendModal;
 window.confirmSuspend = confirmSuspend;
-window.closeUserModal = closeUserModal;
+window.activateUser = activateUser;
 window.closeResetModal = closeResetModal;
 window.closeSuspendModal = closeSuspendModal;
 window.applyFilters = applyFilters;

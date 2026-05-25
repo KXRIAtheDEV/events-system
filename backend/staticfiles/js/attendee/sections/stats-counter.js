@@ -1,67 +1,50 @@
-// File: frontend/static/js/attendee/sections/stats-counter.js
-
-let hasAnimated = false;
-
-function animateNumber(element, target, isPercentage) {
-    let current = 0;
-    const increment = target / 50;
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-            element.textContent = isPercentage ? target + '%' : target + '+';
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current);
-        }
-    }, 30);
-}
-
-function startCounters() {
-    if (hasAnimated) return;
-    hasAnimated = true;
-    
-    const events = document.getElementById('countEvents');
-    const tickets = document.getElementById('countTickets');
-    const organizers = document.getElementById('countOrganizers');
-    const satisfaction = document.getElementById('countSatisfaction');
-    
-    if (events) animateNumber(events, 1248, false);
-    if (tickets) animateNumber(tickets, 15842, false);
-    if (organizers) animateNumber(organizers, 326, false);
-    if (satisfaction) animateNumber(satisfaction, 98, true);
-}
-
-function resetCounters() {
-    if (!hasAnimated) return;
-    hasAnimated = false;
-    
-    const events = document.getElementById('countEvents');
-    const tickets = document.getElementById('countTickets');
-    const organizers = document.getElementById('countOrganizers');
-    const satisfaction = document.getElementById('countSatisfaction');
-    
-    if (events) events.textContent = '0';
-    if (tickets) tickets.textContent = '0';
-    if (organizers) organizers.textContent = '0';
-    if (satisfaction) satisfaction.textContent = '0';
-}
-
-// Check when stats section is visible
-const statsSection = document.getElementById('statsSection');
-
-function checkVisibility() {
-    if (!statsSection) return;
-    const rect = statsSection.getBoundingClientRect();
-    const isVisible = rect.top < window.innerHeight - 100 && rect.bottom > 100;
-    
-    if (isVisible) {
-        startCounters();
-    } else {
-        resetCounters();
-    }
-}
+// ============================================
+// STATS COUNTER - Animated Number Counter
+// ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    checkVisibility();
-    window.addEventListener('scroll', checkVisibility);
+    initStatsCounter();
 });
+
+function initStatsCounter() {
+    const statsSection = document.querySelector('.stats-section');
+    if (!statsSection) return;
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateNumbers();
+                observer.disconnect();
+            }
+        });
+    }, { threshold: 0.3 });
+    
+    observer.observe(statsSection);
+}
+
+function animateNumbers() {
+    const numbers = document.querySelectorAll('.analytics-number');
+    
+    numbers.forEach(num => {
+        const target = parseInt(num.getAttribute('data-target'));
+        if (isNaN(target)) return;
+        
+        let current = 0;
+        const duration = 2000;
+        const stepTime = 20;
+        const steps = duration / stepTime;
+        const increment = target / steps;
+        
+        const updateNumber = () => {
+            current += increment;
+            if (current < target) {
+                num.textContent = Math.floor(current).toLocaleString();
+                requestAnimationFrame(updateNumber);
+            } else {
+                num.textContent = target.toLocaleString();
+            }
+        };
+        
+        updateNumber();
+    });
+}
