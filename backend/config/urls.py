@@ -296,7 +296,7 @@ urlpatterns = [
     path('organizer/', include('config.organizer_urls')),
     
     # ============ ADMIN PORTAL ============
-    path('admin/', include('config.admin_urls')),
+    path('admin-portal/', include('config.admin_urls')),
 ]
 
 # Serve static and media files in development

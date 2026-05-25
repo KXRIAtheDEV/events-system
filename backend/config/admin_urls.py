@@ -50,6 +50,9 @@ urlpatterns = [
     
     # Settings
     path('settings/general/', TemplateView.as_view(template_name='admin/settings/general.html'), name='admin_general_settings'),
-    path('settings/payment/', TemplateView.as_view(template_name='admin/settings/payment.html'), name='admin_payment_settings'),
-    path('settings/security/', TemplateView.as_view(template_name='admin/settings/security.html'), name='admin_security_settings'),
+    path('settings/payment/', TemplateView.as_view(template_name='admin/under_construction.html'), name='admin_payment_settings'),
+    path('settings/security/', TemplateView.as_view(template_name='admin/under_construction.html'), name='admin_security_settings'),
+    
+    # Catch-all graceful fallback for unmatched paths in the admin portal
+    path('<path:undefined_path>', TemplateView.as_view(template_name='admin/under_construction.html'), name='admin_catch_all'),
 ]
