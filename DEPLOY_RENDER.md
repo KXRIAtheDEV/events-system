@@ -22,3 +22,22 @@ Render deployment instructions
 5) Notes
    - Ensure the repository `backend/requirements.txt` includes `psycopg2-binary`, `dj-database-url`, `gunicorn`, and `whitenoise` (already added).
    - Locally on Linux, installing `psycopg2-binary` may require system packages (e.g. `libpq-dev`, `build-essential`).
+
+6) Environment file (optional)
+   - A sample env file has been added at `backend/.env.sample` with placeholders:
+
+```
+DJANGO_SECRET_KEY=REPLACE_WITH_SECURE_RANDOM_KEY
+DATABASE_URL=postgres://user:password@host:5432/dbname
+DJANGO_DEBUG=False
+ALLOWED_HOSTS=eventhub-lovat.vercel.app,example.onrender.com
+CORS_ALLOW_ALL_ORIGINS=True
+```
+
+   - Generate a secure Django secret locally with:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+   - Do not commit real secrets to the repo. Paste values into Render service Environment Variables or keep a local `.env` for development.
