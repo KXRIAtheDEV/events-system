@@ -1,32 +1,4 @@
 {
-<<<<<<< Updated upstream
-    "version": 2,
-    "builds": [
-        {
-            "src": "backend/config/wsgi.py",
-            "use": "@vercel/python",
-            "config": {
-                "maxLambdaSize": "15mb",
-                "runtime": "python3.12",
-                "includeFiles": ["frontend/**", "backend/**"]
-            }
-        },
-        {
-            "src": "frontend/static/**",
-            "use": "@vercel/static"
-        }
-    ],
-    "rewrites": [
-        {
-            "source": "/static/(.*)",
-            "destination": "/frontend/static/$1"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/backend/config/wsgi.py"
-        }
-    ]
-=======
   "experimentalServices": [
     {
       "root": "frontend",
@@ -37,5 +9,4 @@
       "routePrefix": "/_/backend"
     }
   ]
->>>>>>> Stashed changes
 }
