@@ -14,14 +14,14 @@
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/static/(.*)",
-      "destination": "/frontend/static/$1"
+      "src": "/static/(.*)",
+      "dest": "frontend/static/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/config/wsgi.py"
+      "src": "/(.*)",
+      "dest": "config/wsgi.py"
     }
   ]
 }
