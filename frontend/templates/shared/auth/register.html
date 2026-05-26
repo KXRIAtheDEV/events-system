@@ -39,11 +39,18 @@
                 </div>
             </div>
 
-            <form method="POST" action="/register/submit/" id="registerForm">
+            <form method="POST" action="/api/auth/register/" id="registerForm">
                 {% csrf_token %}
                 <input type="hidden" name="role" id="roleInput" value="">
+                
                 <div class="auth-input-wrapper">
                     <i class="fas fa-user auth-input-icon"></i>
+                    <input type="text" name="username" id="username" placeholder="Username" class="auth-input" required>
+                </div>
+                <div id="usernameError" class="error-message hidden"></div>
+
+                <div class="auth-input-wrapper">
+                    <i class="fas fa-id-card auth-input-icon"></i>
                     <input type="text" name="name" id="fullName" placeholder="Full name" class="auth-input" required>
                 </div>
                 <div id="nameError" class="error-message hidden"></div>
@@ -178,6 +185,7 @@
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
         
         // Validation
         const password = document.getElementById('password1').value;
@@ -193,22 +201,46 @@
             return;
         }
         
+        // Split full name into first_name and last_name
+        const fullName = data.name || '';
+        const nameParts = fullName.trim().split(' ');
+        data.first_name = nameParts[0] || '';
+        data.last_name = nameParts.slice(1).join(' ') || '';
+        data.password = password; // Map for backend
+        
         fetch(form.action, {
             method: 'POST',
-            body: formData,
+            body: JSON.stringify(data),
             headers: {
+                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+        .then(response => response.json().then(resData => ({status: response.status, body: resData})))
+        .then(({status, body}) => {
+            if (status === 201) {
+                const prefix = body.user.role === 'organizer' ? 'organizer' : 'attendee';
+                
+                // Store tokens and user profile
+                localStorage.setItem(`${prefix}_access_token`, body.access);
+                localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
+                localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
+                
                 showToast('Registration successful! Redirecting...', 'success');
                 setTimeout(() => {
-                    window.location.href = data.redirect_url;
-                }, 1500);
+                    if (body.user.role === 'organizer') {
+                        window.location.href = '/organizer/';
+                    } else {
+                        window.location.href = '/attendee/';
+                    }
+                }, 1000);
             } else {
-                showToast(data.error || 'Registration failed', 'error');
+                if (body.errors) {
+                    const firstError = Object.values(body.errors)[0];
+                    showToast(Array.isArray(firstError) ? firstError[0] : firstError, 'error');
+                } else {
+                    showToast(body.error || 'Registration failed', 'error');
+                }
             }
         })
         .catch(error => {
