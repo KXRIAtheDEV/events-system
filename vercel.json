@@ -1,12 +1,18 @@
 {
-  "experimentalServices": {
-    "frontend": {
-      "root": "frontend",
-      "routePrefix": "/"
-    },
-    "backend": {
-      "root": "backend",
-      "routePrefix": "/_/backend"
+  "builds": [
+    {
+      "src": "frontend/static/**",
+      "use": "@vercel/static"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "^/favicon.ico$",
+      "dest": "frontend/static/favicon.ico"
+    },
+    {
+      "src": "^/(.*)$",
+      "dest": "frontend/static/$1"
+    }
+  ]
 }
