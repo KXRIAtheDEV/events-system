@@ -2,9 +2,9 @@ Render deployment instructions
 
 1) Connect repository in Render dashboard
    - Create a new Web Service -> Connect GitHub repo -> select this repo
-   - Set Root/Working Directory: `backend`
+   - Ensure Root/Working Directory is empty (default root)
    - Build Command: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-   - Start Command: `gunicorn config.wsgi:application --chdir backend --bind 0.0.0.0:$PORT`
+   - Start Command: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
 
 2) Environment variables (set in Render -> Service -> Environment):
    - `DJANGO_SECRET_KEY` : a secure random value
@@ -20,11 +20,11 @@ Render deployment instructions
    - `python manage.py createsuperuser` (or create via admin UI)
 
 5) Notes
-   - Ensure the repository `backend/requirements.txt` includes `psycopg2-binary`, `dj-database-url`, `gunicorn`, and `whitenoise` (already added).
+   - Ensure the repository `requirements.txt` includes `psycopg2-binary`, `dj-database-url`, `gunicorn`, and `whitenoise` (already added).
    - Locally on Linux, installing `psycopg2-binary` may require system packages (e.g. `libpq-dev`, `build-essential`).
 
 6) Environment file (optional)
-   - A sample env file has been added at `backend/.env.sample` with placeholders:
+   - A sample env file has been added at `.env.sample` with placeholders:
 
 ```
 DJANGO_SECRET_KEY=REPLACE_WITH_SECURE_RANDOM_KEY

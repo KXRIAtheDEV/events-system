@@ -6,7 +6,7 @@ from pathlib import Path
 import os
 import dj_database_url
 
-BASE_DIR = Path(__file__).resolve().resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY: override with environment variable in production
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-j&#8z0n2)9txjmpi6=8i2h=d8ks8gt4gar#!kb0u0z6jd)im+#')
 # Allow controlling debug via env var; default True for local development
@@ -119,7 +119,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/tmp/db.sqlite3' if os.environ.get('VERCEL') else BASE_DIR / 'backend' / 'db.sqlite3',
+        'NAME': '/tmp/db.sqlite3' if os.environ.get('VERCEL') else BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -144,10 +144,10 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend', 'static'),
 ]
-STATIC_ROOT = os.path.join(BASE_DIR, 'backend', 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'backend', 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.User'

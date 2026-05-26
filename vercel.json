@@ -2,12 +2,11 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/config/wsgi.py",
+      "src": "config/wsgi.py",
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "15mb",
-        "runtime": "python3.12",
-        "includeFiles": ["frontend/**", "backend/**"]
+        "runtime": "python3.12"
       }
     },
     {
@@ -22,7 +21,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/backend/config/wsgi.py"
+      "destination": "/config/wsgi.py"
     }
   ]
 }
