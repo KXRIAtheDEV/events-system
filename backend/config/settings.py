@@ -4,10 +4,13 @@ Django settings for EventHub project.
 
 from pathlib import Path
 import os
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().resolve().parent.parent.parent
-SECRET_KEY = 'django-insecure-j&#8z0n2)9txjmpi6=8i2h=d8ks8gt4gar#!kb0u0z6jd)im+#'
-DEBUG = True
+# SECURITY: override with environment variable in production
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-j&#8z0n2)9txjmpi6=8i2h=d8ks8gt4gar#!kb0u0z6jd)im+#')
+# Allow controlling debug via env var; default True for local development
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 
 
@@ -35,6 +38,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -118,6 +122,10 @@ DATABASES = {
         'NAME': '/tmp/db.sqlite3' if os.environ.get('VERCEL') else BASE_DIR / 'backend' / 'db.sqlite3',
     }
 }
+
+# If a DATABASE_URL environment variable is provided (Render/Postgres), use it.
+if os.environ.get('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.parse(os.environ.get('DATABASE_URL'))
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
