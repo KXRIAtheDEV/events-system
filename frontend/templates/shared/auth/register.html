@@ -41,12 +41,12 @@
                 </div>
             </div>
 
-            <form method="POST" action="/register/submit/" id="registerForm" novalidate>
+            <form method="POST" action="/api/auth/register/" id="registerForm">
                 {% csrf_token %}
-                <input type="hidden" name="role" id="roleInput" value="attendee">
+                <input type="hidden" name="role" id="roleInput" value="">
                 
                 <div class="auth-input-wrapper">
-                    <i class="fas fa-user auth-input-icon"></i>
+                    <i class="fas fa-id-card auth-input-icon"></i>
                     <input type="text" name="name" id="fullName" placeholder="Full name" class="auth-input" required>
                 </div>
                 <div id="nameError" class="error-message hidden"></div>
@@ -289,6 +289,9 @@
     
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
         
         const name = nameInput.value;
         const email = emailInput.value;
@@ -322,28 +325,58 @@
             return;
         }
         
-        if (roleInput.value === 'organizer') {
-            const orgValidation = validateOrganization(org);
-            if (orgValidation) {
-                orgError.textContent = orgValidation;
-                orgError.classList.remove('hidden');
-                return;
-            }
+        // Split full name into first_name and last_name
+        const fullName = data.name || '';
+        const nameParts = fullName.trim().split(' ');
+        data.first_name = nameParts[0] || '';
+        data.last_name = nameParts.slice(1).join(' ') || '';
+        data.password = password; // Map for backend
+        
+        // Auto-generate username from email since backend requires it
+        if (data.email) {
+            const emailPrefix = data.email.split('@')[0];
+            const randomDigits = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            data.username = `${emailPrefix}_${randomDigits}`;
         }
         
-        const submitBtn = document.getElementById('registerBtn');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
-        submitBtn.disabled = true;
-        
-        const formData = new FormData(this);
-        
-        setTimeout(() => {
-            showToast('Account created successfully! Redirecting to login...', 'success');
-            setTimeout(() => {
-                window.location.href = '/login/';
-            }, 1500);
-        }, 1000);
+        fetch(form.action, {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json().then(resData => ({status: response.status, body: resData})))
+        .then(({status, body}) => {
+            if (status === 201) {
+                const prefix = body.user.role === 'organizer' ? 'organizer' : 'attendee';
+                
+                // Store tokens and user profile
+                localStorage.setItem(`${prefix}_access_token`, body.access);
+                localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
+                localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
+                
+                showToast('Registration successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    if (body.user.role === 'organizer') {
+                        window.location.href = '/organizer/';
+                    } else {
+                        window.location.href = '/attendee/';
+                    }
+                }, 1000);
+            } else {
+                if (body.errors) {
+                    const firstError = Object.values(body.errors)[0];
+                    showToast(Array.isArray(firstError) ? firstError[0] : firstError, 'error');
+                } else {
+                    showToast(body.error || 'Registration failed', 'error');
+                }
+            }
+        })
+        .catch(error => {
+            showToast('An error occurred', 'error');
+        });
     });
     
     function showToast(message, type) {
