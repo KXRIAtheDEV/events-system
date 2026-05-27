@@ -1,5 +1,9 @@
-@import url('variables.css');
+/* ============================================
+   SHARED CARD COMPONENT - Premium Card Styles
+   Event Cards, Feature Cards, Testimonial Cards
+   ============================================ */
 
+/* Premium Card - Dark Theme with Gradient Overlay */
 .premium-card {
     position: relative;
     background: #1a1a2e;
@@ -14,8 +18,10 @@
 
 .premium-card:hover {
     box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.35);
+    transform: translateY(-5px);
 }
 
+/* Card Image Container */
 .card-image-container {
     position: relative;
     width: 100%;
@@ -37,6 +43,7 @@
     transform: scale(1.05);
 }
 
+/* Gradient Overlay */
 .card-gradient-overlay {
     position: absolute;
     bottom: 0;
@@ -57,6 +64,7 @@
     border-radius: 0 0 20px 20px;
 }
 
+/* Card Content */
 .card-content {
     position: absolute;
     bottom: 0;
@@ -116,6 +124,7 @@
     backdrop-filter: blur(4px);
 }
 
+/* Card Hover Info */
 .card-hover-info {
     position: absolute;
     top: 0;
@@ -155,27 +164,9 @@
     line-height: 1.5;
 }
 
-.btn-outline-light {
-    background: transparent;
-    border: 2px solid white;
-    color: white;
-    padding: 8px 20px;
-    border-radius: 40px;
-    text-decoration: none;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: all 0.25s ease;
-    display: inline-block;
-    cursor: pointer;
-}
-
-.btn-outline-light:hover {
-    background: white;
-    color: #ec6408;
-}
-
+/* Base Card */
 .np-card {
-    background: white;
+    background: #ffffff;
     border-radius: 20px;
     padding: 24px;
     transition: all 0.3s ease;
@@ -188,6 +179,202 @@
     box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.15);
 }
 
+.np-card-solid {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.np-card-solid:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.15);
+}
+
+.np-card-outline {
+    background: transparent;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.np-card-outline:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.15);
+    transform: translateY(-4px);
+}
+
+/* Card with Image */
+.np-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    border-radius: 16px;
+}
+
+.np-card:hover .np-card-image {
+    transform: scale(1.02);
+}
+
+.np-card-content {
+    padding: 16px;
+}
+
+.np-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #1e293b;
+}
+
+.np-card-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.np-card-text {
+    font-size: 0.875rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* Card Footer */
+.np-card-footer {
+    padding: 16px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 0 0 16px 16px;
+}
+
+/* Horizontal Card */
+.np-card-horizontal {
+    display: flex;
+    background: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.np-card-horizontal:hover {
+    transform: translateX(5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.np-card-horizontal .np-card-image {
+    width: 200px;
+    height: 100%;
+    object-fit: cover;
+}
+
+.np-card-horizontal .np-card-content {
+    flex: 1;
+}
+
+/* Feature Card */
+.feature-card {
+    text-align: center;
+    padding: 32px;
+    background: #ffffff;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-color: #f59e0b;
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 100, 8, 0.05));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+    background: linear-gradient(135deg, #f59e0b, #ec6408);
+}
+
+.feature-icon i {
+    font-size: 2rem;
+    color: #f59e0b;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon i {
+    color: white;
+    transform: scale(1.1);
+}
+
+.feature-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #1e293b;
+}
+
+.feature-description {
+    font-size: 0.875rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+/* Stats Card */
+.stats-card {
+    text-align: center;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    border-color: #f59e0b;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #f59e0b;
+    margin-bottom: 8px;
+    line-height: 1;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.stats-icon {
+    font-size: 2rem;
+    color: #f59e0b;
+    margin-bottom: 16px;
+    display: inline-block;
+}
+
+/* Analytics Card */
 .analytics-card {
     background: white;
     border-radius: 20px;
@@ -209,6 +396,7 @@
     margin-bottom: 8px;
 }
 
+/* Testimonial Card */
 .testimonial-card {
     background: white;
     border-radius: 20px;
@@ -224,6 +412,36 @@
     box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.12);
 }
 
+.testimonial-quote {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.testimonial-quote i {
+    font-size: 2rem;
+    color: #f59e0b;
+    opacity: 0.3;
+    position: absolute;
+    top: -10px;
+    left: -10px;
+}
+
+.testimonial-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #1e293b;
+    position: relative;
+    z-index: 1;
+    padding-left: 20px;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+
 .testimonial-avatar {
     width: 50px;
     height: 50px;
@@ -237,311 +455,43 @@
     font-size: 1.2rem;
 }
 
+.testimonial-avatar-img {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #f59e0b;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.testimonial-avatar-img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+    border-color: #ec6408;
+}
+
+.testimonial-author h4 {
+    margin-bottom: 4px;
+    color: #1e293b;
+}
+
+.testimonial-author p {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.testimonial-stars {
+    color: #fbbf24;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
 .stars-display {
     color: #ffd045;
     letter-spacing: 3px;
     font-size: 0.9rem;
     margin: 12px 0 8px;
-}
-
-@media (max-width: 1024px) {
-    .card-image-container { height: 300px; }
-}
-
-@media (max-width: 768px) {
-    .card-image-container { height: 280px; }
-    .card-title { font-size: 1rem; }
-    .card-content { padding: 15px; }
-}
-
-@media (max-width: 480px) {
-    .card-image-container { height: 260px; }
-    .card-title { font-size: 0.95rem; }
-    .card-meta { font-size: 0.7rem; }
-    .card-price { font-size: 0.85rem; }
-    .card-content { padding: 12px; }
-}
-/* Testimonial Avatar Images */
-.testimonial-avatar-img {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--np-gradient);
-}
-
-/* Team Member Avatars */
-.team-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: 0 auto 1rem auto;
-    border: 3px solid var(--np-gradient);
-    transition: all 0.3s ease;
-}
-
-.team-avatar:hover {
-    transform: scale(1.05);
-    border-color: var(--np-yellow);
-}
-
-/* ============================================
-   PROFESSIONAL AVATAR IMAGE STYLES
-   ============================================ */
-
-/* Testimonial Avatar Images - Round, centered, professional */
-.testimonial-avatar-img {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid transparent;
-    background: linear-gradient(135deg, #f59e0b, #ec6408) border-box;
-    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.testimonial-avatar-img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
-}
-
-/* Team Member Avatars - Larger, professional headshots */
-.team-avatar {
-    width: 130px;
-    height: 130px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: 0 auto 1rem auto;
-    border: 4px solid transparent;
-    background: linear-gradient(135deg, #f59e0b, #ec6408) border-box;
-    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-}
-
-.team-avatar:hover {
-    transform: scale(1.05) translateY(-3px);
-    box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35);
-    cursor: pointer;
-}
-
-/* Card alignment for team members */
-.np-card {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Testimonial card alignment */
-.testimonial-card {
-    display: flex;
-    flex-direction: column;
-}
-
-.testimonial-card .flex {
-    align-items: center;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .testimonial-avatar-img {
-        width: 45px;
-        height: 45px;
-    }
-    
-    .team-avatar {
-        width: 100px;
-        height: 100px;
-    }
-}
-
-@media (max-width: 480px) {
-    .testimonial-avatar-img {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .team-avatar {
-        width: 80px;
-        height: 80px;
-    }
-}
-
-/* ============================================
-   PROFESSIONAL AVATAR IMAGE STYLES
-   ============================================ */
-
-/* Testimonial Avatar Images */
-.testimonial-avatar-img {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #f59e0b;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    background: #1e293b;
-}
-
-.testimonial-avatar-img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
-    border-color: #ec6408;
-}
-
-/* Team Member Avatars */
-.team-avatar {
-    width: 130px;
-    height: 130px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: 0 auto 1rem auto;
-    border: 4px solid #f59e0b;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    background: #1e293b;
-    display: block;
-}
-
-.team-avatar:hover {
-    transform: scale(1.05) translateY(-3px);
-    box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35);
-    border-color: #ec6408;
-}
-
-/* Placeholder for broken images */
-.testimonial-avatar-img::before,
-.team-avatar::before {
-    content: "📷";
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: #334155;
-    color: white;
-    font-size: 1.5rem;
-    border-radius: 50%;
-}
-
-/* Testimonial Avatar Icons - Reliable, no external images */
-.testimonial-avatar-icon {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b, #ec6408);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1.3rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
-}
-
-.testimonial-avatar-icon:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
-}
-
-/* Team Avatar Icons */
-.team-avatar-icon {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b, #ec6408);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 2rem;
-    margin: 0 auto 1rem auto;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-}
-
-.team-avatar-icon:hover {
-    transform: scale(1.05) translateY(-3px);
-    box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .testimonial-avatar-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.1rem;
-    }
-    
-    .team-avatar-icon {
-        width: 80px;
-        height: 80px;
-        font-size: 1.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .testimonial-avatar-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    
-    .team-avatar-icon {
-        width: 70px;
-        height: 70px;
-        font-size: 1.3rem;
-    }
-}
-
-/* Working Avatar Images */
-.testimonial-avatar-img {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #f59e0b;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    background: #f59e0b;
-}
-
-.testimonial-avatar-img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
-    border-color: #ec6408;
-}
-
-.team-avatar-img {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: 0 auto 1rem auto;
-    border: 4px solid #f59e0b;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    background: #f59e0b;
-    display: block;
-}
-
-.team-avatar-img:hover {
-    transform: scale(1.05) translateY(-3px);
-    box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35);
-    border-color: #ec6408;
 }
 
 /* Team Card */
@@ -560,4 +510,119 @@
 .team-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.15);
+}
+
+.team-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 1rem auto;
+    border: 4px solid #f59e0b;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+.team-avatar:hover {
+    transform: scale(1.05) translateY(-3px);
+    box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35);
+    border-color: #ec6408;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .card-image-container {
+        height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-image-container {
+        height: 280px;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+    }
+    
+    .card-content {
+        padding: 15px;
+    }
+    
+    .np-card-horizontal {
+        flex-direction: column;
+    }
+    
+    .np-card-horizontal .np-card-image {
+        width: 100%;
+        height: 180px;
+    }
+    
+    .feature-card {
+        padding: 24px;
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .feature-icon i {
+        font-size: 1.5rem;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+    }
+    
+    .testimonial-avatar-img {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .team-avatar {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-image-container {
+        height: 260px;
+    }
+    
+    .card-title {
+        font-size: 0.95rem;
+    }
+    
+    .card-meta {
+        font-size: 0.7rem;
+    }
+    
+    .card-price {
+        font-size: 0.85rem;
+    }
+    
+    .card-content {
+        padding: 12px;
+    }
+    
+    .np-card-solid,
+    .np-card-outline {
+        padding: 16px;
+    }
+    
+    .stats-number {
+        font-size: 1.5rem;
+    }
+    
+    .testimonial-avatar-img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .team-avatar {
+        width: 80px;
+        height: 80px;
+    }
 }
