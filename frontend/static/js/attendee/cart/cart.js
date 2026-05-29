@@ -75,7 +75,7 @@ async function loadCart() {
         if (savedCart) {
             try {
                 const parsed = JSON.parse(savedCart);
-                if (parsed && parsed.items && parsed.items.length > 0) {
+                if (parsed && Array.isArray(parsed.items)) {
                     cartData = parsed;
                 }
             } catch (e) {
@@ -86,7 +86,7 @@ async function loadCart() {
         
         displayCart();
         
-        if (!cartData.items || cartData.items.length === 0) {
+        if (!cartData || !cartData.items || cartData.items.length === 0) {
             if (emptyCartEl) emptyCartEl.style.display = 'block';
             if (cartContentEl) cartContentEl.style.display = 'none';
         } else {
@@ -98,58 +98,78 @@ async function loadCart() {
     } catch (error) {
         console.error('Error loading cart:', error);
         showToast('Failed to load cart', 'error');
+        showDebugError("Error loading cart: " + error.message, error.stack);
     } finally {
         hideLoader();
     }
 }
 
 function displayCart() {
-    if (!cartItemsEl) return;
-    
-    if (!cartData.items || cartData.items.length === 0) {
-        cartItemsEl.innerHTML = '<div class="empty-cart-message">Your cart is empty</div>';
-        return;
-    }
-    
-    cartItemsEl.innerHTML = cartData.items.map(item => `
-        <div class="cart-item" data-id="${item.id}">
-            <div class="item-image" style="background-image: url('${item.image || '/static/images/placeholder.jpg'}')"></div>
-            <div class="item-details">
-                <h4>${escapeHtml(item.title)}</h4>
-                <p class="item-type">${escapeHtml(item.category || 'Event')}</p>
-                <p class="item-date">${formatDate(item.date)}</p>
-                <p class="item-venue">${escapeHtml(item.location)}</p>
-            </div>
-            <div class="item-quantity">
-                <button class="qty-btn minus" onclick="updateItemQuantity(${item.id}, -1)">-</button>
-                <span class="qty-value">${item.quantity}</span>
-                <button class="qty-btn plus" onclick="updateItemQuantity(${item.id}, 1)">+</button>
-            </div>
-            <div class="item-price">${formatCurrency(item.price * item.quantity)}</div>
-            <button class="remove-item" onclick="removeItem(${item.id})">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </div>
-    `).join('');
-    
-    // Update summary
-    if (cartItemCountSpan) cartItemCountSpan.textContent = cartData.items.length;
-    if (subtotalSpan) subtotalSpan.textContent = formatCurrency(cartData.subtotal);
-    if (platformFeeSpan) platformFeeSpan.textContent = formatCurrency(cartData.platform_fee || 0);
-    if (totalAmountSpan) totalAmountSpan.textContent = formatCurrency(cartData.total);
-    
-    if (cartData.discount_amount && cartData.discount_amount > 0) {
-        if (discountRow) discountRow.style.display = 'flex';
-        if (discountAmountSpan) discountAmountSpan.textContent = `-${formatCurrency(cartData.discount_amount)}`;
-    } else {
-        if (discountRow) discountRow.style.display = 'none';
-    }
-    
-    if (cartData.promo_code) {
-        if (appliedPromoDiv) appliedPromoDiv.style.display = 'flex';
-        if (promoCodeDisplaySpan) promoCodeDisplaySpan.textContent = cartData.promo_code;
-    } else {
-        if (appliedPromoDiv) appliedPromoDiv.style.display = 'none';
+    try {
+        if (!cartItemsEl) return;
+        
+        if (!cartData || !cartData.items || cartData.items.length === 0) {
+            cartItemsEl.innerHTML = '<div class="empty-cart-message">Your cart is empty</div>';
+            return;
+        }
+        
+        cartItemsEl.innerHTML = cartData.items.map(item => {
+            try {
+                return `
+                    <div class="cart-item" data-id="${item.id}">
+                        <div class="item-image" style="background-image: url('${item.image || '/static/images/placeholder.jpg'}')"></div>
+                        <div class="item-details">
+                            <h4>${escapeHtml(item.title)}</h4>
+                            <p class="item-type">${escapeHtml(item.category || 'Event')}</p>
+                            <p class="item-date">${formatDate(item.date)}</p>
+                            <p class="item-venue">${escapeHtml(item.location)}</p>
+                        </div>
+                        <div class="item-quantity">
+                            <button class="qty-btn minus" onclick="updateItemQuantity(${item.id}, -1)">-</button>
+                            <span class="qty-value">${item.quantity}</span>
+                            <button class="qty-btn plus" onclick="updateItemQuantity(${item.id}, 1)">+</button>
+                        </div>
+                        <div class="item-price">${formatCurrency(item.price * item.quantity)}</div>
+                        <button class="remove-item" onclick="removeItem(${item.id})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+            } catch (innerError) {
+                console.error("Error rendering cart item:", item, innerError);
+                return `
+                    <div class="cart-item error-item" style="border-left: 4px solid #ef4444; padding-left: 1rem;">
+                        <div class="item-details">
+                            <h4 style="color: #ef4444;">Malformed Event Item</h4>
+                            <p class="text-danger" style="font-size: 0.8rem;">${escapeHtml(innerError.message)}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+        
+        // Update summary
+        if (cartItemCountSpan) cartItemCountSpan.textContent = cartData.items.length;
+        if (subtotalSpan) subtotalSpan.textContent = formatCurrency(cartData.subtotal);
+        if (platformFeeSpan) platformFeeSpan.textContent = formatCurrency(cartData.platform_fee || 0);
+        if (totalAmountSpan) totalAmountSpan.textContent = formatCurrency(cartData.total);
+        
+        if (cartData.discount_amount && cartData.discount_amount > 0) {
+            if (discountRow) discountRow.style.display = 'flex';
+            if (discountAmountSpan) discountAmountSpan.textContent = `-${formatCurrency(cartData.discount_amount)}`;
+        } else {
+            if (discountRow) discountRow.style.display = 'none';
+        }
+        
+        if (cartData.promo_code) {
+            if (appliedPromoDiv) appliedPromoDiv.style.display = 'flex';
+            if (promoCodeDisplaySpan) promoCodeDisplaySpan.textContent = cartData.promo_code;
+        } else {
+            if (appliedPromoDiv) appliedPromoDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Error in displayCart:", error);
+        showDebugError("Error in displayCart: " + error.message, error.stack);
     }
 }
 
@@ -513,7 +533,6 @@ async function checkPaymentStatus(bookingId, billingInfo) {
                     
                     localStorage.removeItem('eventhub_cart');
                     updateCartCount(0);
-                }
             }, 3000);
         }
     } catch (error) {
@@ -624,12 +643,28 @@ function isValidEmail(email) {
 }
 
 function formatDate(dateString) {
-    if (!dateString) return 'TBD';
-    return new Date(dateString).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return 'TBA';
+        }
+        return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        console.error("Error formatting date:", e);
+        return 'TBA';
+    }
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    try {
+        const val = Number(amount);
+        if (isNaN(val)) return 'KSh 0';
+        return `KSh ${val.toLocaleString('en-KE')}`;
+    } catch (e) {
+        console.error("Error formatting currency:", e);
+        return 'KSh 0';
+    }
 }
 
 function escapeHtml(text) {
@@ -641,10 +676,37 @@ function escapeHtml(text) {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
+    toast.className = `toast toast-notification toast-${type}`;
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${escapeHtml(message)}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
+}
+
+function showDebugError(message, stack) {
+    const container = document.querySelector('.cart-page .container');
+    if (!container) return;
+    
+    let errorBox = document.getElementById('cartDebugError');
+    if (!errorBox) {
+        errorBox = document.createElement('div');
+        errorBox.id = 'cartDebugError';
+        errorBox.style.cssText = 'background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem; color: #991b1b;';
+        container.insertBefore(errorBox, container.firstChild);
+    }
+    
+    errorBox.innerHTML = `
+        <div style="display: flex; gap: 0.75rem; align-items: flex-start; text-align: left;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem; color: #ef4444; margin-top: 0.125rem;"></i>
+            <div>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0; color: #991b1b;">Runtime Error Detected</h3>
+                <p style="margin: 0 0 1rem 0; font-size: 0.9rem; line-height: 1.5; color: #7f1d1d;">${escapeHtml(message)}</p>
+                ${stack ? `<pre style="background: #cbd5e1; padding: 1rem; border-radius: 0.25rem; font-size: 0.8rem; overflow-x: auto; color: #1e293b; max-height: 200px; font-family: monospace;">${escapeHtml(stack)}</pre>` : ''}
+                <button class="btn-primary" onclick="localStorage.removeItem('eventhub_cart'); window.location.reload();" style="margin-top: 1rem; background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                    Reset & Clear Cart
+                </button>
+            </div>
+        </div>
+    `;
 }
 
 function showLoader(message) {
