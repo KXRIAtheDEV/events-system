@@ -19,6 +19,7 @@ from events.views import (
     organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
     api_tickets_upcoming
+)
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import ticket_checkout_api
 from bookings.email_service import send_newsletter_confirmation
