@@ -8,13 +8,23 @@ from django.utils import timezone
 from datetime import timedelta
 import dateutil.parser
 
+from accounts.auth import authenticate_bearer
+
 def organizer_required(view_func):
     """Decorator to ensure user is logged in and is an organizer."""
     def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return JsonResponse({'success': False, 'message': 'Please login to continue'}, status=401)
-        if getattr(request.user, 'role', None) != 'organizer':
+        user = request.user
+        if not user.is_authenticated:
+            bearer_user, error = authenticate_bearer(request)
+            if bearer_user:
+                user = bearer_user
+                request.user = user
+            else:
+                return JsonResponse({'success': False, 'message': 'Please login to continue'}, status=401)
+                
+        if getattr(user, 'role', None) != 'organizer' and not getattr(user, 'is_superuser', False):
             return JsonResponse({'success': False, 'message': 'Organizer access required'}, status=403)
+            
         return view_func(request, *args, **kwargs)
     return wrapper
 
