@@ -9,11 +9,38 @@ class OrganizerAPIService {
         this.config = config;
         this.pendingRequests = new Map();
         this.cache = new Map();
-        this.accessToken = localStorage.getItem('organizer_access_token');
-        this.refreshToken = localStorage.getItem('organizer_refresh_token');
+        this.memoryStorage = {};
+        
+        this.accessToken = this.safeGetItem('organizer_access_token');
+        this.refreshToken = this.safeGetItem('organizer_refresh_token');
         
         // Initialize Local Storage Database
         this.initMockDatabase();
+    }
+    
+    safeGetItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return this.memoryStorage ? this.memoryStorage[key] : null;
+        }
+    }
+
+    safeSetItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            if (!this.memoryStorage) this.memoryStorage = {};
+            this.memoryStorage[key] = value;
+        }
+    }
+
+    safeRemoveItem(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (e) {
+            if (this.memoryStorage) delete this.memoryStorage[key];
+        }
     }
     
     // Get CSRF Token from cookies
@@ -26,16 +53,16 @@ class OrganizerAPIService {
     setTokens(access, refresh) {
         this.accessToken = access;
         this.refreshToken = refresh;
-        localStorage.setItem('organizer_access_token', access);
-        localStorage.setItem('organizer_refresh_token', refresh);
+        this.safeSetItem('organizer_access_token', access);
+        this.safeSetItem('organizer_refresh_token', refresh);
     }
     
     // Clear tokens on logout
     clearTokens() {
         this.accessToken = null;
         this.refreshToken = null;
-        localStorage.removeItem('organizer_access_token');
-        localStorage.removeItem('organizer_refresh_token');
+        this.safeRemoveItem('organizer_access_token');
+        this.safeRemoveItem('organizer_refresh_token');
     }
     
     // Build full URL
@@ -133,16 +160,16 @@ class OrganizerAPIService {
             initialized: 'eventhub_organizer_initialized_v2'
         };
 
-        if (!localStorage.getItem(storageKeys.initialized)) {
+        if (!this.safeGetItem(storageKeys.initialized)) {
             // Clear any old data from previous versions
-            localStorage.removeItem('eventhub_organizer_initialized_db');
-            localStorage.removeItem('eventhub_initialized');
+            this.safeRemoveItem('eventhub_organizer_initialized_db');
+            this.safeRemoveItem('eventhub_initialized');
 
             // Start fresh with zero events and zero tickets
             const defaultEvents = [];
             
-            localStorage.setItem(storageKeys.events, JSON.stringify(defaultEvents));
-            localStorage.setItem(storageKeys.initialized, 'true');
+            this.safeSetItem(storageKeys.events, JSON.stringify(defaultEvents));
+            this.safeSetItem(storageKeys.initialized, 'true');
             this.recalculateMockStats(defaultEvents);
         }
     }
@@ -166,12 +193,12 @@ class OrganizerAPIService {
             pending_payout: Math.floor(revenue * 0.15)
         };
 
-        localStorage.setItem('eventhub_organizer_stats_db', JSON.stringify(stats));
+        this.safeSetItem('eventhub_organizer_stats_db', JSON.stringify(stats));
     }
 
     getMockResponse(method, endpoint, data) {
-        const events = JSON.parse(localStorage.getItem('eventhub_organizer_events_db')) || [];
-        const stats = JSON.parse(localStorage.getItem('eventhub_organizer_stats_db')) || {};
+        const events = JSON.parse(this.safeGetItem('eventhub_organizer_events_db')) || [];
+        const stats = JSON.parse(this.safeGetItem('eventhub_organizer_stats_db')) || {};
 
         // 1. Dashboard Stats
         if (endpoint.includes('/dashboard/stats/')) {
@@ -199,7 +226,7 @@ class OrganizerAPIService {
                 status: data.status || 'active'
             };
             events.unshift(newEvent);
-            localStorage.setItem('eventhub_organizer_events_db', JSON.stringify(events));
+            this.safeSetItem('eventhub_organizer_events_db', JSON.stringify(events));
             this.recalculateMockStats(events);
             return newEvent;
         }
@@ -209,7 +236,7 @@ class OrganizerAPIService {
             const parts = endpoint.split('/');
             const id = parseInt(parts[2]);
             const filtered = events.filter(e => e.id !== id);
-            localStorage.setItem('eventhub_organizer_events_db', JSON.stringify(filtered));
+            this.safeSetItem('eventhub_organizer_events_db', JSON.stringify(filtered));
             this.recalculateMockStats(filtered);
             return { success: true };
         }

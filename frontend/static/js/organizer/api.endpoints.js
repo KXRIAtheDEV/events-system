@@ -415,7 +415,13 @@ window.OrganizerAPI = {
     support: OrganizerSupportAPI,
     
     clearCache: (pattern) => OrganizerAPI.clearCache(pattern),
-    isLoggedIn: () => !!localStorage.getItem('organizer_access_token'),
+    isLoggedIn: () => {
+        try {
+            return !!localStorage.getItem('organizer_access_token');
+        } catch (e) {
+            return !!window.OrganizerAPI?.service?.accessToken;
+        }
+    },
     logout: async () => {
         try {
             await OrganizerAuthAPI.logout();
