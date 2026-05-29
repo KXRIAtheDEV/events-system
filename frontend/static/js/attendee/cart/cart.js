@@ -73,9 +73,14 @@ async function loadCart() {
         // Try to load from localStorage first
         const savedCart = localStorage.getItem('eventhub_cart');
         if (savedCart) {
-            const parsed = JSON.parse(savedCart);
-            if (parsed.items && parsed.items.length > 0) {
-                cartData = parsed;
+            try {
+                const parsed = JSON.parse(savedCart);
+                if (parsed && parsed.items && parsed.items.length > 0) {
+                    cartData = parsed;
+                }
+            } catch (e) {
+                console.error("Malformed cart JSON, resetting:", e);
+                localStorage.removeItem('eventhub_cart');
             }
         }
         

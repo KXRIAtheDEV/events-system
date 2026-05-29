@@ -197,14 +197,26 @@ const EventDetailModule = (function() {
         try {
             // Get existing cart or initialize it
             const savedCart = localStorage.getItem('eventhub_cart');
-            let cart = savedCart ? JSON.parse(savedCart) : {
-                items: [],
-                subtotal: 0,
-                platform_fee: 0,
-                total: 0,
-                discount_amount: 0,
-                promo_code: null
-            };
+            let cart = null;
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch (e) {
+                    console.error("Malformed cart JSON, resetting:", e);
+                    localStorage.removeItem('eventhub_cart');
+                }
+            }
+            
+            if (!cart || !cart.items) {
+                cart = {
+                    items: [],
+                    subtotal: 0,
+                    platform_fee: 0,
+                    total: 0,
+                    discount_amount: 0,
+                    promo_code: null
+                };
+            }
 
             // Check if item is already in cart
             const existingItem = cart.items.find(item => item.id == eventId);

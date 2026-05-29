@@ -316,22 +316,35 @@ document.addEventListener('DOMContentLoaded', function() {
         loadWishlistCount();
         loadNotificationCount();
     }
+    loadCounts();
     
     function loadCartCount() {
-        const savedCart = localStorage.getItem('eventhub_cart');
-        const cart = savedCart ? JSON.parse(savedCart) : { items: [] };
-        const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-        
-        const desktopBadge = document.getElementById('cartBadgeDropdown');
-        const mobileBadge = document.getElementById('mobileCartBadge');
-        
-        if (desktopBadge) {
-            desktopBadge.textContent = count;
-            desktopBadge.style.display = count > 0 ? 'inline-block' : 'none';
-        }
-        if (mobileBadge) {
-            mobileBadge.textContent = count;
-            mobileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        try {
+            const savedCart = localStorage.getItem('eventhub_cart');
+            let cart = { items: [] };
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch (e) {
+                    console.error("Malformed cart JSON, resetting:", e);
+                    localStorage.removeItem('eventhub_cart');
+                }
+            }
+            const count = cart && cart.items ? cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+            
+            const desktopBadge = document.getElementById('cartBadgeDropdown');
+            const mobileBadge = document.getElementById('mobileCartBadge');
+            
+            if (desktopBadge) {
+                desktopBadge.textContent = count;
+                desktopBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+            if (mobileBadge) {
+                mobileBadge.textContent = count;
+                mobileBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+        } catch (error) {
+            console.error("Error loading cart count:", error);
         }
     }
     
