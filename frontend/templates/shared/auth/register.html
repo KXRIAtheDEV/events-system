@@ -330,7 +330,7 @@
         const nameParts = fullName.trim().split(' ');
         data.first_name = nameParts[0] || '';
         data.last_name = nameParts.slice(1).join(' ') || '';
-        data.password = password; // Map for backend
+        data.password = password1; // Map for backend
         
         // Auto-generate username from email since backend requires it
         if (data.email) {

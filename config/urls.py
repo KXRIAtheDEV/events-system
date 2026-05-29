@@ -250,6 +250,7 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='attendee/pages/homepage/homepage.html'), name='home'),
     
     # API Endpoints
+    path('api/', include('accounts.urls')),
     path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
     path('api/events/categories/', get_categories_list, name='api_categories'),
