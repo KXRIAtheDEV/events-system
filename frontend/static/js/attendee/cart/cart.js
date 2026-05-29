@@ -493,9 +493,14 @@ async function checkPaymentStatus(bookingId, billingInfo) {
             setTimeout(async () => {
                 // Actually hit the backend API
                 try {
+                    const token = localStorage.getItem('attendee_access_token');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) {
+                        headers['Authorization'] = 'Bearer ' + token;
+                    }
                     await fetch('/api/bookings/checkout/', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: headers,
                         body: JSON.stringify({
                             email: billingInfo.email,
                             name: billingInfo.full_name,
@@ -563,9 +568,14 @@ async function initiateCardPayment(bookingId, billingInfo) {
         setTimeout(async () => {
             // Actually hit the backend API
             try {
+                const token = localStorage.getItem('attendee_access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
                 await fetch('/api/bookings/checkout/', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         email: billingInfo.email,
                         name: billingInfo.full_name,

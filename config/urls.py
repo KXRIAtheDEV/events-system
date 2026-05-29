@@ -18,10 +18,13 @@ from django.contrib import messages
 from events.views import (
     organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_tickets_upcoming, api_featured_events
+    api_featured_events
 )
 from accounts.auth_views import register_submit, login_submit
-from bookings.views import ticket_checkout_api
+from bookings.views import (
+    ticket_checkout_api, api_tickets_upcoming, api_tickets_past,
+    api_ticket_detail, api_ticket_qr, api_ticket_download
+)
 from bookings.email_service import send_newsletter_confirmation
 from events.api_organizer_views import (
     api_organizer_events_list,
@@ -277,6 +280,10 @@ urlpatterns = [
     path('api/attendee/dashboard/recommendations/', api_dashboard_recommendations, name='api_attendee_dashboard_recommendations'),
     path('api/attendee/dashboard/recent-activity/', api_dashboard_recent_activity, name='api_attendee_dashboard_recent_activity'),
     path('api/attendee/tickets/upcoming/', api_tickets_upcoming, name='api_attendee_tickets_upcoming'),
+    path('api/attendee/tickets/past/', api_tickets_past, name='api_attendee_tickets_past'),
+    path('api/attendee/tickets/<str:ticket_number>/', api_ticket_detail, name='api_attendee_ticket_detail'),
+    path('api/attendee/tickets/<str:ticket_number>/qr/', api_ticket_qr, name='api_attendee_ticket_qr'),
+    path('api/attendee/tickets/<str:ticket_number>/download/', api_ticket_download, name='api_attendee_ticket_download'),
     
     # Organizer API Endpoints
     path('api/organizer/', include('accounts.urls')),

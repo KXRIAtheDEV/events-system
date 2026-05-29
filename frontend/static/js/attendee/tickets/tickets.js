@@ -248,6 +248,12 @@ function displayTicketDetail(ticket) {
                     <span class="detail-label">Status</span>
                     <span class="detail-value">${getStatusBadge(ticket.status)}</span>
                 </div>
+                ${ticket.purchase_date ? `
+                <div class="detail-row">
+                    <span class="detail-label">Paid At</span>
+                    <span class="detail-value">${window.AppTime ? window.AppTime.formatDateTime(ticket.purchase_date) : formatDateTime(ticket.purchase_date)}</span>
+                </div>
+                ` : ''}
                 ${ticket.checked_in_at ? `
                 <div class="detail-row">
                     <span class="detail-label">Checked In</span>
@@ -401,6 +407,9 @@ function getStatusBadge(status) {
 }
 
 function formatDate(dateString) {
+    if (window.AppCalendar) {
+        return window.AppCalendar.formatDate(dateString);
+    }
     if (!dateString) return 'TBD';
     return new Date(dateString).toLocaleDateString('en-KE', {
         year: 'numeric',
@@ -410,6 +419,9 @@ function formatDate(dateString) {
 }
 
 function formatDateTime(dateString) {
+    if (window.AppTime) {
+        return window.AppTime.formatDateTime(dateString);
+    }
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString('en-KE');
 }

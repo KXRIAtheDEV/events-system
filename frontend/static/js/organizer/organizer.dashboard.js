@@ -294,11 +294,20 @@ document.addEventListener("DOMContentLoaded", () => {
     function toggleModal(show = true) {
         if (show) {
             elements.createEventModal.classList.add("active");
-            // Set default date to today plus 1 week
+            // Set default date to today plus 1 week using correct YYYY-MM-DD formatting
             const nextWeek = new Date();
             nextWeek.setDate(nextWeek.getDate() + 7);
-            nextWeek.setMinutes(nextWeek.getMinutes() - nextWeek.getTimezoneOffset());
-            document.getElementById("eventDate").value = nextWeek.toISOString().slice(0, 16);
+            const year = nextWeek.getFullYear();
+            const month = String(nextWeek.getMonth() + 1).padStart(2, '0');
+            const day = String(nextWeek.getDate()).padStart(2, '0');
+            
+            const eventDateInput = document.getElementById("eventDate");
+            if (eventDateInput) {
+                eventDateInput.value = `${year}-${month}-${day}`;
+                if (window.AppCalendar) {
+                    eventDateInput.min = window.AppCalendar.getTodayDateString();
+                }
+            }
         } else {
             elements.createEventModal.classList.remove("active");
             elements.createEventForm.reset();
@@ -343,6 +352,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!name || !date || !startTime || !endTime || !venue || !address || !capacity || !price || !category) {
             showToast("Please fill in all mandatory fields.", "error");
+            return;
+        }
+
+        if (window.AppCalendar && window.AppCalendar.isPastDate(date)) {
+            showToast("Cannot create an event in a past date.", "error");
             return;
         }
 
