@@ -360,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error creating event:", error);
-            showToast("Something went wrong while publishing the event.", "error");
+            showToast(error.message || "Something went wrong while publishing the event.", "error");
         }
     });
 

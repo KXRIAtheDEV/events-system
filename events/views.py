@@ -254,6 +254,34 @@ def api_tickets_upcoming(request):
     """API endpoint to get upcoming tickets"""
     return JsonResponse({'results': []})
 
+def api_featured_events(request):
+    """API endpoint to get featured events for the attendee homepage"""
+    events = Event.objects.filter(status='published', is_featured=True)[:6]
+    if not events.exists():
+        events = Event.objects.filter(status='published')[:6]
+        
+    results = []
+    for e in events:
+        results.append({
+            'id': e.id,
+            'title': e.title,
+            'description': e.description,
+            'date': e.start_date.isoformat() if e.start_date else None,
+            'start_date': e.start_date.isoformat() if e.start_date else None,
+            'end_date': e.end_date.isoformat() if e.end_date else None,
+            'location': e.venue,
+            'venue': e.venue,
+            'price': float(e.price),
+            'image': e.banner_image,
+            'banner_image': e.banner_image,
+            'category': e.category.name if e.category else 'General',
+            'category_name': e.category.name if e.category else 'General',
+            'attendees_count': e.total_seats - e.available_seats,
+            'tickets_left': e.available_seats,
+        })
+    return JsonResponse({'success': True, 'events': results})
+
+
 
 
 

@@ -348,6 +348,12 @@ class OrganizerAPIService {
                 throw new Error('Request timeout');
             }
             
+            // If the error has a status property, it was explicitly returned by our backend,
+            // so we should propagate it rather than falling back to local mock data.
+            if (error.status) {
+                throw error;
+            }
+            
             // Fallback on total server crash or offline mode
             console.warn(`[CONNECTION FAILED] Servicing "${endpoint}" via local storage:`, error);
             return this.getMockResponse(method, endpoint, data);

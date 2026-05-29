@@ -52,5 +52,21 @@ class Event(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = self.title.lower().replace(' ', '-')
+            from django.utils.text import slugify
+            import uuid
+            
+            # Generate clean base slug (handling accents, casing, special chars)
+            base_slug = slugify(self.title) or "event"
+            
+            # Truncate base_slug to max 40 chars to ensure suffix fits well under 50 char SlugField limit
+            if len(base_slug) > 40:
+                base_slug = base_slug[:40].rstrip('-')
+                
+            slug = base_slug
+            while Event.objects.filter(slug=slug).exclude(id=self.id).exists():
+                suffix = uuid.uuid4().hex[:4]
+                slug = f"{base_slug}-{suffix}"
+            self.slug = slug
+            
         super().save(*args, **kwargs)
+

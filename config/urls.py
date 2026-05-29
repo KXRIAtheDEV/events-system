@@ -18,7 +18,7 @@ from django.contrib import messages
 from events.views import (
     organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_tickets_upcoming
+    api_tickets_upcoming, api_featured_events
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import ticket_checkout_api
@@ -268,6 +268,7 @@ urlpatterns = [
     # API Endpoints
     path('api/', include('accounts.urls')),
     path('api/attendee/events/', api_event_list, name='api_attendee_event_list'),
+    path('api/attendee/events/featured/', api_featured_events, name='api_attendee_events_featured'),
     path('api/attendee/events/search/', api_event_list, name='api_attendee_event_search'),
     path('api/attendee/events/categories/', api_category_list, name='api_attendee_category_list'),
     path('api/attendee/categories/', api_category_list, name='api_attendee_category_list_legacy'),
