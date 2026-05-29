@@ -12,4 +12,4 @@ class EventPageTests(TestCase):
         response = self.client.get('/events/')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Browse Events')
+        self.assertContains(response, 'Discover Amazing Events')

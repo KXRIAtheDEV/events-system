@@ -272,6 +272,7 @@ urlpatterns = [
     path('api/attendee/tickets/upcoming/', api_tickets_upcoming, name='api_attendee_tickets_upcoming'),
     
     # Organizer API Endpoints
+    path('api/organizer/', include('accounts.urls')),
     path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
     path('api/organizer/events/', api_organizer_events_list, name='api_organizer_events_list'),
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
