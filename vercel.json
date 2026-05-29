@@ -16,6 +16,14 @@
   ],
   "routes": [
     {
+      "src": "/favicon.ico",
+      "dest": "frontend/static/favicon.ico"
+    },
+    {
+      "src": "/favicon.png",
+      "dest": "frontend/static/favicon.png"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "frontend/static/$1"
     },
