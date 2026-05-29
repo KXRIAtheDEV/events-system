@@ -253,7 +253,8 @@ async function addToCart(eventId) {
         
         const existingItem = cart.items.find(i => i.id === eventId);
         if (existingItem) {
-            existingItem.quantity += 1;
+            showToast('This event is already in your cart!', 'info');
+            return;
         } else {
             cart.items.push({
                 id: event.id,

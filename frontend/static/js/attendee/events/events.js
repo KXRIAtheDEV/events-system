@@ -195,7 +195,8 @@ const EventsModule = (function() {
             // Check if item is already in cart
             const existingItem = cart.items.find(item => item.id == eventId);
             if (existingItem) {
-                existingItem.quantity += 1;
+                showToast('This event is already in your cart!', 'info');
+                return;
             } else {
                 cart.items.push({
                     id: event.id,
@@ -350,12 +351,15 @@ const EventsModule = (function() {
         }
     }
     
-    function showToast(message, type) {
+    function showToast(message, type = 'success') {
+        const existingToast = document.querySelector('.toast-notification');
+        if (existingToast) existingToast.remove();
+        
         const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${message}`;
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span>${message}</span>`;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        setTimeout(() => toast.remove(), 4000);
     }
     
     function updateCartBadge(count) {
