@@ -499,6 +499,8 @@ async function checkPaymentStatus(bookingId, billingInfo) {
                         body: JSON.stringify({
                             email: billingInfo.email,
                             name: billingInfo.full_name,
+                            phone: billingInfo.phone,
+                            items: cartData.items.map(item => ({ id: item.id, quantity: item.quantity, price: item.price })),
                             event_title: cartData.items.length > 0 ? cartData.items[0].title : 'Event',
                             quantity: cartData.items.reduce((sum, item) => sum + item.quantity, 0),
                             total_price: cartData.total
@@ -567,6 +569,8 @@ async function initiateCardPayment(bookingId, billingInfo) {
                     body: JSON.stringify({
                         email: billingInfo.email,
                         name: billingInfo.full_name,
+                        phone: billingInfo.phone,
+                        items: cartData.items.map(item => ({ id: item.id, quantity: item.quantity, price: item.price })),
                         event_title: cartData.items.length > 0 ? cartData.items[0].title : 'Event',
                         quantity: cartData.items.reduce((sum, item) => sum + item.quantity, 0),
                         total_price: cartData.total

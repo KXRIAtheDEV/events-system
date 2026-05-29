@@ -35,10 +35,12 @@ def api_organizer_events_list(request):
     """List events for the logged-in organizer."""
     events = Event.objects.filter(organizer=request.user).order_by('-created_at')
     
+    from bookings.models import Ticket
     results = []
     for e in events:
-        sold = e.total_seats - e.available_seats
-        revenue = float(sold * e.price)
+        tickets = Ticket.objects.filter(event=e, status='valid')
+        sold = sum(t.quantity for t in tickets)
+        revenue = float(sum(t.quantity * t.price for t in tickets))
         
         # Map DB status to frontend expected status if necessary
         frontend_status = e.status

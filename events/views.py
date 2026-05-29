@@ -61,17 +61,29 @@ def organizer_dashboard_stats(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
     events = Event.objects.filter(organizer=user)
-    
     events_count = events.count()
-    tickets_sold = sum(e.total_seats - e.available_seats for e in events)
-    revenue = sum((e.total_seats - e.available_seats) * e.price for e in events)
     
+    from bookings.models import Ticket
+    tickets = Ticket.objects.filter(event__organizer=user, status='valid')
+    tickets_sold = sum(t.quantity for t in tickets)
+    revenue = sum(t.quantity * t.price for t in tickets)
+    
+    # Calculate top event by tickets sold/revenue
+    top_event_name = 'No events yet'
+    if events_count > 0:
+        event_revenues = []
+        for e in events:
+            e_revenue = sum(t.quantity * t.price for t in tickets.filter(event=e))
+            event_revenues.append((e_revenue, e.title))
+        if event_revenues:
+            top_event_name = sorted(event_revenues, reverse=True)[0][1]
+            
     metrics = {
         'events_count': events_count,
         'tickets_sold': tickets_sold,
         'revenue': float(revenue),
         'attendees': tickets_sold,
-        'top_event': 'No events yet' if events_count == 0 else events.first().title,
+        'top_event': top_event_name,
         'conversion_rate': 74 if events_count > 0 else 0,
         'new_followers': 32 if events_count > 0 else 0,
         'pending_payout': float(revenue) * 0.85 if revenue > 0 else 0.00,
