@@ -587,14 +587,28 @@ function editField(field) {
     
     document.getElementById('editFieldName').textContent = fieldNames[field];
     document.getElementById('editLabel').textContent = fieldNames[field];
-    document.getElementById('editValue').value = document.getElementById(`display${capitalize(field)}`).textContent;
+    
+    const editInput = document.getElementById('editValue');
+    if (field === 'dob') {
+        editInput.type = 'date';
+        editInput.value = currentUser?.date_of_birth || '';
+    } else {
+        editInput.type = 'text';
+        const mapKeys = {
+            name: 'full_name',
+            email: 'email',
+            phone: 'phone',
+            location: 'location'
+        };
+        editInput.value = currentUser ? currentUser[mapKeys[field]] || '' : document.getElementById(`display${capitalize(field)}`).textContent;
+    }
     
     document.getElementById('editModal').style.display = 'flex';
 }
 
 async function saveEdit() {
     const newValue = document.getElementById('editValue').value;
-    if (!newValue) return;
+    if (!newValue && currentEditField !== 'dob' && currentEditField !== 'location') return;
     
     const updateData = { [currentEditField]: newValue };
     
@@ -681,7 +695,10 @@ function setupDate() {
 }
 
 function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (!dateString) return '-';
+    // Append T00:00:00 to avoid timezone shifting on YYYY-MM-DD format
+    const dt = dateString.includes('T') ? dateString : `${dateString}T00:00:00`;
+    return new Date(dt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function formatRelativeTime(dateString) {
