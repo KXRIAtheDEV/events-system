@@ -1,0 +1,22 @@
+{% extends "organizer/base.html" %}
+{% block title %}Check-in{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between"><h1 class="h2">Check-in Management</h1><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#deviceModal">Register Device</button></div>
+    <div class="row g-4"><div class="col-lg-6"><div class="stat-card"><h5>Active Session</h5><div id="activeSession"></div><button id="createSessionBtn" class="btn btn-success mt-2">Start New Session</button><hr><h5>Real-time Stats</h5><canvas id="realtimeChart" height="200"></canvas></div></div><div class="col-lg-6"><div class="stat-card"><h5>Registered Devices</h5><div id="devicesList"></div></div><div class="stat-card mt-4"><h5>Recent Check-ins</h5><ul id="recentCheckins"></ul></div></div></div>
+</div>
+<div class="modal fade" id="deviceModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Register Device</h5></div><div class="modal-body"><input type="text" id="deviceName" class="form-control" placeholder="Device name"></div><div class="modal-footer"><button class="btn btn-primary" id="registerDeviceBtn">Register</button></div></div></div></div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let realtimeChart, refreshInterval;
+    async function loadDevices(){ let devs=await OrganizerAPI.checkin.getDevices(); let html=devs.map(d=>`<div class="d-flex justify-content-between border-bottom py-2"><div><strong>${d.name}</strong><br><small>Last: ${d.last_active?new Date(d.last_active).toLocaleString():'Never'}</small></div><button class="btn btn-sm btn-outline-danger revokeDevice" data-id="${d.id}">Revoke</button></div>`).join(''); document.getElementById('devicesList').innerHTML=html||'No devices'; document.querySelectorAll('.revokeDevice').forEach(btn=>btn.onclick=async()=>{await OrganizerAPI.checkin.revokeDevice(btn.dataset.id); loadDevices();}); }
+    async function loadActiveSession(){ let sess=await OrganizerAPI.checkin.getActiveSession(); if(sess){ document.getElementById('activeSession').innerHTML=`<div class="alert alert-success">Session active for ${sess.event_title}<br>Started: ${new Date(sess.started_at).toLocaleString()}</div>`; document.getElementById('createSessionBtn').style.display='none'; startRealtime(sess.event_id); }else{ document.getElementById('activeSession').innerHTML='<p>No active session</p>'; document.getElementById('createSessionBtn').style.display='inline-block'; if(refreshInterval) clearInterval(refreshInterval); } }
+    async function createSession(){ let events=await OrganizerAPI.events.getAll(1,100); let id=prompt('Enter event ID:\n'+events.results.map(e=>`${e.id}: ${e.title}`).join('\n')); if(id){ await OrganizerAPI.checkin.createSession(id); window.showToast('Session created','success'); loadActiveSession(); } }
+    async function loadRealtime(eventId){ let stats=await OrganizerAPI.checkin.getRealtime(eventId); if(realtimeChart) realtimeChart.destroy(); realtimeChart=new Chart(document.getElementById('realtimeChart'),{type:'doughnut',data:{labels:['Checked In','Remaining'],datasets:[{data:[stats.checked_in||0,stats.remaining||0],backgroundColor:['#10b981','#e5e7eb']}]}}); let recent=stats.recent_checkins||[]; document.getElementById('recentCheckins').innerHTML=recent.map(c=>`<li class="list-group-item">${c.attendee_name} - ${new Date(c.checked_in_at).toLocaleTimeString()}</li>`).join('')||'<li>None</li>'; }
+    function startRealtime(eventId){ if(refreshInterval) clearInterval(refreshInterval); loadRealtime(eventId); refreshInterval=setInterval(()=>loadRealtime(eventId),5000); }
+    async function registerDevice(){ let name=document.getElementById('deviceName').value; if(!name) return; await OrganizerAPI.checkin.registerDevice(name); window.showToast('Device registered','success'); bootstrap.Modal.getInstance(document.getElementById('deviceModal')).hide(); loadDevices(); }
+    document.getElementById('createSessionBtn').onclick=createSession; document.getElementById('registerDeviceBtn').onclick=registerDevice; loadDevices(); loadActiveSession();
+</script>
+{% endblock %}
