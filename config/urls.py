@@ -21,6 +21,7 @@ from events.views import (
     api_tickets_upcoming
 )
 from accounts.auth_views import register_submit, login_submit
+from bookings.views import ticket_checkout_api
 from events.api_organizer_views import (
     api_organizer_events_list,
     api_organizer_events_create,
@@ -279,6 +280,7 @@ urlpatterns = [
     path('api/organizer/events/<int:event_id>/update/', api_organizer_events_update, name='api_organizer_events_update'),
     path('api/organizer/events/<int:event_id>/delete/', api_organizer_events_delete, name='api_organizer_events_delete'),
     
+    path('api/bookings/checkout/', ticket_checkout_api, name='ticket_checkout_api'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
     path('api/events/categories/', get_categories_list, name='api_categories'),
     path('newsletter/subscribe/', newsletter_subscribe, name='newsletter_subscribe'),
