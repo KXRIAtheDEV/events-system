@@ -380,9 +380,9 @@ async function processCheckout(e) {
         const bookingId = 'BK' + Date.now();
         
         if (paymentMethod === 'mpesa') {
-            await initiateMpesaPayment(bookingId, billingInfo.phone);
+            await initiateMpesaPayment(bookingId, billingInfo);
         } else if (paymentMethod === 'card') {
-            await initiateCardPayment(bookingId);
+            await initiateCardPayment(bookingId, billingInfo);
         }
         
     } catch (error) {
@@ -392,7 +392,8 @@ async function processCheckout(e) {
     }
 }
 
-async function initiateMpesaPayment(bookingId, phone) {
+async function initiateMpesaPayment(bookingId, billingInfo) {
+    let phone = billingInfo.phone;
     let formattedPhone = phone.replace(/\D/g, '');
     if (formattedPhone.startsWith('0')) {
         formattedPhone = '254' + formattedPhone.substring(1);
@@ -425,7 +426,7 @@ async function initiateMpesaPayment(bookingId, phone) {
         hideLoader();
         
         paymentInterval = setInterval(async () => {
-            await checkPaymentStatus(bookingId);
+            await checkPaymentStatus(bookingId, billingInfo);
         }, 3000);
         
         setTimeout(() => {
@@ -453,15 +454,34 @@ async function initiateMpesaPayment(bookingId, phone) {
     }
 }
 
-async function checkPaymentStatus(bookingId) {
+async function checkPaymentStatus(bookingId, billingInfo) {
     try {
         const paymentStatusEl = document.getElementById('paymentStatus');
         
         if (paymentStatusEl && paymentStatusEl.querySelector('.payment-waiting')) {
-            setTimeout(() => {
-                if (paymentInterval) {
-                    clearInterval(paymentInterval);
-                    paymentInterval = null;
+            // Clear interval immediately to stop polling
+            if (paymentInterval) {
+                clearInterval(paymentInterval);
+                paymentInterval = null;
+            }
+            
+            setTimeout(async () => {
+                // Actually hit the backend API
+                try {
+                    await fetch('/api/bookings/checkout/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: billingInfo.email,
+                            name: billingInfo.full_name,
+                            event_title: cartData.items.length > 0 ? cartData.items[0].title : 'Event',
+                            quantity: cartData.items.reduce((sum, item) => sum + item.quantity, 0),
+                            total_price: cartData.total
+                        })
+                    });
+                } catch (e) {
+                    console.error("API error", e);
+                }
                     
                     if (paymentStatusEl) {
                         paymentStatusEl.innerHTML = `
@@ -496,7 +516,7 @@ async function checkPaymentStatus(bookingId) {
     }
 }
 
-async function initiateCardPayment(bookingId) {
+async function initiateCardPayment(bookingId, billingInfo) {
     try {
         if (checkoutViewEl) checkoutViewEl.style.display = 'none';
         if (paymentViewEl) paymentViewEl.style.display = 'block';
@@ -514,7 +534,24 @@ async function initiateCardPayment(bookingId) {
         
         hideLoader();
         
-        setTimeout(() => {
+        setTimeout(async () => {
+            // Actually hit the backend API
+            try {
+                await fetch('/api/bookings/checkout/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: billingInfo.email,
+                        name: billingInfo.full_name,
+                        event_title: cartData.items.length > 0 ? cartData.items[0].title : 'Event',
+                        quantity: cartData.items.reduce((sum, item) => sum + item.quantity, 0),
+                        total_price: cartData.total
+                    })
+                });
+            } catch (e) {
+                console.error("API error", e);
+            }
+            
             paymentStatusEl.innerHTML = `
                 <div class="payment-success">
                     <i class="fas fa-check-circle"></i>

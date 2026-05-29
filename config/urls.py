@@ -19,9 +19,9 @@ from events.views import (
     organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
     api_tickets_upcoming
-)
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import ticket_checkout_api
+from bookings.email_service import send_newsletter_confirmation
 from events.api_organizer_views import (
     api_organizer_events_list,
     api_organizer_events_create,
@@ -75,7 +75,11 @@ def newsletter_subscribe(request):
         data = json.loads(request.body)
         email = data.get('email')
         if email:
-            return JsonResponse({'success': True, 'message': 'Subscribed successfully!'})
+            email_sent = send_newsletter_confirmation(email)
+            if email_sent:
+                return JsonResponse({'success': True, 'message': 'Subscribed successfully!'})
+            else:
+                return JsonResponse({'success': True, 'message': 'Subscribed successfully, but failed to send email.'})
         return JsonResponse({'success': False, 'message': 'Email required'}, status=400)
     except:
         return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
