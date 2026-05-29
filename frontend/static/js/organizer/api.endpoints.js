@@ -1,7 +1,6 @@
 // ============================================
 // ORGANIZER API ENDPOINTS WRAPPER
 // Organized functions for each module
-// EventHub Organizer Portal - Complete API Integration
 // ============================================
 
 function buildParams(filters) {
@@ -14,55 +13,7 @@ function buildParams(filters) {
     return params;
 }
 
-// ============================================
-// AUTHENTICATION API
-// ============================================
-const OrganizerAuthAPI = {
-    register: (data) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.register, data),
-    login: (credentials) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.login, credentials),
-    logout: () => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.logout, {}),
-    verifyEmail: (token) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.verifyEmail, { token }),
-    resendVerification: (email) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.resendVerification, { email }),
-    forgotPassword: (email) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.forgotPassword, { email }),
-    resetPassword: (token, password) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.resetPassword, { token, password }),
-    changePassword: (currentPassword, newPassword) => 
-        OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.changePassword, { current_password: currentPassword, new_password: newPassword }),
-    refreshToken: () => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.refreshToken, {}),
-    checkStatus: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.checkStatus)
-};
-
-// ============================================
-// PROFILE & BUSINESS API
-// ============================================
-const OrganizerProfileAPI = {
-    getProfile: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.detail),
-    update: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.update, data),
-    uploadLogo: (file) => {
-        const formData = new FormData();
-        formData.append('logo', file);
-        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.uploadLogo, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-    },
-    uploadDocuments: (documents) => {
-        const formData = new FormData();
-        documents.forEach(doc => {
-            formData.append('documents', doc);
-        });
-        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.uploadDocuments, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-    },
-    deleteAccount: () => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.deleteAccount),
-    getVerificationStatus: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.verificationStatus),
-    submitApplication: (data) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.submitApplication, data),
-    getBankDetails: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.bankDetails),
-    updateBankDetails: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.updateBankDetails, data)
-};
-
-// ============================================
-// DASHBOARD API
-// ============================================
+// Dashboard API
 const OrganizerDashboardAPI = {
     getStats: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.DASHBOARD.stats),
     getRevenue: (period = 'monthly') => {
@@ -81,9 +32,7 @@ const OrganizerDashboardAPI = {
     getNotifications: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.DASHBOARD.notifications)
 };
 
-// ============================================
-// EVENT MANAGEMENT API
-// ============================================
+// Events API
 const OrganizerEventsAPI = {
     getAll: (page = 1, limit = 20, filters = {}) => {
         const params = buildParams({ page, limit, ...filters });
@@ -99,42 +48,26 @@ const OrganizerEventsAPI = {
     publish: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.publish(id), {}),
     unpublish: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.unpublish(id), {}),
     getStatus: (id) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.status(id)),
-    
-    // Ticket Types
     getTicketTypes: (eventId) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.tickets(eventId)),
     addTicketType: (eventId, data) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.addTicketType(eventId), data),
-    updateTicketType: (eventId, ticketId, data) => 
-        OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.updateTicketType(eventId, ticketId), data),
-    deleteTicketType: (eventId, ticketId) => 
-        OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.deleteTicketType(eventId, ticketId)),
-    
-    // Schedule
+    updateTicketType: (eventId, ticketId, data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.updateTicketType(eventId, ticketId), data),
+    deleteTicketType: (eventId, ticketId) => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.deleteTicketType(eventId, ticketId)),
     getSchedule: (eventId) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.schedule(eventId)),
     addScheduleItem: (eventId, data) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.addScheduleItem(eventId), data),
-    updateScheduleItem: (eventId, itemId, data) => 
-        OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.updateScheduleItem(eventId, itemId), data),
-    deleteScheduleItem: (eventId, itemId) => 
-        OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.deleteScheduleItem(eventId, itemId)),
-    
-    // Media
+    updateScheduleItem: (eventId, itemId, data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.updateScheduleItem(eventId, itemId), data),
+    deleteScheduleItem: (eventId, itemId) => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.deleteScheduleItem(eventId, itemId)),
     uploadImage: (eventId, file) => {
         const formData = new FormData();
         formData.append('image', file);
-        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.uploadImage(eventId), formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.uploadImage(eventId), formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     },
     deleteImage: (eventId, imageId) => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.deleteImage(eventId, imageId)),
     uploadGallery: (eventId, files) => {
         const formData = new FormData();
         files.forEach(file => formData.append('gallery', file));
-        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.uploadGallery(eventId), formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.uploadGallery(eventId), formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     },
     deleteGallery: (eventId, imageId) => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.deleteGallery(eventId, imageId)),
-    
-    // Settings & Analytics
     getSettings: (eventId) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.settings(eventId)),
     updateSettings: (eventId, data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.updateSettings(eventId), data),
     getAnalytics: (eventId) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.analytics(eventId)),
@@ -142,9 +75,7 @@ const OrganizerEventsAPI = {
     getAttendanceReport: (eventId) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.EVENTS.attendanceReport(eventId))
 };
 
-// ============================================
-// TICKET MANAGEMENT API
-// ============================================
+// Tickets API
 const OrganizerTicketsAPI = {
     getAll: (page = 1, limit = 20, filters = {}) => {
         const params = buildParams({ page, limit, ...filters });
@@ -154,8 +85,7 @@ const OrganizerTicketsAPI = {
     scan: (ticketNumber, eventId) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.TICKETS.scan, { ticket_number: ticketNumber, event_id: eventId }),
     verify: (ticketNumber) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.TICKETS.verify(ticketNumber)),
     checkin: (ticketNumber) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.TICKETS.checkin(ticketNumber), {}),
-    bulkCheckin: (ticketNumbers, eventId) => 
-        OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.TICKETS.bulkCheckin, { ticket_numbers: ticketNumbers, event_id: eventId }),
+    bulkCheckin: (ticketNumbers, eventId) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.TICKETS.bulkCheckin, { ticket_numbers: ticketNumbers, event_id: eventId }),
     export: (filters = {}) => {
         const params = buildParams(filters);
         return OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.TICKETS.export, { params });
@@ -171,9 +101,7 @@ const OrganizerTicketsAPI = {
     }
 };
 
-// ============================================
-// BOOKINGS MANAGEMENT API
-// ============================================
+// Bookings API
 const OrganizerBookingsAPI = {
     getAll: (page = 1, limit = 20, filters = {}) => {
         const params = buildParams({ page, limit, ...filters });
@@ -193,9 +121,7 @@ const OrganizerBookingsAPI = {
     getAttendee: (bookingId) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.BOOKINGS.viewAttendee(bookingId))
 };
 
-// ============================================
-// ATTENDEE MANAGEMENT API
-// ============================================
+// Attendees API
 const OrganizerAttendeesAPI = {
     getAll: (page = 1, limit = 20, filters = {}) => {
         const params = buildParams({ page, limit, ...filters });
@@ -215,15 +141,11 @@ const OrganizerAttendeesAPI = {
         return OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.ATTENDEES.search, { params });
     },
     getStats: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.ATTENDEES.stats),
-    sendMessage: (attendeeId, message) => 
-        OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.ATTENDEES.sendMessage(attendeeId), { message }),
-    bulkMessage: (eventId, message, filters = {}) => 
-        OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.ATTENDEES.bulkMessage, { event_id: eventId, message, filters })
+    sendMessage: (attendeeId, message) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.ATTENDEES.sendMessage(attendeeId), { message }),
+    bulkMessage: (eventId, message, filters = {}) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.ATTENDEES.bulkMessage, { event_id: eventId, message, filters })
 };
 
-// ============================================
-// PAYOUTS & EARNINGS API
-// ============================================
+// Payouts API
 const OrganizerPayoutsAPI = {
     getSummary: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PAYOUTS.summary),
     getHistory: (page = 1, limit = 20) => {
@@ -244,9 +166,7 @@ const OrganizerPayoutsAPI = {
     }
 };
 
-// ============================================
-// PROMOTIONS API
-// ============================================
+// Promotions API
 const OrganizerPromotionsAPI = {
     getAll: (page = 1, limit = 20) => {
         const params = buildParams({ page, limit });
@@ -265,9 +185,7 @@ const OrganizerPromotionsAPI = {
     }
 };
 
-// ============================================
-// REVIEWS API
-// ============================================
+// Reviews API
 const OrganizerReviewsAPI = {
     getAll: (page = 1, limit = 20) => {
         const params = buildParams({ page, limit });
@@ -286,9 +204,7 @@ const OrganizerReviewsAPI = {
     }
 };
 
-// ============================================
-// NOTIFICATIONS API
-// ============================================
+// Notifications API
 const OrganizerNotificationsAPI = {
     getList: (page = 1, limit = 20) => {
         const params = buildParams({ page, limit });
@@ -299,13 +215,10 @@ const OrganizerNotificationsAPI = {
     markAllAsRead: () => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.NOTIFICATIONS.markAllRead, {}),
     getPreferences: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.NOTIFICATIONS.preferences),
     updatePreferences: (preferences) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.NOTIFICATIONS.updatePreferences, preferences),
-    sendToAttendees: (eventId, title, message) => 
-        OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.NOTIFICATIONS.sendToAttendees, { event_id: eventId, title, message })
+    sendToAttendees: (eventId, title, message) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.NOTIFICATIONS.sendToAttendees, { event_id: eventId, title, message })
 };
 
-// ============================================
-// REPORTS API
-// ============================================
+// Reports API
 const OrganizerReportsAPI = {
     getSales: (period = 'monthly', startDate = '', endDate = '') => {
         const params = buildParams({ period, start_date: startDate, end_date: endDate });
@@ -334,9 +247,7 @@ const OrganizerReportsAPI = {
     }
 };
 
-// ============================================
-// CHECK-IN MANAGEMENT API
-// ============================================
+// Check-in API
 const OrganizerCheckinAPI = {
     getDevices: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.CHECKIN.devices),
     registerDevice: (deviceName) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.CHECKIN.registerDevice, { device_name: deviceName }),
@@ -356,9 +267,7 @@ const OrganizerCheckinAPI = {
     }
 };
 
-// ============================================
-// SETTINGS API
-// ============================================
+// Settings API
 const OrganizerSettingsAPI = {
     getGeneral: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.general),
     updateGeneral: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.updateGeneral, data),
@@ -375,16 +284,13 @@ const OrganizerSettingsAPI = {
     revokeApiKey: (id) => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.revokeApiKey(id))
 };
 
-// ============================================
-// SUPPORT API
-// ============================================
+// Support API
 const OrganizerSupportAPI = {
     getTickets: (page = 1, limit = 20, status = 'all') => {
         const params = buildParams({ page, limit, status });
         return OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.tickets, { params });
     },
-    createTicket: (subject, category, message, attachments = []) => 
-        OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.create, { subject, category, message, attachments }),
+    createTicket: (subject, category, message, attachments = []) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.create, { subject, category, message, attachments }),
     getTicketDetail: (id) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.detail(id)),
     replyToTicket: (id, message) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.reply(id), { message }),
     closeTicket: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.close(id), {}),
@@ -392,9 +298,42 @@ const OrganizerSupportAPI = {
     getGuides: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SUPPORT.guides, { useCache: true, cacheTTL: 86400000 })
 };
 
-// ============================================
-// EXPORT ALL APIs
-// ============================================
+// Profile API
+const OrganizerProfileAPI = {
+    getProfile: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.detail),
+    update: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.update, data),
+    uploadLogo: (file) => {
+        const formData = new FormData();
+        formData.append('logo', file);
+        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.uploadLogo, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    uploadDocuments: (documents) => {
+        const formData = new FormData();
+        documents.forEach(doc => formData.append('documents', doc));
+        return OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.uploadDocuments, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    deleteAccount: () => OrganizerAPI.delete(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.deleteAccount),
+    getVerificationStatus: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.verificationStatus),
+    submitApplication: (data) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.submitApplication, data),
+    getBankDetails: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.bankDetails),
+    updateBankDetails: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.PROFILE.updateBankDetails, data)
+};
+
+// Auth API
+const OrganizerAuthAPI = {
+    register: (data) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.register, data),
+    login: (credentials) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.login, credentials),
+    logout: () => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.logout, {}),
+    verifyEmail: (token) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.verifyEmail, { token }),
+    resendVerification: (email) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.resendVerification, { email }),
+    forgotPassword: (email) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.forgotPassword, { email }),
+    resetPassword: (token, password) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.resetPassword, { token, password }),
+    changePassword: (currentPassword, newPassword) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.changePassword, { current_password: currentPassword, new_password: newPassword }),
+    refreshToken: () => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.refreshToken, {}),
+    checkStatus: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.checkStatus)
+};
+
+// Export everything to global window object
 window.OrganizerAPI = {
     config: ORGANIZER_API_CONFIG,
     service: OrganizerAPI,
@@ -413,7 +352,6 @@ window.OrganizerAPI = {
     checkin: OrganizerCheckinAPI,
     settings: OrganizerSettingsAPI,
     support: OrganizerSupportAPI,
-    
     clearCache: (pattern) => OrganizerAPI.clearCache(pattern),
     isLoggedIn: () => {
         try {
