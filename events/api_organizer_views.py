@@ -68,10 +68,15 @@ def api_organizer_events_create(request):
     try:
         data = json.loads(request.body)
         name = data.get('name', '').strip()
+        description = data.get('description', '').strip() or "A new event created from the organizer dashboard."
         date_str = data.get('date', '')
-        location = data.get('location', '').strip()
+        start_time_str = data.get('startTime', '00:00')
+        end_time_str = data.get('endTime', '00:00')
+        venue = data.get('venue', '').strip()
+        address = data.get('address', '').strip()
         capacity = int(data.get('capacity', 0))
         price = float(data.get('price', 0))
+        image = data.get('image', '').strip()
         category_name = data.get('category', 'Technology')
         status = data.get('status', 'draft')
 
@@ -80,14 +85,22 @@ def api_organizer_events_create(request):
         if status == 'active':
             db_status = 'published'
             
-        # Parse date
+        # Parse date and times
         try:
-            start_date = dateutil.parser.isoparse(date_str)
+            start_date = dateutil.parser.isoparse(f"{date_str}T{start_time_str}")
+            if timezone.is_naive(start_date):
+                start_date = timezone.make_aware(start_date)
+                
+            end_date = dateutil.parser.isoparse(f"{date_str}T{end_time_str}")
+            if timezone.is_naive(end_date):
+                end_date = timezone.make_aware(end_date)
+                
+            if end_date <= start_date:
+                end_date = start_date + timedelta(hours=3)
         except ValueError:
             start_date = timezone.now() + timedelta(days=7)
+            end_date = start_date + timedelta(hours=3)
             
-        end_date = start_date + timedelta(hours=3) # Default 3 hour event
-        
         # Get or create category
         slug_base = category_name.lower().replace(' ', '-')
         category, created = Category.objects.get_or_create(
@@ -97,15 +110,17 @@ def api_organizer_events_create(request):
 
         event = Event.objects.create(
             title=name,
-            description="A new event created from the organizer dashboard.",
+            description=description,
             category=category,
             organizer=request.user,
             start_date=start_date,
             end_date=end_date,
-            venue=location,
+            venue=venue,
+            address=address,
             price=price,
             total_seats=capacity,
             available_seats=capacity,
+            banner_image=image,
             status=db_status
         )
 
@@ -122,6 +137,8 @@ def api_organizer_events_create(request):
             'status': status
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 @csrf_exempt

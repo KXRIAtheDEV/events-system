@@ -329,21 +329,26 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
 
         const name = document.getElementById("eventName").value.trim();
+        const description = document.getElementById("eventDescription").value.trim();
         const date = document.getElementById("eventDate").value;
-        const location = document.getElementById("eventLocation").value.trim();
+        const startTime = document.getElementById("eventStartTime").value;
+        const endTime = document.getElementById("eventEndTime").value;
+        const venue = document.getElementById("eventVenue").value.trim();
+        const address = document.getElementById("eventAddress").value.trim();
         const capacity = document.getElementById("ticketCapacity").value;
         const price = document.getElementById("ticketPrice").value;
+        const image = document.getElementById("eventImage").value.trim();
         const category = document.getElementById("eventCategory").value;
         const status = document.getElementById("eventStatus").value;
 
-        if (!name || !date || !location || !capacity || !price || !category) {
+        if (!name || !date || !startTime || !endTime || !venue || !address || !capacity || !price || !category) {
             showToast("Please fill in all mandatory fields.", "error");
             return;
         }
 
         try {
             const newEvent = await window.OrganizerAPI.events.create({
-                name, date, location, capacity, price, category, status
+                name, description, date, startTime, endTime, venue, address, capacity, price, image, category, status
             });
 
             if (newEvent) {
