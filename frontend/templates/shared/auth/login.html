@@ -214,21 +214,33 @@
         .then(({status, body}) => {
             if (status === 200 || status === 201) {
                 const userRole = body.user.role;
+                const selectedRole = data.role;
                 const prefix = userRole === 'organizer' ? 'organizer' : 'attendee';
                 
                 localStorage.setItem(`${prefix}_access_token`, body.access);
                 localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
                 localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
                 
-                showToast(`Welcome back! Redirecting...`, 'success');
-                
-                setTimeout(() => {
-                    if (userRole === 'organizer') {
-                        window.location.href = '/organizer/dashboard/';
-                    } else {
+                if (selectedRole === 'organizer' && userRole === 'attendee') {
+                    showToast('You are not an organizer and cannot login as one. Redirecting to attendee dashboard...', 'error');
+                    setTimeout(() => {
                         window.location.href = '/dashboard/';
-                    }
-                }, 1000);
+                    }, 3000);
+                } else if (selectedRole === 'attendee' && userRole === 'organizer') {
+                    showToast('You are an organizer. Redirecting to organizer dashboard...', 'info');
+                    setTimeout(() => {
+                        window.location.href = '/organizer/dashboard/';
+                    }, 2000);
+                } else {
+                    showToast('Welcome back! Redirecting...', 'success');
+                    setTimeout(() => {
+                        if (userRole === 'organizer') {
+                            window.location.href = '/organizer/dashboard/';
+                        } else {
+                            window.location.href = '/dashboard/';
+                        }
+                    }, 1000);
+                }
             } else {
                 showToast(body.error || 'Invalid email or password', 'error');
                 submitBtn.innerHTML = originalText;
