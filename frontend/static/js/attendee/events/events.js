@@ -174,24 +174,53 @@ const EventsModule = (function() {
             return;
         }
         
+        const event = currentEvents.find(e => e.id == eventId);
+        if (!event) {
+            showToast('Event not found', 'error');
+            return;
+        }
+
         try {
-            const response = await fetch(API.cart, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ event_id: eventId, quantity: 1 })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                showToast('Added to cart!', 'success');
-                updateCartBadge(data.cart_count);
+            // Get existing cart or initialize it
+            const savedCart = localStorage.getItem('eventhub_cart');
+            let cart = savedCart ? JSON.parse(savedCart) : {
+                items: [],
+                subtotal: 0,
+                platform_fee: 0,
+                total: 0,
+                discount_amount: 0,
+                promo_code: null
+            };
+
+            // Check if item is already in cart
+            const existingItem = cart.items.find(item => item.id == eventId);
+            if (existingItem) {
+                existingItem.quantity += 1;
             } else {
-                showToast(data.message || 'Failed to add to cart', 'error');
+                cart.items.push({
+                    id: event.id,
+                    title: event.title,
+                    category: event.category_name || event.category,
+                    date: event.start_date || event.date,
+                    location: event.location || event.venue,
+                    price: event.price,
+                    image: event.image || event.banner_image,
+                    quantity: 1
+                });
             }
+
+            // Recalculate totals
+            cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
+            cart.total = cart.subtotal + cart.platform_fee - (cart.discount_amount || 0);
+
+            // Save back to localStorage
+            localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+
+            // Trigger custom event to notify navbar to update badge
+            window.dispatchEvent(new Event('cart-updated'));
+
+            showToast('Added to cart!', 'success');
         } catch (error) {
             console.error('Error adding to cart:', error);
             showToast('Failed to add to cart', 'error');

@@ -11,6 +11,8 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='attendee')
     phone = models.CharField(max_length=15, blank=True)
     organization_name = models.CharField(max_length=150, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    location = models.CharField(max_length=100, blank=True)
     
     def __str__(self):
         return f"{self.username} ({self.role})"

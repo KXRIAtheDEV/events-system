@@ -273,7 +273,7 @@ async function addToCart(eventId) {
         
         showToast('Added to cart!', 'success');
         updateCartCount();
-        
+        window.dispatchEvent(new Event('cart-updated'));
     } catch (error) {
         console.error('Error adding to cart:', error);
         showToast('Failed to add to cart', 'error');

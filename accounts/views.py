@@ -19,7 +19,7 @@ from .models import APIToken
 
 
 PUBLIC_REGISTRATION_ROLES = {'attendee', 'organizer'}
-PROFILE_FIELDS = ('first_name', 'last_name', 'email', 'phone', 'organization_name')
+PROFILE_FIELDS = ('first_name', 'last_name', 'email', 'phone', 'organization_name', 'location')
 
 
 def user_payload(user):
@@ -29,9 +29,12 @@ def user_payload(user):
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
+        'full_name': f"{user.first_name} {user.last_name}".strip(),
         'phone': user.phone,
         'role': user.role,
         'organization_name': user.organization_name,
+        'date_of_birth': getattr(user, 'date_of_birth', None),
+        'location': getattr(user, 'location', ''),
         'is_staff': user.is_staff,
         'is_superuser': user.is_superuser,
     }
@@ -207,6 +210,22 @@ def profile_update(request):
     if user.role == 'organizer' and 'organization_name' in data and not (data.get('organization_name') or '').strip():
         return json_error('Organization name is required for organizers.')
 
+    if 'name' in data:
+        name_parts = (data.get('name') or '').strip().split(' ', 1)
+        user.first_name = name_parts[0] if len(name_parts) > 0 else ''
+        user.last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+    if 'dob' in data:
+        dob_str = (data.get('dob') or '').strip()
+        if dob_str:
+            try:
+                import dateutil.parser
+                user.date_of_birth = dateutil.parser.isoparse(dob_str).date()
+            except ValueError:
+                pass
+        else:
+            user.date_of_birth = None
+
     for field in PROFILE_FIELDS:
         if field in data:
             setattr(user, field, (data.get(field) or '').strip())
@@ -214,7 +233,7 @@ def profile_update(request):
     if user.role != 'organizer':
         user.organization_name = ''
 
-    user.save(update_fields=[*PROFILE_FIELDS])
+    user.save(update_fields=[*PROFILE_FIELDS, 'date_of_birth'])
     return JsonResponse({'message': 'Profile updated.', 'user': user_payload(user)})
 
 
