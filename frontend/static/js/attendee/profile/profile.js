@@ -267,10 +267,10 @@ function checkPasswordMatch() {
     }
     
     if (newPasswordValue === confirmPasswordValue) {
-        passwordMatch.textContent = '✓ Passwords match';
+        passwordMatch.textContent = 'âœ“ Passwords match';
         passwordMatch.className = 'password-match match-success';
     } else {
-        passwordMatch.textContent = '✗ Passwords do not match';
+        passwordMatch.textContent = 'âœ— Passwords do not match';
         passwordMatch.className = 'password-match match-error';
     }
 }
@@ -355,7 +355,7 @@ function formatNumber(num) {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 function formatDate(dateString) {

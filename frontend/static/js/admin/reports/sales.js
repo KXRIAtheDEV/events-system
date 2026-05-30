@@ -75,7 +75,7 @@ function updateSalesChart(data) {
     if (salesChart) salesChart.destroy();
     
     const datasets = currentChartType === 'revenue' ? [{
-        label: 'Revenue (KSh)',
+        label: 'Revenue (Kes)',
         data: data.revenue_data || [],
         borderColor: '#f59e0b',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -320,7 +320,7 @@ function resetSalesFilters() {
     loadSalesReport();
 }
 
-function formatCurrency(amount) { return `KSh ${Number(amount).toLocaleString('en-KE')}`; }
+function formatCurrency(amount) { return `Kes ${Number(amount).toLocaleString('en-KE')}`; }
 function formatNumber(num) { return Number(num).toLocaleString('en-KE'); }
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('en-KE') : 'N/A'; }
 function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }

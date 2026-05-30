@@ -315,7 +315,7 @@ function formatDate(dateString) {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 function escapeHtml(text) {

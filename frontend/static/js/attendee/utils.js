@@ -69,7 +69,7 @@ window.Loader = {
 
 // Format Currency (Kenyan Shilling)
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 // Format Number
@@ -221,4 +221,4 @@ window.getQueryParam = getQueryParam;
 window.copyToClipboard = copyToClipboard;
 window.downloadFile = downloadFile;
 
-console.log('✅ Attendee utilities loaded');
+console.log('âœ… Attendee utilities loaded');

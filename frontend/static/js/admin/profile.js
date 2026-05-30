@@ -525,7 +525,7 @@ function escapeHtml(text) {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${amount.toLocaleString()}`;
+    return `Kes ${amount.toLocaleString()}`;
 }
 
 // Add slideOutRight animation to CSS

@@ -88,7 +88,7 @@ function showToast(message, type = 'success') {
 
 // Format Currency
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 // Format Date
@@ -284,7 +284,7 @@ function displayNotifications(notifications, unreadCount) {
                     <div class="notification-message">${escapeHtml(n.message)}</div>
                     <div class="notification-time">${formatRelativeTime(n.created_at)}</div>
                 </div>
-                ${!n.is_read ? `<button class="mark-read" onclick="markNotificationRead(${n.id})">✓</button>` : ''}
+                ${!n.is_read ? `<button class="mark-read" onclick="markNotificationRead(${n.id})">âœ“</button>` : ''}
             </div>
         `).join('');
     }
@@ -403,4 +403,4 @@ window.formatDate = formatDate;
 window.formatDateTime = formatDateTime;
 window.escapeHtml = escapeHtml;
 
-console.log('✅ Admin JS loaded');
+console.log('âœ… Admin JS loaded');

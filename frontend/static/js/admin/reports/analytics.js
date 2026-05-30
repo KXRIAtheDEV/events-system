@@ -83,7 +83,7 @@ async function loadRevenueChart(days) {
             data: {
                 labels: data.labels || [],
                 datasets: [{
-                    label: 'Revenue (KSh)',
+                    label: 'Revenue (Kes)',
                     data: data.values || [],
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -224,7 +224,7 @@ async function exportReport() {
         
         const kpiData = [
             ['Metric', 'Value', 'Trend'],
-            ['Total Revenue', currentData.kpis?.total_revenue ? formatCurrency(currentData.kpis.total_revenue) : 'KSh 0', `${currentData.kpis?.revenue_trend?.percentage >= 0 ? '+' : ''}${Math.abs(currentData.kpis?.revenue_trend?.percentage || 0)}%`],
+            ['Total Revenue', currentData.kpis?.total_revenue ? formatCurrency(currentData.kpis.total_revenue) : 'Kes 0', `${currentData.kpis?.revenue_trend?.percentage >= 0 ? '+' : ''}${Math.abs(currentData.kpis?.revenue_trend?.percentage || 0)}%`],
             ['Tickets Sold', formatNumber(currentData.kpis?.total_tickets || 0), `${currentData.kpis?.tickets_trend?.percentage >= 0 ? '+' : ''}${Math.abs(currentData.kpis?.tickets_trend?.percentage || 0)}%`],
             ['Active Users', formatNumber(currentData.kpis?.active_users || 0), `${currentData.kpis?.users_trend?.percentage >= 0 ? '+' : ''}${Math.abs(currentData.kpis?.users_trend?.percentage || 0)}%`],
             ['Completed Events', formatNumber(currentData.kpis?.completed_events || 0), `${currentData.kpis?.events_trend?.percentage >= 0 ? '+' : ''}${Math.abs(currentData.kpis?.events_trend?.percentage || 0)}%`]
@@ -324,7 +324,7 @@ function viewAllEvents() {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 function formatNumber(num) {

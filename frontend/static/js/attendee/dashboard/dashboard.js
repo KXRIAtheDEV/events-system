@@ -103,7 +103,7 @@ function setDefaultStats() {
     const reviewsWritten = document.getElementById('reviewsWritten');
     
     if (totalTickets) totalTickets.textContent = '0';
-    if (totalSpent) totalSpent.textContent = 'KSh 0';
+    if (totalSpent) totalSpent.textContent = 'Kes 0';
     if (upcomingEvents) upcomingEvents.textContent = '0';
     if (reviewsWritten) reviewsWritten.textContent = '0';
 }
@@ -120,7 +120,7 @@ function updateTrend(elementId, trend) {
     element.style.display = 'inline-block';
     const isPositive = trend.percentage >= 0;
     element.className = `stat-trend ${isPositive ? 'up' : 'down'}`;
-    element.innerHTML = `${isPositive ? '↑' : '↓'} ${Math.abs(trend.percentage)}%`;
+    element.innerHTML = `${isPositive ? 'â†‘' : 'â†“'} ${Math.abs(trend.percentage)}%`;
 }
 
 async function loadUpcomingTickets() {
@@ -349,7 +349,7 @@ function formatNumber(num) {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 function formatDate(dateString) {

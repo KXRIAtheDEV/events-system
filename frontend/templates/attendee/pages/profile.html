@@ -536,7 +536,7 @@ function checkPasswordStrength() {
     else if (strength <= 4) { strengthText = 'Medium'; strengthClass = 'strength-medium'; }
     else { strengthText = 'Strong'; strengthClass = 'strength-strong'; }
     
-    strengthDiv.innerHTML = `<span class="${strengthClass}">🔒 ${strengthText} password</span>`;
+    strengthDiv.innerHTML = `<span class="${strengthClass}">ðŸ”’ ${strengthText} password</span>`;
 }
 
 function checkPasswordMatch() {
@@ -712,7 +712,7 @@ function formatRelativeTime(dateString) {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString()}`;
+    return `Kes ${Number(amount).toLocaleString()}`;
 }
 
 function capitalize(str) {

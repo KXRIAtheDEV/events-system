@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Animate counter values
             animateCounter(elements.eventsCount, stats.events_count || 0, 800);
             animateCounter(elements.ticketsCount, stats.tickets_sold || 0, 1000);
-            animateCounter(elements.revenueCount, stats.revenue || 0, 1200, 'KSh ');
+            animateCounter(elements.revenueCount, stats.revenue || 0, 1200, 'Kes ');
             animateCounter(elements.attendeesCount, stats.attendees || 0, 1000);
         } catch (error) {
             console.error("Error updating metrics:", error);
@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-weight: 500;">${event.sold} / ${event.capacity}</div>
                         <div style="font-size: 0.75rem; color: var(--gray-muted);">Tickets</div>
                     </td>
-                    <td style="font-weight: 600; color: var(--dark);">KSh ${(event.revenue || 0).toLocaleString()}</td>
+                    <td style="font-weight: 600; color: var(--dark);">Kes ${(event.revenue || 0).toLocaleString()}</td>
                     <td>
                         <span class="status-badge ${event.status}">${event.status}</span>
                     </td>

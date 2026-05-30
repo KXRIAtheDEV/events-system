@@ -24,7 +24,7 @@ def send_ticket_confirmation(user_email, user_name, event_title, ticket_quantity
             <h3 style="margin-top: 0;">Order Details</h3>
             <p><strong>Event:</strong> {event_title}</p>
             <p><strong>Tickets:</strong> {ticket_quantity}</p>
-            <p><strong>Total Paid:</strong> KSh {total_price}</p>
+            <p><strong>Total Paid:</strong> Kes {total_price}</p>
         </div>
         
         <p>You can view and download your tickets from your attendee dashboard.</p>

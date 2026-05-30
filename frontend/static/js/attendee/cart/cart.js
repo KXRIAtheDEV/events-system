@@ -673,11 +673,11 @@ function formatDate(dateString) {
 function formatCurrency(amount) {
     try {
         const val = Number(amount);
-        if (isNaN(val)) return 'KSh 0';
-        return `KSh ${val.toLocaleString('en-KE')}`;
+        if (isNaN(val)) return 'Kes 0';
+        return `Kes ${val.toLocaleString('en-KE')}`;
     } catch (e) {
         console.error("Error formatting currency:", e);
-        return 'KSh 0';
+        return 'Kes 0';
     }
 }
 
