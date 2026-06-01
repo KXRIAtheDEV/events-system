@@ -3,18 +3,19 @@
    ============================================ */
 
 .ticket-card {
-    background: white;
+    background: white !important;
     border-radius: var(--radius-xl);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
     overflow: hidden;
     transition: all var(--transition-normal);
     cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
 .ticket-card:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
 }
 
 /* Ticket Header */
@@ -25,28 +26,33 @@
     flex-wrap: wrap;
     gap: var(--spacing-md);
     padding: var(--spacing-lg) var(--spacing-xl);
-    background: linear-gradient(135deg, var(--np-bg), white);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: linear-gradient(135deg, #f1f5f9, #f8fafc) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 .event-info h3 {
     font-size: 1.1rem;
     font-weight: 700;
     margin-bottom: var(--spacing-xs);
-    color: var(--np-dark);
+    color: #0f172a !important;
 }
 
 .event-meta {
     display: flex;
     gap: var(--spacing-md);
     font-size: 0.75rem;
-    color: var(--np-gray);
+    color: #334155 !important;
 }
 
 .event-meta span {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
+    color: #334155 !important;
+}
+
+.event-meta span i {
+    color: #475569 !important;
 }
 
 .ticket-status {
@@ -57,23 +63,24 @@
 }
 
 .ticket-status.valid {
-    background: #d1fae5;
-    color: #065f46;
+    background: #d1fae5 !important;
+    color: #065f46 !important;
 }
 
 .ticket-status.checked_in {
-    background: #dbeafe;
-    color: #1e40af;
+    background: #dbeafe !important;
+    color: #1e40af !important;
 }
 
 .ticket-status.expired {
-    background: #fee2e2;
-    color: #991b1b;
+    background: #fee2e2 !important;
+    color: #991b1b !important;
 }
 
 /* Ticket Body */
 .ticket-body {
     padding: var(--spacing-xl);
+    background: #ffffff !important;
 }
 
 .ticket-details {
@@ -90,7 +97,7 @@
 
 .detail .label {
     font-size: 0.7rem;
-    color: var(--np-gray);
+    color: #475569 !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -98,7 +105,7 @@
 .detail .value {
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--np-dark);
+    color: #0f172a !important;
 }
 
 /* Ticket Footer */
@@ -107,8 +114,32 @@
     justify-content: flex-end;
     gap: var(--spacing-md);
     padding: var(--spacing-lg) var(--spacing-xl);
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    background: var(--np-bg);
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+    background: #f8fafc !important;
+}
+
+.ticket-footer .btn-outline {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+
+.ticket-footer .btn-outline:hover {
+    border-color: #ec6408 !important;
+    color: #ec6408 !important;
+    background: #fffdfb !important;
+}
+
+.ticket-footer .btn-danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+
+.ticket-footer .btn-danger:hover {
+    background: #dc2626 !important;
 }
 
 /* Responsive */

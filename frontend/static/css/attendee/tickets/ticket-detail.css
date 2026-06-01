@@ -39,16 +39,17 @@
 
 /* Ticket Detail Card */
 .ticket-detail-card {
-    background: white;
+    background: white !important;
     border-radius: var(--radius-xl);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
 .ticket-detail-card .card-header {
     padding: var(--spacing-lg) var(--spacing-xl);
-    background: linear-gradient(135deg, var(--np-bg), white);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: linear-gradient(135deg, #f1f5f9, #f8fafc) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 .ticket-detail-card .card-header h3 {
@@ -58,6 +59,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    color: #0f172a !important;
 }
 
 .ticket-detail-card .card-header h3 i {
@@ -66,6 +68,7 @@
 
 .ticket-detail-card .card-body {
     padding: var(--spacing-xl);
+    background: #ffffff !important;
 }
 
 /* Detail Rows */
@@ -74,16 +77,16 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: var(--spacing-md) 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
 }
 
 .detail-row:last-child {
-    border-bottom: none;
+    border-bottom: none !important;
 }
 
 .detail-label {
     font-weight: 600;
-    color: var(--np-gray);
+    color: #475569 !important;
     width: 140px;
     flex-shrink: 0;
     font-size: 0.85rem;
@@ -91,21 +94,44 @@
 
 .detail-value {
     flex: 1;
-    color: var(--np-dark);
+    color: #0f172a !important;
     font-size: 0.85rem;
     word-break: break-word;
 }
 
 .detail-value code {
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(245, 158, 11, 0.1) !important;
+    color: #b45309 !important;
     padding: 2px 6px;
     border-radius: var(--radius-sm);
     font-size: 0.8rem;
 }
 
 .detail-value.amount {
-    color: var(--np-gold);
+    color: #f59e0b !important;
     font-weight: 700;
+}
+
+.detail-value .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.detail-value .status-badge.status-valid {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.detail-value .status-badge.status-checked-in {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+}
+
+.detail-value .status-badge.status-expired {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
 }
 
 /* Actions */
@@ -114,7 +140,31 @@
     gap: var(--spacing-md);
     margin-top: var(--spacing-xl);
     padding-top: var(--spacing-lg);
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.ticket-actions .btn-outline {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+
+.ticket-actions .btn-outline:hover {
+    border-color: #ec6408 !important;
+    color: #ec6408 !important;
+    background: #fffdfb !important;
+}
+
+.ticket-actions .btn-danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+
+.ticket-actions .btn-danger:hover {
+    background: #dc2626 !important;
 }
 
 /* Responsive */

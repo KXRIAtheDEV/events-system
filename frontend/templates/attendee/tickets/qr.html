@@ -5,7 +5,39 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/attendee/typography.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/tickets/ticket-qr.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendee/tickets/ticket-qr.css' %}?v=2.0">
+<style>
+    /* Foolproof high-contrast light theme overrides */
+    .qr-card {
+        background: #ffffff !important;
+    }
+    .qr-header {
+        background: linear-gradient(135deg, #f1f5f9, #f8fafc) !important;
+    }
+    .qr-header h2 {
+        color: #0f172a !important;
+    }
+    .qr-header p {
+        color: #475569 !important;
+    }
+    .ticket-info {
+        background: #f8fafc !important;
+    }
+    .info-label {
+        color: #475569 !important;
+    }
+    .info-value {
+        color: #0f172a !important;
+    }
+    .qr-footer {
+        background: #f8fafc !important;
+    }
+    .qr-footer .btn-outline {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+</style>
 {% endblock %}
 
 {% block attendee_content %}

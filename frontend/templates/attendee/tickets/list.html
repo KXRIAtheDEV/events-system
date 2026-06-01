@@ -5,8 +5,34 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/attendee/typography.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/tickets/tickets.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/tickets/ticket-card.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendee/tickets/tickets.css' %}?v=2.0">
+<link rel="stylesheet" href="{% static 'css/attendee/tickets/ticket-card.css' %}?v=2.0">
+<style>
+    /* Foolproof light high-contrast ticket overrides */
+    .ticket-card {
+        background: #ffffff !important;
+    }
+    .ticket-header {
+        background: linear-gradient(135deg, #f1f5f9, #f8fafc) !important;
+    }
+    .event-info h3 {
+        color: #0f172a !important;
+    }
+    .event-meta, .event-meta span {
+        color: #334155 !important;
+    }
+    .event-meta span i {
+        color: #475569 !important;
+    }
+    .ticket-footer {
+        background: #f8fafc !important;
+    }
+    .ticket-footer .btn-outline {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+</style>
 {% endblock %}
 
 {% block attendee_content %}
