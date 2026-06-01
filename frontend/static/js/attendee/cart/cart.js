@@ -520,19 +520,11 @@ async function checkPaymentStatus(bookingId, billingInfo) {
                             <div class="payment-success">
                                 <i class="fas fa-check-circle"></i>
                                 <h3>Payment Successful!</h3>
-                                <p>Your tickets have been confirmed.</p>
+                                <p>Your tickets have been confirmed. Redirecting you to your tickets...</p>
                                 <div class="payment-details">
-                                    <p><strong>M-Pesa Receipt:</strong> MPESA${Math.floor(Math.random() * 10000000)}</p>
-                                    <p><strong>Amount:</strong> ${formatCurrency(cartData.total)}</p>
-                                    <p><strong>Booking ID:</strong> ${bookingId}</p>
-                                </div>
-                                <div class="payment-actions">
-                                    <button class="btn-primary" onclick="window.location.href='/attendee/tickets/'">
-                                        View My Tickets
-                                    </button>
-                                    <button class="btn-outline" onclick="window.location.href='/attendee/bookings/'">
-                                        View Booking
-                                    </button>
+                                    <p><strong>M-Pesa Receipt:</strong> MPESA\${Math.floor(Math.random() * 10000000)}</p>
+                                    <p><strong>Amount:</strong> \${formatCurrency(cartData.total)}</p>
+                                    <p><strong>Booking ID:</strong> \${bookingId}</p>
                                 </div>
                             </div>
                         `;
@@ -540,6 +532,10 @@ async function checkPaymentStatus(bookingId, billingInfo) {
                     
                     localStorage.removeItem('eventhub_cart');
                     updateCartCount(0);
+                    showToast('Payment Successful! Redirecting to your tickets...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/attendee/tickets/';
+                    }, 1000);
             }, 3000);
         }
     } catch (error) {
@@ -594,23 +590,19 @@ async function initiateCardPayment(bookingId, billingInfo) {
                 <div class="payment-success">
                     <i class="fas fa-check-circle"></i>
                     <h3>Payment Successful!</h3>
-                    <p>Your tickets have been confirmed.</p>
+                    <p>Your tickets have been confirmed. Redirecting you to your tickets...</p>
                     <div class="payment-details">
-                        <p><strong>Amount:</strong> ${formatCurrency(cartData.total)}</p>
-                        <p><strong>Booking ID:</strong> ${bookingId}</p>
-                    </div>
-                    <div class="payment-actions">
-                        <button class="btn-primary" onclick="window.location.href='/attendee/tickets/'">
-                            View My Tickets
-                        </button>
-                        <button class="btn-outline" onclick="window.location.href='/attendee/bookings/'">
-                            View Booking
-                        </button>
+                        <p><strong>Amount:</strong> \${formatCurrency(cartData.total)}</p>
+                        <p><strong>Booking ID:</strong> \${bookingId}</p>
                     </div>
                 </div>
             `;
             localStorage.removeItem('eventhub_cart');
             updateCartCount(0);
+            showToast('Payment Successful! Redirecting to your tickets...', 'success');
+            setTimeout(() => {
+                window.location.href = '/attendee/tickets/';
+            }, 1000);
         }, 2000);
         
     } catch (error) {

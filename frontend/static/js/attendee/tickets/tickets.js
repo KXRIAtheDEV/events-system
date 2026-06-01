@@ -44,7 +44,7 @@ function switchTab(tab) {
     });
     document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
     
-    filterAndDisplayTickets();
+    loadTickets();
 }
 
 async function loadTickets() {
