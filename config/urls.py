@@ -23,7 +23,10 @@ from events.views import (
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
     ticket_checkout_api, api_tickets_upcoming, api_tickets_past,
-    api_ticket_detail, api_ticket_qr, api_ticket_download
+    api_ticket_detail, api_ticket_qr, api_ticket_download,
+    api_organizer_bookings_list, api_organizer_tickets_list,
+    api_organizer_tickets_stats, api_organizer_ticket_verify,
+    api_organizer_ticket_checkin, api_organizer_attendees_list
 )
 from bookings.email_service import send_newsletter_confirmation
 from events.api_organizer_views import (
@@ -292,6 +295,13 @@ urlpatterns = [
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
     path('api/organizer/events/<int:event_id>/update/', api_organizer_events_update, name='api_organizer_events_update'),
     path('api/organizer/events/<int:event_id>/delete/', api_organizer_events_delete, name='api_organizer_events_delete'),
+    path('api/organizer/bookings/', api_organizer_bookings_list, name='api_organizer_bookings_list'),
+    path('api/organizer/tickets/', api_organizer_tickets_list, name='api_organizer_tickets_list'),
+    path('api/organizer/tickets/stats/', api_organizer_tickets_stats, name='api_organizer_tickets_stats'),
+    path('api/organizer/tickets/stats/<int:event_id>/', api_organizer_tickets_stats, name='api_organizer_tickets_stats_event'),
+    path('api/organizer/tickets/<str:ticket_number>/verify/', api_organizer_ticket_verify, name='api_organizer_ticket_verify'),
+    path('api/organizer/tickets/<str:ticket_number>/checkin/', api_organizer_ticket_checkin, name='api_organizer_ticket_checkin'),
+    path('api/organizer/attendees/', api_organizer_attendees_list, name='api_organizer_attendees_list'),
     
     path('api/bookings/checkout/', ticket_checkout_api, name='ticket_checkout_api'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),

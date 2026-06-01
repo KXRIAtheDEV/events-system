@@ -320,3 +320,156 @@ def api_ticket_download(request, ticket_number):
     except Ticket.DoesNotExist:
         return HttpResponse('Ticket not found', status=404)
 
+
+from events.api_organizer_views import organizer_required
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_bookings_list(request):
+    """List bookings (tickets bought) for events organized by the logged-in user."""
+    tickets = Ticket.objects.filter(event__organizer=request.user).order_by('-purchase_date')
+    results = []
+    for t in tickets:
+        results.append({
+            'ticket_number': t.ticket_number,
+            'event_title': t.event.title,
+            'event_id': t.event.id,
+            'customer_name': t.billing_name,
+            'customer_email': t.billing_email,
+            'quantity': t.quantity,
+            'price': float(t.price * t.quantity),
+            'purchase_date': t.purchase_date.isoformat(),
+            'status': t.status,
+            'checked_in_at': t.checked_in_at.isoformat() if t.checked_in_at else None
+        })
+    return JsonResponse(results, safe=False)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_tickets_list(request):
+    """Same as bookings list for this schema."""
+    return api_organizer_bookings_list(request)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_tickets_stats(request, event_id=None):
+    """Get ticket statistics (total, checked-in, recent)."""
+    tickets = Ticket.objects.filter(event__organizer=request.user)
+    if event_id:
+        tickets = tickets.filter(event_id=event_id)
+        
+    total = sum(t.quantity for t in tickets)
+    checked_in = sum(t.quantity for t in tickets.filter(status='checked_in'))
+    
+    # recent (past 24h)
+    yesterday = timezone.now() - timezone.timedelta(days=1)
+    recent = sum(t.quantity for t in tickets.filter(purchase_date__gte=yesterday))
+    
+    return JsonResponse({
+        'total': total,
+        'checked_in': checked_in,
+        'recent': recent
+    })
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_ticket_verify(request, ticket_number):
+    """Verify a ticket for organizers."""
+    try:
+        t = Ticket.objects.get(ticket_number=ticket_number, event__organizer=request.user)
+        is_valid = t.status == 'valid'
+        msg = "Valid ticket"
+        if t.status == 'checked_in':
+            msg = "Ticket already checked in"
+        elif t.status == 'cancelled':
+            msg = "Ticket cancelled"
+            
+        return JsonResponse({
+            'success': is_valid,
+            'message': msg,
+            'ticket': {
+                'ticket_number': t.ticket_number,
+                'event_title': t.event.title,
+                'customer_name': t.billing_name,
+                'status': t.status,
+                'checked_in_at': t.checked_in_at.isoformat() if t.checked_in_at else None
+            }
+        })
+    except Ticket.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Ticket not found or does not belong to your events.'}, status=404)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_ticket_checkin(request, ticket_number):
+    """Mark a ticket as checked in."""
+    try:
+        t = Ticket.objects.get(ticket_number=ticket_number, event__organizer=request.user)
+        if t.status == 'checked_in':
+            return JsonResponse({'success': False, 'message': 'Ticket already checked in.'}, status=400)
+        if t.status == 'cancelled':
+            return JsonResponse({'success': False, 'message': 'Cannot check in a cancelled ticket.'}, status=400)
+            
+        t.status = 'checked_in'
+        t.checked_in_at = timezone.now()
+        t.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Check-in successful!',
+            'ticket': {
+                'ticket_number': t.ticket_number,
+                'event_title': t.event.title,
+                'customer_name': t.billing_name,
+                'status': t.status,
+                'checked_in_at': t.checked_in_at.isoformat()
+            }
+        })
+    except Ticket.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Ticket not found or does not belong to your events.'}, status=404)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_attendees_list(request):
+    """List unique attendees who bought tickets to events organized by the user."""
+    tickets = Ticket.objects.filter(event__organizer=request.user).order_by('-purchase_date')
+    
+    attendee_map = {}
+    for t in tickets:
+        email = t.billing_email.lower().strip()
+        if email not in attendee_map:
+            attendee_map[email] = {
+                'name': t.billing_name,
+                'email': t.billing_email,
+                'phone': t.billing_phone,
+                'purchased_event_ids': {t.event.id},
+                'events_count': 1,
+                'tickets_count': t.quantity,
+                'total_spent': float(t.price * t.quantity),
+                'last_purchase_date': t.purchase_date.isoformat()
+            }
+        else:
+            attendee_map[email]['purchased_event_ids'].add(t.event.id)
+            attendee_map[email]['events_count'] = len(attendee_map[email]['purchased_event_ids'])
+            attendee_map[email]['tickets_count'] += t.quantity
+            attendee_map[email]['total_spent'] += float(t.price * t.quantity)
+            
+    # Convert sets to lists for JSON serialization
+    results = []
+    for email, details in attendee_map.items():
+        details['purchased_event_ids'] = list(details['purchased_event_ids'])
+        results.append(details)
+        
+    return JsonResponse(results, safe=False)
+
+
