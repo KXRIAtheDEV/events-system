@@ -78,7 +78,7 @@ window.loadDashboardStats = async function() {
 
         totalEventsEl.innerText = totalEvents;
         totalTicketsEl.innerText = Number(totalTicketsSold).toLocaleString();
-        totalRevenueEl.innerText = '$' + Number(totalRevenue).toLocaleString();
+        totalRevenueEl.innerText = 'Kes ' + Number(totalRevenue).toLocaleString('en-KE');
         totalAttendeesEl.innerText = Number(totalAttendees).toLocaleString();
         if (stats.organizer_name) document.getElementById('organizerName').innerText = stats.organizer_name;
         if (stats.events_change) document.getElementById('eventsChange').innerHTML = (stats.events_change > 0 ? '+' : '') + stats.events_change + '%';
@@ -95,7 +95,7 @@ window.loadDashboardStats = async function() {
         // Keep dashboard usable even when stats endpoint has transient issues.
         totalEventsEl.innerText = '0';
         totalTicketsEl.innerText = '0';
-        totalRevenueEl.innerText = '$0';
+        totalRevenueEl.innerText = 'Kes 0';
         totalAttendeesEl.innerText = '0';
     }
 };
@@ -150,7 +150,7 @@ window.loadRecentBookings = async function() {
         container.innerHTML = bookings.map(b => `
             <div class="border-bottom py-2">
                 <strong>${escapeHtml(b.event_title)}</strong><br>
-                <small>${escapeHtml(b.attendee_name)} - $${b.amount} <span class="status-badge ${b.status === 'confirmed' ? 'active' : 'pending'}">${b.status}</span></small>
+                <small>${escapeHtml(b.attendee_name)} - Kes ${b.amount} <span class="status-badge ${b.status === 'confirmed' ? 'active' : 'pending'}">${b.status}</span></small>
             </div>
         `).join('');
     } catch(e) {

@@ -115,48 +115,46 @@ TEMPLATES = [
     },
 ]
 
-IS_SERVERLESS_RUNTIME = bool(
-    os.environ.get('VERCEL')
-    or os.environ.get('VERCEL_ENV')
-    or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-)
-USE_FILE_LOGGING = not IS_SERVERLESS_RUNTIME
-LOG_HANDLERS = {
+# Only log to a file on writable filesystems (not Vercel/Render serverless)
+_IS_SERVERLESS = bool(os.environ.get('VERCEL') or os.environ.get('RENDER'))
+
+_log_handlers = {
     'console': {
         'class': 'logging.StreamHandler',
     },
 }
-DEFAULT_LOG_HANDLERS = ['console']
+_root_handlers = ['console']
 
-if USE_FILE_LOGGING:
-    LOG_HANDLERS['file'] = {
+if not _IS_SERVERLESS:
+    _log_handlers['file'] = {
         'level': 'ERROR',
         'class': 'logging.FileHandler',
         'filename': os.path.join(BASE_DIR, 'events.log'),
     }
-    DEFAULT_LOG_HANDLERS.append('file')
+    _root_handlers.append('file')
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'handlers': LOG_HANDLERS,
+    'handlers': _log_handlers,
     'root': {
-        'handlers': DEFAULT_LOG_HANDLERS,
+        'handlers': _root_handlers,
         'level': 'WARNING',
     },
     'loggers': {
         'django': {
-            'handlers': DEFAULT_LOG_HANDLERS,
+            'handlers': _root_handlers,
             'level': 'INFO',
             'propagate': False,
         },
         'config.middleware': {
-            'handlers': DEFAULT_LOG_HANDLERS,
+            'handlers': _root_handlers,
             'level': 'ERROR',
             'propagate': False,
         },
     },
 }
+
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
