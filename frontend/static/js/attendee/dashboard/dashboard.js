@@ -4,11 +4,13 @@
 
 let allTickets = [];
 let allBookings = [];
+let refreshInterval = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
     displayCurrentDate();
     displayUserName();
+    setupAutoRefresh();
 });
 
 function displayCurrentDate() {
@@ -93,7 +95,7 @@ function displayUpcomingTickets() {
     }
     
     container.innerHTML = upcomingTickets.map(ticket => `
-        <div class="ticket-item" onclick="window.location.href='/tickets/detail/?id=${ticket.id}'">
+        <div class="ticket-item" onclick="viewTicket('${ticket.id}')">
             <div class="ticket-item-image" style="background-image: url('${ticket.image || '/static/images/placeholder.jpg'}')"></div>
             <div class="ticket-item-info">
                 <div class="ticket-item-title">${escapeHtml(ticket.title)}</div>
@@ -116,7 +118,7 @@ function loadRecentActivity() {
             title: `Booking Confirmed`,
             description: `Booking #${booking.id.substring(0, 8)} - Total: ${formatCurrency(booking.total_amount)}`,
             time: booking.booking_date,
-            icon: 'fa-receipt'
+            icon: getActivityIcon('booking')
         });
     });
     
@@ -153,21 +155,24 @@ function loadStats() {
     today.setHours(0, 0, 0, 0);
     const upcomingEvents = allTickets.filter(ticket => new Date(ticket.date) >= today).length;
     
-    document.getElementById('totalTickets').textContent = totalTickets;
-    document.getElementById('totalSpent').textContent = formatCurrency(totalSpent);
-    document.getElementById('upcomingEvents').textContent = upcomingEvents;
-    document.getElementById('reviewsWritten').textContent = '0';
+    const totalTicketsEl = document.getElementById('totalTickets');
+    const totalSpentEl = document.getElementById('totalSpent');
+    const upcomingEventsEl = document.getElementById('upcomingEvents');
+    const reviewsWrittenEl = document.getElementById('reviewsWritten');
+    
+    if (totalTicketsEl) totalTicketsEl.textContent = totalTickets;
+    if (totalSpentEl) totalSpentEl.textContent = formatCurrency(totalSpent);
+    if (upcomingEventsEl) upcomingEventsEl.textContent = upcomingEvents;
+    if (reviewsWrittenEl) reviewsWrittenEl.textContent = '0';
     
     const pastEvents = allTickets.filter(ticket => new Date(ticket.date) < today).length;
-    document.getElementById('eventsAttended').textContent = pastEvents;
+    const eventsAttendedEl = document.getElementById('eventsAttended');
+    if (eventsAttendedEl) eventsAttendedEl.textContent = pastEvents;
 }
 
 function refreshActivity() {
     loadRecentActivity();
-<<<<<<< HEAD
     showToast('Activity refreshed!', 'success');
-=======
-    showToast('Activity refreshed', 'success');
 }
 
 function setupAutoRefresh() {
@@ -193,7 +198,7 @@ function getActivityIcon(type) {
 }
 
 function viewTicket(ticketId) {
-    window.location.href = `/attendee/tickets/detail/?ticket=${ticketId}`;
+    window.location.href = `/tickets/detail/?id=${ticketId}`;
 }
 
 function viewEvent(eventId) {
@@ -202,11 +207,6 @@ function viewEvent(eventId) {
 
 function formatNumber(num) {
     return Number(num).toLocaleString('en-KE');
-}
-
-function formatCurrency(amount) {
-    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
->>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
 }
 
 function formatDate(dateString) {
@@ -269,3 +269,5 @@ function showToast(message, type) {
 }
 
 window.refreshActivity = refreshActivity;
+window.viewTicket = viewTicket;
+window.viewEvent = viewEvent;

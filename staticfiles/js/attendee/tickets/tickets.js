@@ -1,5 +1,5 @@
 // ============================================
-// TICKETS MODULE - Fixed PDF Export
+// TICKETS MODULE - Loads from eventhub_tickets
 // ============================================
 
 let allTickets = [];
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     currentBookingId = urlParams.get('booking_id');
     
-    loadTicketsFromBookings();
+    loadTickets();
     setupEventListeners();
     
     const path = window.location.pathname;
@@ -32,46 +32,77 @@ function setupEventListeners() {
     }
 }
 
-function loadTicketsFromBookings() {
+function loadTickets() {
     try {
-        const savedBookings = localStorage.getItem('eventhub_bookings');
+        // Try to load from eventhub_tickets first
+        const savedTickets = localStorage.getItem('eventhub_tickets');
         
-        if (savedBookings) {
-            const bookings = JSON.parse(savedBookings);
-            allTickets = [];
-            
-            let filteredBookings = bookings;
-            if (currentBookingId) {
-                filteredBookings = bookings.filter(booking => booking.id === currentBookingId);
-            }
-            
-            filteredBookings.forEach(booking => {
-                booking.items.forEach((item, itemIndex) => {
-                    for (let i = 0; i < item.quantity; i++) {
-                        allTickets.push({
-                            id: `${booking.id}_${item.id}_${i}`,
-                            booking_id: booking.id,
-                            title: item.title,
-                            category: item.category,
-                            date: item.date,
-                            location: item.location,
-                            price: item.price,
-                            image: item.image,
-                            ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
-                            status: 'active',
-                            purchased_date: booking.booking_date,
-                            receipt_number: booking.receipt_number,
-                            quantity: item.quantity
-                        });
-                    }
+        if (savedTickets && JSON.parse(savedTickets).length > 0) {
+            allTickets = JSON.parse(savedTickets);
+        } else {
+            // Fallback to generating from bookings
+            const savedBookings = localStorage.getItem('eventhub_bookings');
+            if (savedBookings) {
+                const bookings = JSON.parse(savedBookings);
+                allTickets = [];
+                
+                let filteredBookings = bookings;
+                if (currentBookingId) {
+                    filteredBookings = bookings.filter(booking => booking.id === currentBookingId);
+                }
+                
+                filteredBookings.forEach(booking => {
+                    booking.items.forEach((item, itemIndex) => {
+                        if (item.ticket_codes && item.ticket_codes.length > 0) {
+                            item.ticket_codes.forEach((code, idx) => {
+                                allTickets.push({
+                                    id: `${booking.id}_${item.id}_${idx}`,
+                                    booking_id: booking.id,
+                                    title: item.title,
+                                    category: item.category,
+                                    date: item.date,
+                                    location: item.location,
+                                    price: item.price,
+                                    image: item.image,
+                                    ticket_code: code,
+                                    status: 'active',
+                                    purchased_date: booking.booking_date,
+                                    receipt_number: booking.receipt_number,
+                                    quantity: 1
+                                });
+                            });
+                        } else {
+                            for (let i = 0; i < item.quantity; i++) {
+                                allTickets.push({
+                                    id: `${booking.id}_${item.id}_${i}`,
+                                    booking_id: booking.id,
+                                    title: item.title,
+                                    category: item.category,
+                                    date: item.date,
+                                    location: item.location,
+                                    price: item.price,
+                                    image: item.image,
+                                    ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
+                                    status: 'active',
+                                    purchased_date: booking.booking_date,
+                                    receipt_number: booking.receipt_number,
+                                    quantity: 1
+                                });
+                            }
+                        }
+                    });
                 });
-            });
+            }
         }
         
         renderTickets();
         updateHeaderInfo();
     } catch (error) {
         console.error('Error loading tickets:', error);
+        const container = document.getElementById('ticketsList');
+        if (container) {
+            container.innerHTML = '<div class="error-state">Failed to load tickets. Please try again.</div>';
+        }
     }
 }
 
@@ -189,30 +220,55 @@ function loadTicketDetail() {
     let ticket = allTickets.find(t => t.id === ticketId);
     
     if (!ticket) {
+        // Try to find in bookings if not in tickets
         const savedBookings = localStorage.getItem('eventhub_bookings');
         if (savedBookings) {
             const bookings = JSON.parse(savedBookings);
             for (const booking of bookings) {
                 for (const item of booking.items) {
-                    for (let i = 0; i < item.quantity; i++) {
-                        const tempId = `${booking.id}_${item.id}_${i}`;
-                        if (tempId === ticketId) {
-                            ticket = {
-                                id: tempId,
-                                booking_id: booking.id,
-                                title: item.title,
-                                category: item.category,
-                                date: item.date,
-                                location: item.location,
-                                price: item.price,
-                                image: item.image,
-                                ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
-                                status: 'active',
-                                purchased_date: booking.booking_date,
-                                receipt_number: booking.receipt_number,
-                                quantity: item.quantity
-                            };
-                            break;
+                    if (item.ticket_codes) {
+                        for (let idx = 0; idx < item.ticket_codes.length; idx++) {
+                            const tempId = `${booking.id}_${item.id}_${idx}`;
+                            if (tempId === ticketId) {
+                                ticket = {
+                                    id: tempId,
+                                    booking_id: booking.id,
+                                    title: item.title,
+                                    category: item.category,
+                                    date: item.date,
+                                    location: item.location,
+                                    price: item.price,
+                                    image: item.image,
+                                    ticket_code: item.ticket_codes[idx],
+                                    status: 'active',
+                                    purchased_date: booking.booking_date,
+                                    receipt_number: booking.receipt_number,
+                                    quantity: 1
+                                };
+                                break;
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < item.quantity; i++) {
+                            const tempId = `${booking.id}_${item.id}_${i}`;
+                            if (tempId === ticketId) {
+                                ticket = {
+                                    id: tempId,
+                                    booking_id: booking.id,
+                                    title: item.title,
+                                    category: item.category,
+                                    date: item.date,
+                                    location: item.location,
+                                    price: item.price,
+                                    image: item.image,
+                                    ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
+                                    status: 'active',
+                                    purchased_date: booking.booking_date,
+                                    receipt_number: booking.receipt_number,
+                                    quantity: 1
+                                };
+                                break;
+                            }
                         }
                     }
                     if (ticket) break;
@@ -305,8 +361,23 @@ function loadQRCode() {
             const bookings = JSON.parse(savedBookings);
             for (const booking of bookings) {
                 for (const item of booking.items) {
-                    const tempCode = item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`;
-                    if (tempCode === ticketCode) {
+                    if (item.ticket_codes && item.ticket_codes.includes(ticketCode)) {
+                        ticket = {
+                            id: `${booking.id}_${item.id}_${item.ticket_codes.indexOf(ticketCode)}`,
+                            booking_id: booking.id,
+                            title: item.title,
+                            category: item.category,
+                            date: item.date,
+                            location: item.location,
+                            price: item.price,
+                            image: item.image,
+                            ticket_code: ticketCode,
+                            status: 'active',
+                            purchased_date: booking.booking_date,
+                            receipt_number: booking.receipt_number
+                        };
+                        break;
+                    } else if (item.ticket_code === ticketCode) {
                         ticket = {
                             id: `${booking.id}_${item.id}_0`,
                             booking_id: booking.id,
@@ -316,7 +387,7 @@ function loadQRCode() {
                             location: item.location,
                             price: item.price,
                             image: item.image,
-                            ticket_code: tempCode,
+                            ticket_code: ticketCode,
                             status: 'active',
                             purchased_date: booking.booking_date,
                             receipt_number: booking.receipt_number
@@ -546,6 +617,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Make functions globally available
 window.switchTab = switchTab;
 window.viewTicketDetail = viewTicketDetail;
 window.viewQRCode = viewQRCode;

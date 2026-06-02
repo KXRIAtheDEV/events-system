@@ -26,14 +26,16 @@
             </div>
         </div>
         
-        <!-- Stats Section - Modern Card Style -->
+        <!-- Stats Section - Modern Card Style with Counters -->
         <div class="stats-section">
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon-wrapper">
                         <i class="fas fa-calendar-check"></i>
                     </div>
-                    <div class="stat-number">500+</div>
+                    <div class="stat-number">
+                        <span class="counter" data-target="100">0</span>+
+                    </div>
                     <div class="stat-label">Events Hosted</div>
                     <p class="stat-description">Successfully hosted across Kenya</p>
                 </div>
@@ -42,7 +44,9 @@
                     <div class="stat-icon-wrapper">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="stat-number">50K+</div>
+                    <div class="stat-number">
+                        <span class="counter" data-target="1000">0</span>+
+                    </div>
                     <div class="stat-label">Happy Attendees</div>
                     <p class="stat-description">Satisfied customers served</p>
                 </div>
@@ -51,7 +55,9 @@
                     <div class="stat-icon-wrapper">
                         <i class="fas fa-building"></i>
                     </div>
-                    <div class="stat-number">200+</div>
+                    <div class="stat-number">
+                        <span class="counter" data-target="20">0</span>+
+                    </div>
                     <div class="stat-label">Event Organizers</div>
                     <p class="stat-description">Trusted partners nationwide</p>
                 </div>
@@ -60,7 +66,9 @@
                     <div class="stat-icon-wrapper">
                         <i class="fas fa-star"></i>
                     </div>
-                    <div class="stat-number">98%</div>
+                    <div class="stat-number">
+                        <span class="counter" data-target="98">0</span>%
+                    </div>
                     <div class="stat-label">Satisfaction Rate</div>
                     <p class="stat-description">Customer satisfaction rate</p>
                 </div>
@@ -129,27 +137,67 @@
             
             <div class="team-grid">
                 <div class="team-card">
-                    <div class="team-avatar">JD</div>
-                    <h3>John Doe</h3>
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/women/89.jpg" alt="Scholasticah Mutuku">
+                    </div>
+                    <h3>Scholasticah Mutuku</h3>
                     <p>Founder & CEO</p>
                 </div>
                 
                 <div class="team-card">
-                    <div class="team-avatar">JS</div>
-                    <h3>Jane Smith</h3>
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/men/54.jpg" alt="Edwin Nyambane">
+                    </div>
+                    <h3>Edwin Nyambane</h3>
+                    <p>Head of Technology</p>
+                </div>
+                
+                <div class="team-card">
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/women/16.jpg" alt="Yvonne Eshitemi">
+                    </div>
+                    <h3>Yvonne Eshitemi</h3>
                     <p>Head of Operations</p>
                 </div>
                 
                 <div class="team-card">
-                    <div class="team-avatar">MK</div>
-                    <h3>Michael Kim</h3>
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/men/80.jpg" alt="Wilson Thoma">
+                    </div>
+                    <h3>Wilson Thoma</h3>
                     <p>Technical Director</p>
                 </div>
                 
                 <div class="team-card">
-                    <div class="team-avatar">SW</div>
-                    <h3>Sarah Wang</h3>
-                    <p>Marketing Lead</p>
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/men/70.jpg" alt="Brad Omwamba">
+                    </div>
+                    <h3>Brad Omwamba</h3>
+                    <p>Product Manager</p>
+                </div>
+                
+                <div class="team-card">
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/women/90.jpg" alt="Bullim Njeri">
+                    </div>
+                    <h3>Bullim Njeri</h3>
+                    <p>Customer Success Lead</p>
+                </div>
+                
+                <div class="team-card">
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/men/55.jpg" alt="Toji Mraster">
+                    </div>
+                    <h3>Toji Mraster</h3>
+                    <p>Sales Director</p>
+                </div>
+                
+                <div class="team-card">
+                    <div class="team-avatar-img">
+                        <img src="https://randomuser.me/api/portraits/women/69.jpg" alt="Stacy Naomi">
+                    </div>
+                    <h3>Stacy Naomi</h3>
+                    <p>Community Manager</p>
                 </div>
             </div>
         </div>
@@ -167,4 +215,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/attendee/pages/about.js' %}"></script>
 {% endblock %}

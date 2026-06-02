@@ -1,5 +1,5 @@
 // ============================================
-// DASHBOARD MODULE - Fetches real data
+// DASHBOARD MODULE - Preserves user data
 // ============================================
 
 let allTickets = [];
@@ -37,27 +37,36 @@ function loadDashboardData() {
 
 function loadTicketsAndBookings() {
     try {
+        const savedTickets = localStorage.getItem('eventhub_tickets');
         const savedBookings = localStorage.getItem('eventhub_bookings');
+        
+        if (savedTickets && JSON.parse(savedTickets).length > 0) {
+            allTickets = JSON.parse(savedTickets);
+            console.log('Loaded tickets:', allTickets.length);
+        }
         
         if (savedBookings) {
             allBookings = JSON.parse(savedBookings);
+            console.log('Loaded bookings:', allBookings.length);
             
-            allTickets = [];
-            allBookings.forEach(booking => {
-                booking.items.forEach(item => {
-                    for (let i = 0; i < item.quantity; i++) {
-                        allTickets.push({
-                            id: `${item.id}_${i}`,
-                            title: item.title,
-                            date: item.date,
-                            location: item.location,
-                            price: item.price,
-                            image: item.image,
-                            booking_id: booking.id
-                        });
-                    }
+            if (!allTickets || allTickets.length === 0) {
+                allBookings.forEach(booking => {
+                    booking.items.forEach(item => {
+                        for (let i = 0; i < item.quantity; i++) {
+                            allTickets.push({
+                                id: `${item.id}_${i}`,
+                                title: item.title,
+                                date: item.date,
+                                location: item.location,
+                                price: item.price,
+                                image: item.image,
+                                booking_id: booking.id,
+                                category: item.category
+                            });
+                        }
+                    });
                 });
-            });
+            }
         }
         
         displayUpcomingTickets();
@@ -109,16 +118,6 @@ function loadRecentActivity() {
             time: booking.booking_date,
             icon: 'fa-receipt'
         });
-        
-        booking.items.forEach(item => {
-            activities.push({
-                type: 'ticket',
-                title: `Tickets Purchased`,
-                description: `${item.quantity} ticket(s) for ${item.title}`,
-                time: booking.booking_date,
-                icon: 'fa-ticket-alt'
-            });
-        });
     });
     
     activities.sort((a, b) => new Date(b.time) - new Date(a.time));
@@ -154,44 +153,60 @@ function loadStats() {
     today.setHours(0, 0, 0, 0);
     const upcomingEvents = allTickets.filter(ticket => new Date(ticket.date) >= today).length;
     
-    const reviews = JSON.parse(localStorage.getItem('eventhub_reviews') || '{}');
-    let reviewsCount = 0;
-    Object.keys(reviews).forEach(eventId => {
-        reviewsCount += reviews[eventId].length;
-    });
-    
     document.getElementById('totalTickets').textContent = totalTickets;
     document.getElementById('totalSpent').textContent = formatCurrency(totalSpent);
     document.getElementById('upcomingEvents').textContent = upcomingEvents;
-    document.getElementById('reviewsWritten').textContent = reviewsCount;
-    
-    const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-    const memberSince = user.date_joined || (allBookings.length > 0 ? allBookings[allBookings.length - 1].booking_date : new Date().toISOString());
-    document.getElementById('memberSince').textContent = formatDate(memberSince);
+    document.getElementById('reviewsWritten').textContent = '0';
     
     const pastEvents = allTickets.filter(ticket => new Date(ticket.date) < today).length;
     document.getElementById('eventsAttended').textContent = pastEvents;
-    
-    // Calculate favorite category
-    const categoryCount = {};
-    allTickets.forEach(ticket => {
-        const cat = ticket.category || 'General';
-        categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-    });
-    let favoriteCategory = '-';
-    let maxCount = 0;
-    for (const [cat, count] of Object.entries(categoryCount)) {
-        if (count > maxCount) {
-            maxCount = count;
-            favoriteCategory = cat;
-        }
-    }
-    document.getElementById('favoriteCategory').textContent = favoriteCategory;
 }
 
 function refreshActivity() {
     loadRecentActivity();
+<<<<<<< HEAD
     showToast('Activity refreshed!', 'success');
+=======
+    showToast('Activity refreshed', 'success');
+}
+
+function setupAutoRefresh() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+        loadStats();
+        loadRecentActivity();
+    }, 60000);
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'booking': 'fa-ticket-alt',
+        'payment': 'fa-credit-card',
+        'refund': 'fa-undo-alt',
+        'review': 'fa-star',
+        'checkin': 'fa-check-circle',
+        'wishlist': 'fa-heart',
+        'profile': 'fa-user-edit',
+        'default': 'fa-bell'
+    };
+    return icons[type] || icons.default;
+}
+
+function viewTicket(ticketId) {
+    window.location.href = `/attendee/tickets/detail/?ticket=${ticketId}`;
+}
+
+function viewEvent(eventId) {
+    window.location.href = `/events/detail/?id=${eventId}`;
+}
+
+function formatNumber(num) {
+    return Number(num).toLocaleString('en-KE');
+}
+
+function formatCurrency(amount) {
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
+>>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
 }
 
 function formatDate(dateString) {
@@ -237,32 +252,20 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showToast(message, type = 'success') {
+function showToast(message, type) {
     const existingToast = document.querySelector('.custom-toast');
     if (existingToast) existingToast.remove();
     
     const toast = document.createElement('div');
-    toast.className = `custom-toast toast-${type}`;
     toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 10000;
-        padding: 12px 20px;
-        border-radius: 12px;
-        color: white;
-        font-size: 0.85rem;
+        position: fixed; bottom: 20px; right: 20px; z-index: 10000;
+        padding: 12px 20px; border-radius: 12px; color: white;
         background: ${type === 'success' ? '#10b981' : '#3b82f6'};
-        animation: slideInRight 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        animation: slideInRight 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     `;
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${message}`;
     document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 window.refreshActivity = refreshActivity;

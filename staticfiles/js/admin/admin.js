@@ -34,7 +34,11 @@ async function apiRequest(url, method = 'GET', data = null) {
         }
         
         if (!response.ok) {
-            throw new Error(result.message || result.error || result.detail || 'Request failed');
+            const errorObj = new Error(result.message || result.error || result.detail || 'Request failed');
+            if (result.admin_details) {
+                errorObj.adminDetails = result.admin_details;
+            }
+            throw errorObj;
         }
         
         return result;
@@ -48,7 +52,7 @@ async function apiRequest(url, method = 'GET', data = null) {
         
         // Suppress 404 Not Found from showing toast popups automatically
         if (!msg.includes('404')) {
-            showToast(msg, 'error');
+            showToast(msg, 'error', error.adminDetails);
         }
         throw error;
     }
@@ -71,19 +75,54 @@ function getCSRFToken() {
 }
 
 // Toast Notification - Bottom Right
-function showToast(message, type = 'success') {
+function showToast(message, type = 'success', adminDetails = null) {
     const toast = document.createElement('div');
     toast.className = `admin-toast ${type === 'error' ? 'toast-error' : ''}`;
-    toast.innerHTML = `
+    
+    let innerHTML = `
         <i class="ri-${type === 'success' ? 'checkbox-circle-line' : 'error-warning-line'}"></i>
-        <span>${message}</span>
+        <span>${escapeHtml(message)}</span>
     `;
+    
+    if (adminDetails) {
+        const detailsId = 'error-details-' + Math.random().toString(36).substr(2, 9);
+        innerHTML += `
+            <div style="margin-top: 8px; width: 100%;">
+                <button type="button" class="btn btn-sm btn-outline-danger" 
+                        aria-expanded="false" aria-controls="${detailsId}"
+                        onclick="const d = document.getElementById('${detailsId}'); const expanded = d.style.display === 'block'; d.style.display = expanded ? 'none' : 'block'; this.setAttribute('aria-expanded', !expanded); event.stopPropagation();">
+                    View Details
+                </button>
+                <div id="${detailsId}" style="display: none; margin-top: 8px; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 200px; font-family: monospace; font-size: 11px; color: #dc3545; text-align: left;">
+                    <pre style="margin:0;">${escapeHtml(adminDetails)}</pre>
+                </div>
+            </div>
+        `;
+        toast.style.flexDirection = 'column';
+        toast.style.alignItems = 'flex-start';
+    }
+    
+    toast.innerHTML = innerHTML;
     document.body.appendChild(toast);
     
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    // Auto-dismiss only if no admin details are shown, or maybe increase timeout
+    if (!adminDetails) {
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    } else {
+        // Add a close button for dismissible error toast
+        const closeBtn = document.createElement('i');
+        closeBtn.className = 'ri-close-line';
+        closeBtn.style.cssText = 'position: absolute; top: 12px; right: 12px; cursor: pointer; font-size: 16px;';
+        closeBtn.onclick = () => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        };
+        toast.appendChild(closeBtn);
+        toast.style.paddingRight = '32px';
+    }
 }
 
 // Format Currency
@@ -277,16 +316,45 @@ function displayNotifications(notifications, unreadCount) {
     if (!notifications || notifications.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="ri-mail-line"></i><p>No notifications</p></div>';
     } else {
-        container.innerHTML = notifications.map(n => `
-            <div class="notification-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}">
-                <div class="notification-content">
-                    <div class="notification-title">${escapeHtml(n.title)}</div>
-                    <div class="notification-message">${escapeHtml(n.message)}</div>
-                    <div class="notification-time">${formatRelativeTime(n.created_at)}</div>
+        container.innerHTML = notifications.map(n => {
+            // Determine dynamic redirect URL based on notification contents
+            let redirectUrl = '/admin-portal/dashboard/';
+            const title = n.title ? n.title.toLowerCase() : '';
+            const msg = n.message ? n.message.toLowerCase() : '';
+
+            if (title.includes('event') || msg.includes('event')) {
+                if (title.includes('submit') || title.includes('pending') || title.includes('draft') || msg.includes('approval') || msg.includes('submit')) {
+                    redirectUrl = '/admin-portal/events/pending/';
+                } else {
+                    redirectUrl = '/admin-portal/events/all/';
+                }
+            } else if (title.includes('refund') || msg.includes('refund')) {
+                redirectUrl = '/admin-portal/bookings/refunds/';
+            } else if (title.includes('organizer') || msg.includes('organizer')) {
+                redirectUrl = '/admin-portal/users/organizers/';
+            } else if (title.includes('user') || msg.includes('user') || title.includes('registration') || msg.includes('registration')) {
+                redirectUrl = '/admin-portal/users/';
+            } else if (title.includes('support') || title.includes('ticket') || msg.includes('support') || msg.includes('ticket')) {
+                redirectUrl = '/admin-portal/support/';
+            } else if (title.includes('payment') || title.includes('transaction') || msg.includes('payment') || msg.includes('transaction')) {
+                redirectUrl = '/admin-portal/payments/';
+            } else if (title.includes('payout') || msg.includes('payout')) {
+                redirectUrl = '/admin-portal/payments/payouts/';
+            }
+
+            return `
+                <div class="notification-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}" style="cursor: pointer;" onclick="handleNotificationClick(event, ${n.id}, '${redirectUrl}')">
+                    <div class="notification-content">
+                        <div class="notification-title">${escapeHtml(n.title)}</div>
+                        <div class="notification-message">${escapeHtml(n.message)}</div>
+                        <div class="notification-time">${formatRelativeTime(n.created_at)}</div>
+                    </div>
+                    <a href="/admin-portal/settings/general/" class="mark-read" title="Information: View general settings & privacy policy" onclick="event.stopPropagation();" style="color: var(--success); font-size: 1.15rem; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 4px;">
+                        <i class="ri-info-circle-line"></i>
+                    </a>
                 </div>
-                ${!n.is_read ? `<button class="mark-read" onclick="markNotificationRead(${n.id})">âœ“</button>` : ''}
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
     
     const badge = document.getElementById('notificationBadge');
@@ -299,6 +367,21 @@ function displayNotifications(notifications, unreadCount) {
         }
     }
 }
+
+window.handleNotificationClick = async function(event, notificationId, redirectUrl) {
+    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+    if (item && item.classList.contains('unread')) {
+        try {
+            await fetch(`/api/admin/notifications/${notificationId}/read/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            });
+        } catch (error) {
+            console.error('Error marking as read on click:', error);
+        }
+    }
+    window.location.href = redirectUrl;
+};
 
 window.markNotificationRead = async function(notificationId) {
     try {

@@ -173,14 +173,6 @@
         toggleIcon.classList.toggle('fa-eye-slash');
     }
     
-    function showToast(message, type) {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-    
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -225,18 +217,9 @@
                 const selectedRole = data.role;
                 const prefix = userRole === 'organizer' ? 'organizer' : 'attendee';
                 
-                const expiry = new Date().getTime() + (24 * 60 * 60 * 1000);
-                
                 localStorage.setItem(`${prefix}_access_token`, body.access);
                 localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
                 localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
-                localStorage.setItem('attendee_access_token', body.access);
-                localStorage.setItem('attendee_user', JSON.stringify(body.user));
-                localStorage.setItem('attendee_token_expiry', expiry.toString());
-                
-                window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-                    detail: { isLoggedIn: true, user: body.user } 
-                }));
                 
                 if (selectedRole === 'organizer' && userRole === 'attendee') {
                     showToast('You are not an organizer and cannot login as one. Redirecting to attendee dashboard...', 'error');
@@ -251,12 +234,10 @@
                 } else {
                     showToast('Welcome back! Redirecting...', 'success');
                     setTimeout(() => {
-                        const redirectUrl = localStorage.getItem('redirect_after_login');
-                        localStorage.removeItem('redirect_after_login');
                         if (userRole === 'organizer') {
-                            window.location.href = redirectUrl || '/organizer/dashboard/';
+                            window.location.href = '/organizer/dashboard/';
                         } else {
-                            window.location.href = redirectUrl || '/dashboard/';
+                            window.location.href = '/dashboard/';
                         }
                     }, 1000);
                 }
@@ -267,11 +248,18 @@
             }
         })
         .catch(error => {
-            console.error('Login error:', error);
             showToast('Network error. Please try again.', 'error');
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         });
     });
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
 </script>
 {% endblock %}

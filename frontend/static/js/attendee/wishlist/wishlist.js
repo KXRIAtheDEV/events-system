@@ -1,6 +1,6 @@
 // ============================================
 // WISHLIST JS - Works with event IDs from localStorage
-// Fetches full event data from eventsCatalog
+// Fetches full event data from API
 // ============================================
 
 let wishlistIds = [];
@@ -19,17 +19,27 @@ const modal = document.getElementById('shareModal');
 const shareLink = document.getElementById('shareLink');
 let currentShareEvent = null;
 
-// Import events from the global eventsCatalog if available
-function getEventById(eventId) {
-    // Try to get from window.MOCK_EVENTS_DATA first (from event detail page)
-    if (window.MOCK_EVENTS_DATA && window.MOCK_EVENTS_DATA.getEventById) {
-        const event = window.MOCK_EVENTS_DATA.getEventById(eventId);
-        if (event) return event;
+// API endpoints
+const API = {
+    events: '/api/attendee/events/',
+    cart: '/api/attendee/cart/',
+    wishlist: '/api/attendee/wishlist/'
+};
+
+// Fetch event by ID from API
+async function getEventById(eventId) {
+    try {
+        const response = await fetch(`${API.events}${eventId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.event) {
+            return data.event;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching event:', error);
+        return null;
     }
-    
-    // Fallback events catalog
-    
-    return eventsCatalog.find(e => e.id == eventId);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -65,9 +75,8 @@ function setupModalClose() {
     window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
-function loadWishlist() {
+async function loadWishlist() {
     try {
-        // Get wishlist IDs from localStorage (what event detail page stores)
         const saved = localStorage.getItem('event_wishlist');
         console.log('Raw wishlist IDs:', saved);
         
@@ -77,10 +86,10 @@ function loadWishlist() {
             wishlistIds = [];
         }
         
-        // Convert IDs to full event objects
         wishlistItems = [];
-        wishlistIds.forEach(id => {
-            const event = getEventById(id);
+        
+        for (const id of wishlistIds) {
+            const event = await getEventById(id);
             if (event) {
                 wishlistItems.push({
                     id: event.id,
@@ -94,7 +103,7 @@ function loadWishlist() {
                     added_at: new Date().toISOString()
                 });
             }
-        });
+        }
         
         console.log('Loaded wishlist items:', wishlistItems.length);
         
@@ -170,12 +179,10 @@ function displayWishlist(items) {
     `).join('');
 }
 
-function removeFromWishlist(eventId) {
-    // Remove from IDs array
+async function removeFromWishlist(eventId) {
     wishlistIds = wishlistIds.filter(id => id != eventId);
     localStorage.setItem('event_wishlist', JSON.stringify(wishlistIds));
     
-    // Remove from items array
     wishlistItems = wishlistItems.filter(item => item.id != eventId);
     
     filterAndDisplay();
@@ -185,7 +192,7 @@ function removeFromWishlist(eventId) {
     window.dispatchEvent(new CustomEvent('wishlist-updated'));
 }
 
-function clearAllWishlist() {
+async function clearAllWishlist() {
     if (wishlistItems.length === 0) return;
     if (!confirm('Clear your entire wishlist?')) return;
     
@@ -200,7 +207,7 @@ function clearAllWishlist() {
     window.dispatchEvent(new CustomEvent('wishlist-updated'));
 }
 
-function addToCart(eventId) {
+async function addToCart(eventId) {
     const token = localStorage.getItem('attendee_access_token');
     if (!token) {
         showToast('Please login to book tickets', 'info');

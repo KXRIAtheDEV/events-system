@@ -28,8 +28,14 @@
 .welcome-content h1 {
     font-family: 'Kaushan Script', cursive;
     font-size: 1.8rem;
+<<<<<<< HEAD
     color: #1e293b;
     margin-bottom: 0.3rem;
+=======
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #ffffff;
+>>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
 }
 
 .welcome-content h1 span {

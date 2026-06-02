@@ -4,6 +4,52 @@ console.log('Events.js loaded');
 let currentCategory = "all";
 let currentSearch = "";
 let filteredEvents = [];
+let eventsCatalog = [];
+
+// API endpoints
+const API = {
+    events: '/api/attendee/events/',
+    categories: '/api/attendee/categories/',
+};
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 20px;
+        border-radius: 12px;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideInRight 0.3s ease;
+    `;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'TBA';
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function loadEventsFromAPI() {
+    try {
+        let url = API.events;
+        if (currentCategory !== 'all') {
+            url += `?category=${currentCategory}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            eventsCatalog = data.events || [];
         } else {
             console.error('Failed to load events:', data.message);
             eventsCatalog = [];
@@ -36,7 +82,6 @@ async function addFilters() {
     const header = container.querySelector('.events-header');
     if (!header) return;
     
-    // Load categories from API
     const categoriesData = await loadCategoriesFromAPI();
     
     const categories = [
@@ -75,7 +120,6 @@ async function addFilters() {
 }
 
 async function filterEvents() {
-    // Load fresh events from API
     await loadEventsFromAPI();
     
     let filtered = [...eventsCatalog];
@@ -89,7 +133,6 @@ async function filterEvents() {
     renderEvents();
 }
 
-// Store FULL event object in wishlist
 function toggleWishlist(id, btn) {
     const token = localStorage.getItem('attendee_access_token');
     if (!token) {
@@ -98,7 +141,6 @@ function toggleWishlist(id, btn) {
         return;
     }
     
-    // Find the full event object
     const event = eventsCatalog.find(e => e.id == id);
     if (!event) return;
     
@@ -130,7 +172,6 @@ function toggleWishlist(id, btn) {
     localStorage.setItem('event_wishlist', JSON.stringify(wishlist));
     window.dispatchEvent(new Event('wishlist-updated'));
     
-    // Update badge
     const badge = document.getElementById('wishlistBadgeDropdown');
     if (badge) {
         badge.textContent = wishlist.length;
@@ -249,7 +290,6 @@ function bookTicket(id) {
     showToast(`${event.title} added to booking cart!`, 'success');
 }
 
-// Add animation styles
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideInRight {

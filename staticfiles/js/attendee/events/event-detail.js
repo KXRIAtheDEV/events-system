@@ -1,34 +1,44 @@
-// EVENT DETAIL MODULE - With 4 Tabs: Details, Location, Directions, Reviews
+// EVENT DETAIL MODULE - Live API Integration
 console.log('Event detail loaded');
 
 const urlParams = new URLSearchParams(window.location.search);
 const eventId = urlParams.get('id');
-let currentEvent = null;
-let currentQuantity = 1;
-let userLocation = null;
+let eventData = null;
+
+// API endpoints
+const API = {
+    event: '/api/attendee/events/',
+    cart: '/api/attendee/cart/',
+    wishlist: '/api/attendee/wishlist/',
+    reviews: '/api/attendee/reviews/'
+};
 
 function showToast(message, type = 'success') {
     const existing = document.querySelector('.custom-toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 20px;
+        border-radius: 12px;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideInRight 0.3s ease;
+    `;
     toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i><span>${message}</span>`;
     document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    setTimeout(() => toast.remove(), 3000);
 }
 
 function renderStars(rating) {
-    if (rating === 0) return '<i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>';
+    if (!rating || rating === 0) return '<i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>';
     const fullStars = Math.floor(rating);
     const hasHalf = rating % 1 >= 0.5;
     let stars = '';
@@ -45,170 +55,383 @@ function renderStars(rating) {
 }
 
 function formatDate(dateString) {
+    if (!dateString) return 'TBA';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function getEventReviews(eventId) {
-    if (!window.MOCK_EVENTS_DATA) return [];
-    return window.MOCK_EVENTS_DATA.getReviews(eventId);
-}
-
-function getAverageRating(eventId) {
-    const reviews = getEventReviews(eventId);
-    if (reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-    return sum / reviews.length;
-}
-
-function renderReviewsList(eventId) {
-    const reviews = getEventReviews(eventId);
-    if (reviews.length === 0) {
-        return '<div class="empty-state">No reviews yet. Be the first to review this event!</div>';
+async function loadEventDetails() {
+    const container = document.getElementById('eventDetailContainer');
+    if (!container) return;
+    
+    if (!eventId) {
+        container.innerHTML = '<div class="error-state">Event not found</div>';
+        return;
     }
+    
+    try {
+        const response = await fetch(`${API.event}${eventId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.event) {
+            eventData = data.event;
+            renderEventDetails(eventData);
+            await loadReviews();
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h2>Event Not Found</h2>
+                    <p>The event you're looking for doesn't exist or has been removed.</p>
+                    <a href="/events/" class="btn-primary">Browse Events</a>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading event:', error);
+        container.innerHTML = '<div class="error-state">Failed to load event details</div>';
+    }
+}
+
+async function loadReviews() {
+    try {
+        const response = await fetch(`${API.reviews}?event_id=${eventId}`);
+        const data = await response.json();
+        
+        const reviewsList = document.getElementById('reviewsList');
+        if (reviewsList) {
+            if (data.reviews && data.reviews.length > 0) {
+                reviewsList.innerHTML = renderReviewsList(data.reviews);
+            } else {
+                reviewsList.innerHTML = '<div class="empty-state">No reviews yet. Be the first to review this event!</div>';
+            }
+        }
+        
+        // Update rating display
+        if (data.avg_rating) {
+            const ratingNumber = document.querySelector('.rating-number');
+            const starsLarge = document.querySelector('.stars-large');
+            const reviewCount = document.querySelector('.review-count');
+            
+            if (ratingNumber) ratingNumber.textContent = data.avg_rating.toFixed(1);
+            if (starsLarge) starsLarge.innerHTML = renderStars(data.avg_rating);
+            if (reviewCount) reviewCount.textContent = `Based on ${data.total_reviews || 0} reviews`;
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+    }
+}
+
+function renderReviewsList(reviews) {
     return reviews.map(review => `
         <div class="review-card">
             <div class="review-header">
                 <div class="reviewer-info">
-                    <div class="reviewer-avatar">${review.userName.charAt(0)}</div>
+                    <div class="reviewer-avatar">${(review.user_name || 'U').charAt(0)}</div>
                     <div>
-                        <div class="reviewer-name">${review.userName}</div>
-                        <div class="review-date">${new Date(review.created_at).toLocaleDateString()}</div>
+                        <div class="reviewer-name">${escapeHtml(review.user_name || 'Anonymous')}</div>
+                        <div class="review-date">${formatDate(review.created_at)}</div>
                     </div>
                 </div>
                 <div class="review-rating">${renderStars(review.rating)}</div>
             </div>
-            <div class="review-title">${review.title}</div>
-            <div class="review-content">${review.content}</div>
+            <div class="review-title">${escapeHtml(review.title)}</div>
+            <div class="review-content">${escapeHtml(review.content)}</div>
         </div>
     `).join('');
 }
 
-function updateReviewsUI(eventId) {
-    const avgRating = getAverageRating(eventId);
-    const reviewsCount = getEventReviews(eventId).length;
-    const ratingNumber = document.querySelector('.rating-number');
-    const starsLarge = document.querySelector('.stars-large');
-    const reviewCount = document.querySelector('.review-count');
-    const reviewsList = document.getElementById('reviewsList');
+function renderEventDetails(event) {
+    const container = document.getElementById('eventDetailContainer');
+    if (!container) return;
     
-    if (ratingNumber) ratingNumber.textContent = avgRating.toFixed(1);
-    if (starsLarge) starsLarge.innerHTML = renderStars(avgRating);
-    if (reviewCount) reviewCount.textContent = `Based on ${reviewsCount} reviews`;
-    if (reviewsList) reviewsList.innerHTML = renderReviewsList(eventId);
+    const wishlist = JSON.parse(localStorage.getItem('event_wishlist') || '[]');
+    const isInWishlist = wishlist.some(item => item.id == event.id);
+    
+    container.innerHTML = `
+        <div class="event-content-wrapper">
+            <div class="event-main">
+                <div class="event-breadcrumb">
+                    <a href="/">Home</a> / 
+                    <a href="/events/">Events</a> / 
+                    <span>${escapeHtml(event.title)}</span>
+                </div>
+                
+                <div class="event-image-container">
+                    <img src="${event.image || '/static/images/placeholder.jpg'}" alt="${event.title}" class="event-main-image" onerror="this.src='/static/images/placeholder.jpg'">
+                    ${event.is_featured ? '<div class="event-featured-badge">Featured</div>' : ''}
+                </div>
+                
+                <div class="event-title-section">
+                    <h1>${escapeHtml(event.title)}</h1>
+                    <div class="event-rating">
+                        <div class="stars">${renderStars(event.avg_rating || 0)}</div>
+                        <span class="rating-count">(${event.review_count || 0} reviews)</span>
+                    </div>
+                </div>
+                
+                <div class="event-meta">
+                    <span><i class="fas fa-calendar"></i> ${formatDate(event.date)} at ${event.time || 'TBA'}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location)}</span>
+                    <span><i class="fas fa-ticket-alt"></i> ${event.available_tickets || 0} tickets left</span>
+                </div>
+                
+                <a href="https://maps.google.com/?q=${encodeURIComponent(event.location)}" target="_blank" class="directions-btn">
+                    <i class="fas fa-directions"></i> Get Directions
+                </a>
+                
+                <div class="event-tabs">
+                    <button class="tab-btn active" data-tab="details">Details</button>
+                    <button class="tab-btn" data-tab="organizer">Organizer</button>
+                    <button class="tab-btn" data-tab="reviews">Reviews</button>
+                </div>
+                
+                <div id="detailsTab" class="tab-content active">
+                    <div class="event-description">
+                        <h3><i class="fas fa-info-circle"></i> About This Event</h3>
+                        <p>${escapeHtml(event.description || 'No description available.')}</p>
+                    </div>
+                    
+                    <div class="event-venue">
+                        <h3><i class="fas fa-map-marker-alt"></i> Venue Information</h3>
+                        <p><strong>Venue:</strong> ${escapeHtml(event.venue || event.location)}</p>
+                        <p><strong>Address:</strong> ${escapeHtml(event.location)}</p>
+                        ${event.parking_available ? '<p><i class="fas fa-parking"></i> Free parking available</p>' : '<p><i class="fas fa-parking"></i> Limited street parking</p>'}
+                        ${event.wheelchair_accessible ? '<p><i class="fas fa-wheelchair"></i> Wheelchair accessible</p>' : ''}
+                    </div>
+                </div>
+                
+                <div id="organizerTab" class="tab-content">
+                    <div class="organizer-info">
+                        <h3><i class="fas fa-building"></i> About the Organizer</h3>
+                        <p><strong>${escapeHtml(event.organizer || 'EventHub')}</strong></p>
+                        ${event.organizer_email ? `<p><i class="fas fa-envelope"></i> <a href="mailto:${event.organizer_email}">${event.organizer_email}</a></p>` : ''}
+                        ${event.organizer_phone ? `<p><i class="fas fa-phone"></i> <a href="tel:${event.organizer_phone}">${event.organizer_phone}</a></p>` : ''}
+                        <div class="refund-policy">
+                            <i class="fas fa-ticket-alt"></i>
+                            <strong>Refund Policy:</strong> ${event.refund_policy || 'Standard refund policy applies'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="reviewsTab" class="tab-content">
+                    <div class="reviews-summary">
+                        <div class="average-rating">
+                            <div class="rating-number">${(event.avg_rating || 0).toFixed(1)}</div>
+                            <div class="stars-large">${renderStars(event.avg_rating || 0)}</div>
+                            <div class="review-count">Based on ${event.review_count || 0} reviews</div>
+                        </div>
+                        <button id="writeReviewBtn" class="write-review-btn">Write a Review</button>
+                    </div>
+                    <div id="reviewsList" class="reviews-list">
+                        <div class="loading-state">Loading reviews...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="event-sidebar">
+                <div class="ticket-card">
+                    <h3>Get Your Tickets</h3>
+                    <div class="ticket-price-info">
+                        <span class="current-price">KES ${(event.price || 0).toLocaleString()}</span>
+                        ${event.original_price ? `<span class="original-price">KES ${event.original_price.toLocaleString()}</span>` : ''}
+                    </div>
+                    <div class="ticket-availability">
+                        <i class="fas fa-check-circle"></i> ${event.available_tickets || 0} tickets available
+                    </div>
+                    
+                    <div class="ticket-quantity">
+                        <label>Quantity</label>
+                        <div class="quantity-selector">
+                            <button class="qty-btn" id="decreaseQty">-</button>
+                            <input type="number" id="ticketQuantity" value="1" min="1" max="${event.available_tickets || 10}">
+                            <button class="qty-btn" id="increaseQty">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-total">
+                        <span>Total:</span>
+                        <span class="total-amount" id="totalAmount">KES ${(event.price || 0).toLocaleString()}</span>
+                    </div>
+                    
+                    <button id="bookNowBtn" class="book-now-btn">
+                        <i class="fas fa-ticket-alt"></i> Book Ticket
+                    </button>
+                    
+                    <button id="wishlistBtn" class="wishlist-sidebar-btn ${isInWishlist ? 'active' : ''}">
+                        <i class="fas fa-heart"></i> ${isInWishlist ? 'Saved to Wishlist' : 'Save to Wishlist'}
+                    </button>
+                    
+                    <div class="ticket-info">
+                        <p><i class="fas fa-shield-alt"></i> Secure booking</p>
+                        <p><i class="fas fa-envelope"></i> E-tickets sent instantly</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    setupTabs();
+    setupQuantitySelector(event);
+    setupBookButton(event);
+    setupWishlistButton(event);
+    setupReviewModal(event);
 }
 
-// Location Functions
-function getUserLocation() {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error('Geolocation not supported'));
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-                resolve(userLocation);
-            },
-            (error) => {
-                let errorMessage = 'Unable to get location';
-                if (error.code === 1) errorMessage = 'Location permission denied';
-                reject(new Error(errorMessage));
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
+function setupTabs() {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.dataset.tab;
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`${tabId}Tab`).classList.add('active');
+        });
     });
 }
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
-
-async function getCoordinatesFromAddress(address) {
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-        const data = await response.json();
-        if (data && data.length > 0) {
-            return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-        }
-        return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        return null;
-    }
-}
-
-async function handleLiveLocation() {
-    const locationStatus = document.getElementById('locationStatus');
-    if (locationStatus) {
-        locationStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting your location...';
-        locationStatus.style.display = 'flex';
+function setupQuantitySelector(event) {
+    let quantity = 1;
+    const qtyInput = document.getElementById('ticketQuantity');
+    const totalSpan = document.getElementById('totalAmount');
+    const decreaseBtn = document.getElementById('decreaseQty');
+    const increaseBtn = document.getElementById('increaseQty');
+    
+    function updateTotal() {
+        const total = quantity * (event.price || 0);
+        totalSpan.textContent = `KES ${total.toLocaleString()}`;
     }
     
-    try {
-        await getUserLocation();
-        const eventCoords = await getCoordinatesFromAddress(currentEvent.location);
-        if (eventCoords) {
-            currentEvent.coordinates = { lat: eventCoords.lat, lon: eventCoords.lon };
-        }
-        if (locationStatus) {
-            locationStatus.innerHTML = '<i class="fas fa-check-circle"></i> ✅ Location detected!';
-            locationStatus.style.background = '#d1fae5';
-            setTimeout(() => locationStatus.style.display = 'none', 3000);
-        }
-        updateDistanceAndMap();
-        showToast('Location detected!', 'success');
-    } catch (error) {
-        if (locationStatus) {
-            locationStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ⚠️ ${error.message}`;
-            locationStatus.style.background = '#fee2e2';
-            setTimeout(() => locationStatus.style.display = 'none', 5000);
-        }
-        showToast(error.message, 'error');
+    if (decreaseBtn) {
+        decreaseBtn.onclick = () => {
+            if (quantity > 1) {
+                quantity--;
+                if (qtyInput) qtyInput.value = quantity;
+                updateTotal();
+            }
+        };
+    }
+    
+    if (increaseBtn) {
+        increaseBtn.onclick = () => {
+            if (quantity < (event.available_tickets || 10)) {
+                quantity++;
+                if (qtyInput) qtyInput.value = quantity;
+                updateTotal();
+            }
+        };
+    }
+    
+    if (qtyInput) {
+        qtyInput.onchange = () => {
+            quantity = parseInt(qtyInput.value) || 1;
+            if (quantity < 1) quantity = 1;
+            if (quantity > (event.available_tickets || 10)) quantity = event.available_tickets || 10;
+            qtyInput.value = quantity;
+            updateTotal();
+        };
     }
 }
 
-function updateDistanceAndMap() {
-    const distanceElement = document.getElementById('distanceInfo');
-    const mapFrame = document.querySelector('#directionsTab .location-map iframe');
+function setupBookButton(event) {
+    const bookBtn = document.getElementById('bookNowBtn');
+    if (!bookBtn) return;
     
-    if (userLocation && currentEvent.coordinates) {
-        const distance = calculateDistance(
-            userLocation.lat, userLocation.lng,
-            currentEvent.coordinates.lat, currentEvent.coordinates.lon
-        );
-        let distanceText = distance < 1 ? `${Math.round(distance * 1000)}m away` : 
-                          distance < 10 ? `${distance.toFixed(1)}km away` : 
-                          `${Math.round(distance)}km away`;
-        if (distanceElement) {
-            distanceElement.innerHTML = `<i class="fas fa-location-dot"></i> 📍 ${distanceText} from your location`;
-            distanceElement.style.display = 'flex';
+    bookBtn.onclick = () => {
+        const token = localStorage.getItem('attendee_access_token');
+        if (!token) {
+            showToast('Please login to book tickets', 'info');
+            setTimeout(() => window.location.href = '/login/', 1500);
+            return;
         }
         
-        if (mapFrame) {
-            const mapUrl = `https://maps.google.com/maps?q=${userLocation.lat},${userLocation.lng}&q=${encodeURIComponent(currentEvent.location)}&output=embed`;
-            mapFrame.src = mapUrl;
+        const quantity = parseInt(document.getElementById('ticketQuantity')?.value || 1);
+        
+        let cart = localStorage.getItem('eventhub_cart');
+        if (cart) {
+            try {
+                cart = JSON.parse(cart);
+            } catch(e) {
+                cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+            }
+        } else {
+            cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
         }
-    }
+        
+        const existingItem = cart.items.find(i => i.id == event.id);
+        if (existingItem) {
+            showToast(`${event.title} is already in your cart!`, 'info');
+            setTimeout(() => window.location.href = '/cart/', 1000);
+            return;
+        }
+        
+        cart.items.push({
+            id: event.id,
+            title: event.title,
+            price: event.price,
+            quantity: quantity,
+            image: event.image,
+            location: event.location,
+            date: event.date,
+            category: event.category_name
+        });
+        
+        cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
+        cart.total = cart.subtotal + cart.platform_fee;
+        
+        localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+        window.dispatchEvent(new Event('cart-updated'));
+        
+        showToast(`${quantity} ticket(s) added to cart! Redirecting...`, 'success');
+        setTimeout(() => window.location.href = '/cart/', 1000);
+    };
 }
 
-function getDirectionsFromLocation() {
-    if (!userLocation) {
-        showToast('Please get your location first', 'info');
-        return;
-    }
-    const directionsUrl = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${encodeURIComponent(currentEvent.location)}`;
-    window.open(directionsUrl, '_blank');
+function setupWishlistButton(event) {
+    const wishlistBtn = document.getElementById('wishlistBtn');
+    if (!wishlistBtn) return;
+    
+    wishlistBtn.onclick = () => {
+        const token = localStorage.getItem('attendee_access_token');
+        if (!token) {
+            showToast('Please login to save to wishlist', 'info');
+            setTimeout(() => window.location.href = '/login/', 1500);
+            return;
+        }
+        
+        let wishlist = JSON.parse(localStorage.getItem('event_wishlist') || '[]');
+        const exists = wishlist.some(item => item.id == event.id);
+        
+        if (!exists) {
+            wishlist.push({
+                id: event.id,
+                title: event.title,
+                price: event.price,
+                image: event.image,
+                location: event.location,
+                date: event.date,
+                category: event.category_name,
+                added_at: new Date().toISOString()
+            });
+            wishlistBtn.classList.add('active');
+            wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Saved to Wishlist';
+            showToast('Event saved to wishlist!', 'success');
+        } else {
+            wishlist = wishlist.filter(item => item.id != event.id);
+            wishlistBtn.classList.remove('active');
+            wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Save to Wishlist';
+            showToast('Event removed from wishlist', 'info');
+        }
+        
+        localStorage.setItem('event_wishlist', JSON.stringify(wishlist));
+        window.dispatchEvent(new Event('wishlist-updated'));
+    };
 }
 
-function setupReviewModal(eventId) {
+function setupReviewModal(event) {
     const modal = document.getElementById('reviewModal');
     const writeBtn = document.getElementById('writeReviewBtn');
     const closeBtn = document.querySelector('.modal-close');
@@ -222,24 +445,33 @@ function setupReviewModal(eventId) {
             setTimeout(() => window.location.href = '/login/', 1500);
             return;
         }
-        modal.style.display = 'flex';
+        if (modal) modal.style.display = 'flex';
         resetRatingStars();
     };
     
-    if (closeBtn) closeBtn.onclick = () => {
-        modal.style.display = 'none';
-        resetReviewForm();
-    };
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            if (modal) modal.style.display = 'none';
+            resetReviewForm();
+        };
+    }
     
-    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    if (modal) {
+        window.onclick = (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                resetReviewForm();
+            }
+        };
+    }
     
     setupRatingStars();
     
     const reviewForm = document.getElementById('reviewForm');
     if (reviewForm) {
-        reviewForm.onsubmit = (e) => {
+        reviewForm.onsubmit = async (e) => {
             e.preventDefault();
-            submitReview(eventId);
+            await submitReview(event.id);
         };
     }
 }
@@ -252,24 +484,41 @@ function setupRatingStars() {
     stars.forEach(star => {
         star.onclick = function() {
             const rating = parseInt(this.dataset.rating);
-            ratingInput.value = rating;
+            if (ratingInput) ratingInput.value = rating;
             stars.forEach((s, i) => {
-                if (i < rating) s.classList.add('fas'), s.classList.remove('far');
-                else s.classList.add('far'), s.classList.remove('fas');
+                if (i < rating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas');
+                } else {
+                    s.classList.remove('fas');
+                    s.classList.add('far');
+                }
             });
         };
+        
         star.onmouseenter = function() {
             const rating = parseInt(this.dataset.rating);
             stars.forEach((s, i) => {
-                if (i < rating) s.classList.add('fas'), s.classList.remove('far');
-                else s.classList.add('far'), s.classList.remove('fas');
+                if (i < rating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas');
+                } else {
+                    s.classList.remove('fas');
+                    s.classList.add('far');
+                }
             });
         };
+        
         star.onmouseleave = function() {
-            const currentRating = parseInt(ratingInput.value) || 5;
+            const currentRating = parseInt(ratingInput?.value || 5);
             stars.forEach((s, i) => {
-                if (i < currentRating) s.classList.add('fas'), s.classList.remove('far');
-                else s.classList.add('far'), s.classList.remove('fas');
+                if (i < currentRating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas');
+                } else {
+                    s.classList.remove('fas');
+                    s.classList.add('far');
+                }
             });
         };
     });
@@ -279,353 +528,79 @@ function resetRatingStars() {
     const stars = document.querySelectorAll('.rating-select i');
     const ratingInput = document.getElementById('reviewRating');
     if (ratingInput) ratingInput.value = 5;
-    stars.forEach((s, i) => { if (i < 5) s.classList.add('fas'), s.classList.remove('far'); });
+    stars.forEach((s, i) => {
+        if (i < 5) {
+            s.classList.remove('far');
+            s.classList.add('fas');
+        } else {
+            s.classList.remove('fas');
+            s.classList.add('far');
+        }
+    });
 }
 
 function resetReviewForm() {
-    document.getElementById('reviewForm')?.reset();
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) reviewForm.reset();
     resetRatingStars();
 }
 
-function submitReview(eventId) {
+async function submitReview(eventId) {
     const rating = parseInt(document.getElementById('reviewRating')?.value || 0);
     const title = document.getElementById('reviewTitle')?.value.trim();
     const content = document.getElementById('reviewText')?.value.trim();
-    
-    if (!title) { showToast('Please enter a title', 'error'); return; }
-    if (!content) { showToast('Please enter your review', 'error'); return; }
-    if (rating === 0) { showToast('Please select a rating', 'error'); return; }
-    
-    const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-    const userName = user.name || 'Guest';
-    
-    const newReview = {
-        id: Date.now(),
-        userName: userName,
-        rating: rating,
-        title: title,
-        content: content,
-        created_at: new Date().toISOString()
-    };
-    
-    if (window.MOCK_EVENTS_DATA) {
-        window.MOCK_EVENTS_DATA.addReview(parseInt(eventId), newReview);
-    }
-    
-    updateReviewsUI(eventId);
-    document.getElementById('reviewModal').style.display = 'none';
-    resetReviewForm();
-    showToast('Thank you for your review!', 'success');
-}
-
-function bookTicket(eventId, quantity) {
     const token = localStorage.getItem('attendee_access_token');
-    if (!token) {
-        showToast('Please login to book', 'info');
-        setTimeout(() => window.location.href = '/login/', 1500);
+    
+    if (!title) {
+        showToast('Please enter a review title', 'error');
+        return;
+    }
+    if (!content) {
+        showToast('Please enter your review', 'error');
+        return;
+    }
+    if (rating === 0) {
+        showToast('Please select a rating', 'error');
         return;
     }
     
-    if (!window.MOCK_EVENTS_DATA) return;
-    const event = window.MOCK_EVENTS_DATA.getEventById(eventId);
-    if (!event) return;
-    
-    if (event.available_tickets <= 0) {
-        showToast('Sold out!', 'error');
-        return;
-    }
-    
-    let cart = JSON.parse(localStorage.getItem('eventhub_cart') || '{"items":[],"subtotal":0,"platform_fee":0,"total":0}');
-    const existing = cart.items.find(i => i.id === eventId);
-    
-    if (existing) {
-        existing.quantity += quantity;
-        showToast(`Added ${quantity} more ticket(s)`, 'success');
-    } else {
-        cart.items.push({ 
-            id: event.id, 
-            title: event.title, 
-            price: event.price, 
-            quantity: quantity, 
-            image: event.image,
-            date: event.date,
-            location: event.location
+    try {
+        const response = await fetch(API.reviews, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                event_id: eventId,
+                rating: rating,
+                title: title,
+                content: content
+            })
         });
-        showToast(`Added to booking cart!`, 'success');
-    }
-    
-    cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-    cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
-    cart.total = cart.subtotal + cart.platform_fee;
-    
-    localStorage.setItem('eventhub_cart', JSON.stringify(cart));
-    window.dispatchEvent(new Event('cart-updated'));
-}
-
-function renderEventDetails(event) {
-    const container = document.getElementById('eventDetailContainer');
-    if (!container) return;
-    
-    const avgRating = getAverageRating(event.id);
-    const reviewsCount = getEventReviews(event.id).length;
-    const wishlist = JSON.parse(localStorage.getItem('event_wishlist') || '[]');
-    const isInWishlist = wishlist.includes(event.id);
-    
-    container.innerHTML = `
-        <div class="event-content-wrapper">
-            <div class="event-main">
-                <div class="event-breadcrumb">
-                    <a href="/">Home</a> / <a href="/events/">Events</a> / <span>${event.title}</span>
-                </div>
-                
-                <div class="event-image-container">
-                    <img src="${event.image}" alt="${event.title}" class="event-main-image">
-                    ${event.is_featured ? '<div class="event-featured-badge">Featured</div>' : ''}
-                </div>
-                
-                <div class="event-title-section">
-                    <h1>${event.title}</h1>
-                    <div class="event-rating">
-                        <div class="stars">${renderStars(avgRating)}</div>
-                        <span class="rating-count">(${reviewsCount})</span>
-                    </div>
-                </div>
-                
-                <div class="event-meta">
-                    <span><i class="fas fa-calendar"></i> ${formatDate(event.date)}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${event.location.split(',')[0]}</span>
-                    <span><i class="fas fa-ticket-alt"></i> ${event.available_tickets} left</span>
-                </div>
-                
-                <div class="event-tabs">
-                    <button class="tab-btn active" data-tab="details">Details</button>
-                    <button class="tab-btn" data-tab="location">Location</button>
-                    <button class="tab-btn" data-tab="directions">Directions</button>
-                    <button class="tab-btn" data-tab="reviews">Reviews</button>
-                </div>
-                
-                <!-- Details Tab -->
-                <div id="detailsTab" class="tab-content active">
-                    <div class="event-description">
-                        <h3><i class="fas fa-info-circle"></i> About</h3>
-                        <p>${event.description}</p>
-                    </div>
-                    
-                    <div class="event-features">
-                        <h3><i class="fas fa-star"></i> Features</h3>
-                        <ul>
-                            ${event.features.slice(0,4).map(f => `<li><i class="fas fa-check-circle"></i> ${f}</li>`).join('')}
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Location Tab -->
-                <div id="locationTab" class="tab-content">
-                    <div class="event-location">
-                        <h3><i class="fas fa-map-marker-alt"></i> Venue Location</h3>
-                        <p><i class="fas fa-location-dot"></i> ${event.location}</p>
-                        
-                        <div id="locationStatus" class="location-status" style="display: none;"></div>
-                        
-                        <div class="location-controls">
-                            <button id="getLiveLocationBtn" class="btn-live-location">
-                                <i class="fas fa-location-arrow"></i> Get My Location
-                            </button>
-                        </div>
-                        
-                        <div class="location-map">
-                            <iframe 
-                                width="100%" 
-                                height="250" 
-                                frameborder="0" 
-                                style="border:0; border-radius: 12px;"
-                                src="https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&output=embed"
-                                allowfullscreen>
-                            </iframe>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Directions Tab -->
-                <div id="directionsTab" class="tab-content">
-                    <div class="directions-container">
-                        <h3><i class="fas fa-directions"></i> Get Directions</h3>
-                        
-                        <div id="distanceInfo" class="distance-info" style="display: none;"></div>
-                        
-                        <div class="directions-controls">
-                            <button id="getDirectionsBtn" class="btn-get-directions">
-                                <i class="fas fa-map-marked-alt"></i> Get Directions from My Location
-                            </button>
-                        </div>
-                        
-                        <div class="location-map">
-                            <iframe 
-                                width="100%" 
-                                height="300" 
-                                frameborder="0" 
-                                style="border:0; border-radius: 12px;"
-                                src="https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&output=embed"
-                                allowfullscreen>
-                            </iframe>
-                        </div>
-                        
-                        <div class="directions-tips">
-                            <i class="fas fa-info-circle"></i> 
-                            Click "Get My Location" in the Location tab first, then use Directions tab for step-by-step directions.
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Reviews Tab -->
-                <div id="reviewsTab" class="tab-content">
-                    <div class="reviews-summary">
-                        <div class="average-rating">
-                            <div class="rating-number">${avgRating.toFixed(1)}</div>
-                            <div class="stars-large">${renderStars(avgRating)}</div>
-                            <div class="review-count">${reviewsCount} reviews</div>
-                        </div>
-                        <button id="writeReviewBtn" class="write-review-btn">Write Review</button>
-                    </div>
-                    <div id="reviewsList">${renderReviewsList(event.id)}</div>
-                </div>
-            </div>
-            
-            <div class="event-sidebar">
-                <div class="ticket-card">
-                    <h3>Get Your Tickets</h3>
-                    <div class="current-price">KES ${event.price.toLocaleString()}</div>
-                    ${event.original_price ? `<div><s class="original-price">KES ${event.original_price.toLocaleString()}</s></div>` : ''}
-                    <div class="ticket-availability">
-                        <i class="fas fa-check-circle"></i> ${event.available_tickets} tickets left
-                    </div>
-                    
-                    <div class="ticket-quantity">
-                        <label>Quantity</label>
-                        <div class="quantity-selector">
-                            <button class="qty-btn" id="decreaseQty">-</button>
-                            <input type="number" id="ticketQuantity" value="1" min="1" max="${event.available_tickets}">
-                            <button class="qty-btn" id="increaseQty">+</button>
-                        </div>
-                    </div>
-                    
-                    <div class="ticket-total">
-                        <span>Total:</span>
-                        <span class="total-amount" id="totalAmount">KES ${event.price.toLocaleString()}</span>
-                    </div>
-                    
-                    <button id="bookNowBtn" class="book-now-btn">
-                        <i class="fas fa-ticket-alt"></i> Book Ticket
-                    </button>
-                    
-                    <button id="wishlistBtn" class="wishlist-sidebar-btn ${isInWishlist ? 'active' : ''}">
-                        <i class="fas fa-heart"></i> ${isInWishlist ? 'Saved' : 'Save'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Setup tabs
-    const tabs = document.querySelectorAll('.tab-btn');
-    const contents = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-        tab.onclick = () => {
-            const tabId = tab.dataset.tab;
-            tabs.forEach(t => t.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById(`${tabId}Tab`).classList.add('active');
-        };
-    });
-    
-    // Setup quantity selector
-    let quantity = 1;
-    const qtyInput = document.getElementById('ticketQuantity');
-    const totalSpan = document.getElementById('totalAmount');
-    const decreaseBtn = document.getElementById('decreaseQty');
-    const increaseBtn = document.getElementById('increaseQty');
-    const bookBtn = document.getElementById('bookNowBtn');
-    const wishlistBtn = document.getElementById('wishlistBtn');
-    
-    function updateTotal() {
-        totalSpan.textContent = `KES ${(quantity * event.price).toLocaleString()}`;
-    }
-    
-    decreaseBtn.onclick = () => { if (quantity > 1) { quantity--; qtyInput.value = quantity; updateTotal(); } };
-    increaseBtn.onclick = () => { if (quantity < event.available_tickets) { quantity++; qtyInput.value = quantity; updateTotal(); } };
-    qtyInput.onchange = () => { quantity = Math.min(Math.max(parseInt(qtyInput.value) || 1, 1), event.available_tickets); qtyInput.value = quantity; updateTotal(); };
-    
-    bookBtn.onclick = () => bookTicket(event.id, quantity);
-    
-    wishlistBtn.onclick = () => {
-        const token = localStorage.getItem('attendee_access_token');
-        if (!token) {
-            showToast('Please login', 'info');
-            setTimeout(() => window.location.href = '/login/', 1500);
-            return;
-        }
-        let wishlist = JSON.parse(localStorage.getItem('event_wishlist') || '[]');
-        const idx = wishlist.indexOf(event.id);
-        if (idx === -1) {
-            wishlist.push(event.id);
-            wishlistBtn.classList.add('active');
-            wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Saved';
-            showToast('Saved to wishlist', 'success');
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Thank you for your review!', 'success');
+            const modal = document.getElementById('reviewModal');
+            if (modal) modal.style.display = 'none';
+            resetReviewForm();
+            await loadReviews();
         } else {
-            wishlist.splice(idx, 1);
-            wishlistBtn.classList.remove('active');
-            wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Save';
-            showToast('Removed from wishlist', 'info');
+            showToast(data.message || 'Failed to submit review', 'error');
         }
-        localStorage.setItem('event_wishlist', JSON.stringify(wishlist));
-        window.dispatchEvent(new Event('wishlist-updated'));
-    };
-    
-    // Location tab buttons
-    const liveLocationBtn = document.getElementById('getLiveLocationBtn');
-    if (liveLocationBtn) {
-        liveLocationBtn.onclick = () => handleLiveLocation();
+    } catch (error) {
+        console.error('Error submitting review:', error);
+        showToast('Failed to submit review', 'error');
     }
-    
-    // Directions tab button
-    const directionsBtn = document.getElementById('getDirectionsBtn');
-    if (directionsBtn) {
-        directionsBtn.onclick = () => getDirectionsFromLocation();
-    }
-    
-    setupReviewModal(event.id);
 }
 
-function loadEventDetails() {
-    const container = document.getElementById('eventDetailContainer');
-    if (!container) return;
-    
-    if (!eventId) {
-        container.innerHTML = '<div class="error-state">Event not found</div>';
-        return;
-    }
-    
-    if (!window.MOCK_EVENTS_DATA) {
-        container.innerHTML = '<div class="error-state">Data not loaded</div>';
-        return;
-    }
-    
-    const event = window.MOCK_EVENTS_DATA.getEventById(eventId);
-    
-    if (!event) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h2>Event Not Found</h2>
-                <a href="/events/" class="btn-primary">Browse Events</a>
-            </div>
-        `;
-        return;
-    }
-    
-    currentEvent = event;
-    renderEventDetails(event);
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 document.addEventListener('DOMContentLoaded', loadEventDetails);

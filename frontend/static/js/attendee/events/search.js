@@ -78,7 +78,6 @@ async function loadCategories() {
         }
     } catch (error) {
         console.error('Error loading categories:', error);
-        // Fallback to empty
         if (categoryFilter) {
             categoryFilter.innerHTML = '<option value="">All Categories</option>';
         }
@@ -86,13 +85,7 @@ async function loadCategories() {
 }
 
 async function loadSearchResults() {
-    // Use global loader if available
-    if (window.PageLoader) {
-        window.PageLoader.show('Searching for events...');
-    }
-    
     try {
-        // Build query parameters
         const params = new URLSearchParams({
             q: currentQuery,
             page: currentPage,
@@ -140,11 +133,6 @@ async function loadSearchResults() {
                     <button class="btn-primary" onclick="location.reload()">Retry</button>
                 </div>
             `;
-        }
-    } finally {
-        // Hide global loader
-        if (window.PageLoader) {
-            setTimeout(() => window.PageLoader.hide(), 300);
         }
     }
 }
@@ -309,6 +297,5 @@ function addToCart(eventId, title, price, image) {
     showToast(`${title} added to cart!`, 'success');
 }
 
-// Make functions global
 window.changePage = changePage;
 window.addToCart = addToCart;

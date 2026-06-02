@@ -1,8 +1,15 @@
+
 {% load static %}
 <section class="hero-section">
-    <!-- Background Image -->
+    <!-- Background Image Slideshow -->
     <div class="hero-bg-image">
-        <img src="{% static 'images/hero/hero.jpg' %}" alt="EventHub Hero Background" class="hero-background-img">
+        <div class="hero-slideshow">
+            <div class="slide active" style="background-image: url('{% static 'images/hero/hero1.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero2.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero3.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero4.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero5.jpg' %}');"></div>
+        </div>
         <div class="hero-gradient-overlay"></div>
         <div class="hero-overlay"></div>
     </div>
@@ -16,7 +23,7 @@
                     <span class="cursor"></span>
                 </span>
             </h1>
-            <p class="hero-description">Find and book tickets for the best concerts, conferences, worKesops, and entertainment events in Kenya.</p>
+            <p class="hero-description">Find and book tickets for the best concerts, conferences, workshops, and entertainment events in Kenya.</p>
             <div class="hero-buttons">
                 <a href="/events/" class="hero-btn hero-btn-primary">
                     <i class="fas fa-calendar-alt"></i>
@@ -29,15 +36,15 @@
             </div>
             <div class="hero-stats">
                 <div class="stat">
-                    <span class="stat-number">500+</span>
+                    <span class="stat-number counter" data-target="500">0</span><span class="plus-sign">+</span>
                     <span class="stat-label">Events</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-number">50K+</span>
+                    <span class="stat-number counter" data-target="50000">0</span><span class="plus-sign">+</span>
                     <span class="stat-label">Happy Attendees</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-number">200+</span>
+                    <span class="stat-number counter" data-target="200">0</span><span class="plus-sign">+</span>
                     <span class="stat-label">Organizers</span>
                 </div>
             </div>
@@ -47,7 +54,22 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Typewriter Effect
+    // ========== BACKGROUND SLIDESHOW (5 images) ==========
+    const slides = document.querySelectorAll('.hero-slideshow .slide');
+    let currentSlide = 0;
+    const slideInterval = 5000; // 5 seconds
+    
+    if (slides.length > 1) {
+        function nextSlide() {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        
+        setInterval(nextSlide, slideInterval);
+    }
+    
+    // ========== TYPEWRITER EFFECT ==========
     const words = ['Events', 'Experiences', 'Moments', 'Adventures'];
     let wordIndex = 0;
     let charIndex = 0;
@@ -91,6 +113,55 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(() => {
             cursorElement.style.opacity = cursorElement.style.opacity === '0' ? '1' : '0';
         }, 500);
+    }
+    
+    // ========== COUNTER ANIMATION ==========
+    const counters = document.querySelectorAll('.counter');
+    let hasAnimated = false;
+    
+    const animateCounter = (counter) => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        let current = 0;
+        const duration = 2000;
+        const stepTime = 20;
+        const steps = duration / stepTime;
+        const increment = target / steps;
+        
+        const updateCount = () => {
+            current += increment;
+            if (current < target) {
+                counter.textContent = Math.floor(current);
+                setTimeout(updateCount, stepTime);
+            } else {
+                counter.textContent = target;
+            }
+        };
+        
+        updateCount();
+    };
+    
+    const statsContainer = document.querySelector('.hero-stats');
+    
+    if (statsContainer) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !hasAnimated) {
+                    hasAnimated = true;
+                    counters.forEach((counter, index) => {
+                        setTimeout(() => {
+                            animateCounter(counter);
+                        }, index * 200);
+                    });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+        
+        observer.observe(statsContainer);
+    } else {
+        counters.forEach(counter => {
+            animateCounter(counter);
+        });
     }
 });
 </script>
