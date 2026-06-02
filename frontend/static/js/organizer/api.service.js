@@ -703,9 +703,20 @@ class OrganizerAPIService {
                 throw error;
             }
             
-            // Fallback on total server crash or offline mode
-            console.warn(`[CONNECTION FAILED] Servicing "${endpoint}" via local storage:`, error);
-            return this.getMockResponse(method, endpoint, data);
+            // Only use mock fallback when mock mode is explicitly enabled.
+            if (this.config.USE_MOCK) {
+                console.warn(`[MOCK MODE] Servicing "${endpoint}" via local storage because backend request failed:`, error);
+                return this.getMockResponse(method, endpoint, data);
+            }
+            
+            // Optionally allow offline fallback when browser is offline.
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                console.warn(`[OFFLINE] Serving "${endpoint}" via local storage because browser is offline.`, error);
+                return this.getMockResponse(method, endpoint, data);
+            }
+            
+            // Propagate actual backend request failures so the dashboard reflects real endpoint status.
+            throw error;
         }
     }
     
