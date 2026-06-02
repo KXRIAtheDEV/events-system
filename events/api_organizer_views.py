@@ -509,3 +509,67 @@ def api_organizer_reviews_stats(request):
         'response_rate': 0
     })
 
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_event_analytics(request, event_id):
+    """Get analytics for a specific organizer event."""
+    try:
+        from django.utils import timezone
+        from django.db.models.functions import TruncDate
+        from django.db.models import Sum
+        
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        
+        # Pull real, factual database tickets
+        tickets = Ticket.objects.filter(event=event)
+        valid_tickets = tickets.exclude(status__in=['cancelled', 'refunded'])
+        
+        tickets_sold = sum(t.quantity for t in valid_tickets)
+        revenue = float(sum(t.quantity * t.price for t in valid_tickets))
+        attendance = tickets.filter(status='checked_in').count()
+        
+        # Calculate sales data by day
+        sales_by_day = (
+            valid_tickets
+            .annotate(date=TruncDate('purchase_date'))
+            .values('date')
+            .annotate(sold=Sum('quantity'))
+            .order_by('date')
+        )
+        
+        sales_data = []
+        for s in sales_by_day:
+            if s['date']:
+                sales_data.append({
+                    'date': s['date'].isoformat(),
+                    'sold': s['sold']
+                })
+        
+        # If sales data is empty, put a single entry for today or date of creation
+        if not sales_data:
+            sales_data.append({
+                'date': timezone.now().date().isoformat(),
+                'sold': 0
+            })
+            
+        # Calculate ticket type distribution
+        distribution = {}
+        for t in valid_tickets:
+            ttype = t.ticket_type or 'Standard'
+            distribution[ttype] = distribution.get(ttype, 0) + t.quantity
+            
+        return JsonResponse({
+            'total_tickets': event.total_seats or 100,
+            'tickets_sold': tickets_sold,
+            'attendance': attendance,
+            'revenue': revenue,
+            'sales_data': sales_data,
+            'ticket_distribution': distribution
+        })
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+

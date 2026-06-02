@@ -5,7 +5,8 @@ async function loadEvents() {
     try {
         const events = await OrganizerAPI.events.getAll(1, 100);
         const selector = document.getElementById('eventSelector');
-        selector.innerHTML = '<option value="">Select an event</option>' + events.results.map(e => `<option value="${e.id}">${escapeHtml(e.title)}</option>`).join('');
+        const results = events.results || events || [];
+        selector.innerHTML = '<option value="">Select an event</option>' + results.map(e => `<option value="${e.id}">${escapeHtml(e.title || e.name)}</option>`).join('');
     } catch(e) { console.error(e); }
 }
 
@@ -16,7 +17,7 @@ async function loadAnalytics(eventId) {
         document.getElementById('totalTicketsKpi').innerText = data.total_tickets || 0;
         document.getElementById('ticketsSoldKpi').innerText = data.tickets_sold || 0;
         document.getElementById('attendanceKpi').innerText = data.attendance || 0;
-        document.getElementById('revenueKpi').innerText = '$' + (data.revenue || 0).toLocaleString();
+        document.getElementById('revenueKpi').innerText = 'Kes ' + (data.revenue || 0).toLocaleString();
         const rate = data.total_tickets ? ((data.attendance || 0) / data.total_tickets * 100).toFixed(1) : 0;
         document.getElementById('attendanceProgress').style.width = rate + '%';
         document.getElementById('attendanceProgress').innerText = rate + '%';
