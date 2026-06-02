@@ -81,12 +81,12 @@ function displayEvents(events) {
             <td><strong>${escapeHtml(event.organizer_name || 'N/A')}</strong></td>
             <td>${formatDate(event.start_date)}</td>
             <td>${getEventStatusBadge(event.status)}</td>
-            <td class="action-buttons">
-                <button class="action-btn view" onclick="viewEvent(${event.id})" title="Review Event" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; margin-right: 6px;">
-                    <i class="fas fa-eye"></i> Review
+            <td class="action-buttons" style="display: flex; align-items: center; gap: 6px; padding: 12px 8px;">
+                <button class="action-btn view" onclick="viewEvent(${event.id})" aria-label="Review entry" title="Review Event" style="background-color: #2563eb; color: #ffffff; border: none; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.backgroundColor='#1d4ed8'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#2563eb'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';">
+                    <i class="fas fa-eye" style="font-size: 11px;"></i> Review
                 </button>
-                <button class="action-btn delete" onclick="deleteEvent(${event.id})" title="Delete Event" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer;">
-                    <i class="fas fa-trash-alt"></i> Delete
+                <button class="action-btn delete" onclick="deleteEvent(${event.id})" aria-label="Delete entry" title="Delete Event" style="background-color: #dc2626; color: #ffffff; border: none; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.backgroundColor='#b91c1c'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#dc2626'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';">
+                    <i class="fas fa-trash-alt" style="font-size: 11px;"></i> Delete
                 </button>
             </td>
         </tr>

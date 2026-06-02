@@ -103,6 +103,15 @@
             renderAttendees();
         } catch (err) {
             window.showToast('Failed to load attendees', 'error');
+            document.getElementById('attendeesList').innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x mb-2 text-danger"></i>
+                        <p class="m-0 font-weight-bold text-white">Failed to load attendees</p>
+                        <p class="m-0 small">There was a server connection or authentication issue.</p>
+                    </td>
+                </tr>
+            `;
         }
     }
 
@@ -111,10 +120,16 @@
         const eventId = document.getElementById('eventFilter').value;
 
         const filtered = attendeesData.filter(a => {
-            const matchQuery = !query || a.name.toLowerCase().includes(query) || 
-                               a.email.toLowerCase().includes(query) || 
-                               (a.phone && a.phone.includes(query));
-            const matchEvent = !eventId || a.purchased_event_ids.includes(parseInt(eventId));
+            const attName = (a.name || "").toLowerCase();
+            const attEmail = (a.email || "").toLowerCase();
+            const attPhone = a.phone || "";
+            const matchQuery = !query || attName.includes(query) || 
+                               attEmail.includes(query) || 
+                               attPhone.includes(query);
+            
+            const purchasedIds = Array.isArray(a.purchased_event_ids) ? a.purchased_event_ids : [];
+            const matchEvent = !eventId || purchasedIds.includes(parseInt(eventId));
+            
             return matchQuery && matchEvent;
         });
 
@@ -138,24 +153,35 @@
             return;
         }
 
-        tbody.innerHTML = paginated.map(a => `
-            <tr>
-                <td class="text-white fw-bold">
-                    <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px; font-size: 0.85rem;">
-                            ${a.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+        tbody.innerHTML = paginated.map(a => {
+            const attName = a.name || "Anonymous Attendee";
+            const initials = attName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || "?";
+            const attEmail = a.email || "No Email";
+            const attPhone = a.phone || "--";
+            const eventsCount = a.events_count || 0;
+            const ticketsCount = a.tickets_count || 0;
+            const totalSpent = (a.total_spent || 0).toLocaleString();
+            const lastPurchaseDate = a.last_purchase_date ? new Date(a.last_purchase_date).toLocaleDateString() : "Never";
+
+            return `
+                <tr>
+                    <td class="text-white fw-bold">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                                ${initials}
+                            </div>
+                            <span>${attName}</span>
                         </div>
-                        <span>${a.name}</span>
-                    </div>
-                </td>
-                <td class="font-monospace text-muted small">${a.email}</td>
-                <td class="text-muted small">${a.phone || '--'}</td>
-                <td class="text-white">${a.events_count}</td>
-                <td class="text-white fw-bold">${a.tickets_count}</td>
-                <td class="text-success fw-bold">KSh ${a.total_spent.toLocaleString()}</td>
-                <td class="text-muted small">${new Date(a.last_purchase_date).toLocaleDateString()}</td>
-            </tr>
-        `).join('');
+                    </td>
+                    <td class="font-monospace text-muted small">${attEmail}</td>
+                    <td class="text-muted small">${attPhone}</td>
+                    <td class="text-white">${eventsCount}</td>
+                    <td class="text-white fw-bold">${ticketsCount}</td>
+                    <td class="text-success fw-bold">KSh ${totalSpent}</td>
+                    <td class="text-muted small">${lastPurchaseDate}</td>
+                </tr>
+            `;
+        }).join('');
 
         document.getElementById('paginationMeta').innerText = `Showing ${start + 1} to ${Math.min(start + itemsPerPage, totalItems)} of ${totalItems} entries`;
         

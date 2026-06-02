@@ -133,7 +133,8 @@ class OrganizerAPIService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ refresh: this.refreshToken })
+                body: JSON.stringify({ refresh: this.refreshToken }),
+                credentials: 'same-origin'
             });
             
             if (response.ok) {
@@ -490,7 +491,8 @@ class OrganizerAPIService {
                 method,
                 headers: requestHeaders,
                 body,
-                signal: controller.signal
+                signal: controller.signal,
+                credentials: 'same-origin'
             });
             
             // Handle token expiration
@@ -502,7 +504,8 @@ class OrganizerAPIService {
                         method,
                         headers: requestHeaders,
                         body,
-                        signal: controller.signal
+                        signal: controller.signal,
+                        credentials: 'same-origin'
                     });
                 } else {
                     window.location.href = '/organizer/login/';

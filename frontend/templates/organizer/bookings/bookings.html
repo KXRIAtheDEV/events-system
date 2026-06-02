@@ -151,6 +151,15 @@
             renderBookings();
         } catch (err) {
             window.showToast('Failed to load bookings', 'error');
+            document.getElementById('bookingsList').innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x mb-2 text-danger"></i>
+                        <p class="m-0 font-weight-bold text-white">Failed to load bookings</p>
+                        <p class="m-0 small">There was a server connection or authentication issue.</p>
+                    </td>
+                </tr>
+            `;
         }
     }
 
@@ -160,9 +169,10 @@
         const status = document.getElementById('statusFilter').value;
 
         const filtered = bookingsData.filter(b => {
-            const matchQuery = !query || b.ticket_number.toLowerCase().includes(query) || 
-                               b.customer_name.toLowerCase().includes(query) || 
-                               b.customer_email.toLowerCase().includes(query);
+            const tNum = (b.ticket_number || "").toLowerCase();
+            const cName = (b.customer_name || "").toLowerCase();
+            const cEmail = (b.customer_email || "").toLowerCase();
+            const matchQuery = !query || tNum.includes(query) || cName.includes(query) || cEmail.includes(query);
             const matchEvent = !eventId || String(b.event_id) === eventId;
             const matchStatus = !status || b.status === status;
             return matchQuery && matchEvent && matchStatus;
@@ -194,20 +204,27 @@
             if (b.status === 'checked_in') statusClass = 'status-checked_in';
             if (b.status === 'cancelled') statusClass = 'status-cancelled';
 
+            const ticketNum = b.ticket_number || "TICK-UNKNOWN";
+            const eventTitle = b.event_title || "Unknown Event";
+            const customerName = b.customer_name || "Unknown Attendee";
+            const customerEmail = b.customer_email || "";
+            const price = b.price || 0;
+            const formattedDate = b.purchase_date ? new Date(b.purchase_date).toLocaleDateString() : "Date TBA";
+
             return `
                 <tr>
-                    <td class="font-monospace text-warning">${b.ticket_number}</td>
-                    <td class="text-white fw-bold">${b.event_title}</td>
+                    <td class="font-monospace text-warning">${ticketNum}</td>
+                    <td class="text-white fw-bold">${eventTitle}</td>
                     <td>
-                        <div class="text-white">${b.customer_name}</div>
-                        <div class="text-muted small">${b.customer_email}</div>
+                        <div class="text-white">${customerName}</div>
+                        <div class="text-muted small">${customerEmail}</div>
                     </td>
-                    <td class="text-white">${b.quantity}</td>
-                    <td class="text-success fw-bold">KSh ${b.price.toLocaleString()}</td>
-                    <td class="text-muted small">${new Date(b.purchase_date).toLocaleDateString()}</td>
-                    <td><span class="status-badge ${statusClass}">${b.status === 'checked_in' ? 'Checked In' : b.status.toUpperCase()}</span></td>
+                    <td class="text-white">${b.quantity || 1}</td>
+                    <td class="text-success fw-bold">KSh ${price.toLocaleString()}</td>
+                    <td class="text-muted small">${formattedDate}</td>
+                    <td><span class="status-badge ${statusClass}">${b.status === 'checked_in' ? 'Checked In' : (b.status || 'VALID').toUpperCase()}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-warning view-details" data-id="${b.ticket_number}">
+                        <button class="btn btn-sm btn-outline-warning view-details" data-id="${ticketNum}">
                             <i class="fa-solid fa-eye me-1"></i>View
                         </button>
                     </td>
