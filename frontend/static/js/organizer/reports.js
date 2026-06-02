@@ -7,10 +7,10 @@ async function loadReportData() {
         const salesData = await OrganizerAPI.reports.getSales(period);
         const revenueData = await OrganizerAPI.reports.getRevenue(period);
         const eventsData = await OrganizerAPI.reports.getEvents({ period, limit: 5 });
-        document.getElementById('reportTotalRevenue').innerText = '$' + (revenueData.total || 0).toLocaleString();
+        document.getElementById('reportTotalRevenue').innerText = 'Kes ' + (revenueData.total || 0).toLocaleString();
         document.getElementById('reportTotalTickets').innerText = salesData.total_tickets || 0;
         document.getElementById('reportTotalAttendees').innerText = salesData.total_attendees || 0;
-        document.getElementById('reportAvgOrderValue').innerText = '$' + (salesData.avg_order_value || 0).toLocaleString();
+        document.getElementById('reportAvgOrderValue').innerText = 'Kes ' + (salesData.avg_order_value || 0).toLocaleString();
         updateRevenueChart(revenueData.chart_labels || [], revenueData.chart_values || []);
         updateTopEventsChart(eventsData);
         updateTopEventsTable(eventsData.events || []);
@@ -45,7 +45,7 @@ function updateTopEventsTable(events) {
         <tr>
             <td>${escapeHtml(e.title)}</td>
             <td>${e.tickets_sold || 0}</td>
-            <td>$${e.revenue || 0}</td>
+            <td>Kes ${(e.revenue || 0).toLocaleString()}</td>
             <td>${e.attendance_rate || 0}%</td>
         </tr>
     `).join('');

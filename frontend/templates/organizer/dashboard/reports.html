@@ -3,15 +3,111 @@
 {% block title %}Reports | EventHub Organizer{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/organizers/reports.css">
+<style>
+    /* Clean, premium dark background */
+    body {
+        background-color: #000000 !important;
+    }
+
+    .metric-card, .chart-card {
+        background: #080808 !important; /* Softer solid black for cards */
+        border: 1px solid #141414 !important; /* Subtle divider-like borders */
+        border-radius: 16px !important;
+        padding: 1.5rem !important; /* Generous breathing space */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+        color: #ffffff !important;
+    }
+
+    .metric-card h3 {
+        color: #ff6a00 !important; /* Brand orange highlight for values */
+        font-weight: 700 !important;
+    }
+
+    .metric-card small {
+        color: #888888 !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+    }
+
+    .chart-card h5 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        margin-bottom: 1.2rem !important;
+        border-bottom: 1px solid #1a1a1a !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    /* Minimal table styling */
+    .table {
+        background-color: transparent !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .table thead th {
+        background-color: #000000 !important;
+        color: #ffffff !important; /* Bold white */
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        border-bottom: 2px solid #1a1a1a !important;
+        padding: 14px 12px !important;
+        text-align: left;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #111111 !important; /* Subtle dividers */
+        background: transparent !important;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(255, 106, 0, 0.02) !important;
+    }
+
+    .table tbody td {
+        padding: 14px 12px !important; /* Cell padding */
+        color: #ffffff !important; /* Regular white text */
+        background: transparent !important;
+        border: none !important;
+        vertical-align: middle;
+        text-align: left;
+    }
+
+    /* Selector in minimal dark theme */
+    .filter-select {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+        padding: 10px 14px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .filter-select:focus {
+        border-color: #ff6a00 !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 106, 0, 0.15) !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+
+    .filter-select option {
+        background-color: #080808;
+        color: #ffffff;
+    }
+</style>
 {% endblock %}
 {% block content %}
 <div>
     <div class="d-flex justify-content-between mb-4"><h1>Reports</h1><div><select id="reportPeriod" class="filter-select"><option value="weekly">Weekly</option><option value="monthly" selected>Monthly</option><option value="yearly">Yearly</option></select><button id="exportReportBtn" class="btn btn-outline ms-2">Export</button></div></div>
     <div class="row g-4 mb-4">
-        <div class="col-md-3"><div class="metric-card text-center"><h3 id="reportTotalRevenue">$--</h3><small>Revenue</small></div></div>
+        <div class="col-md-3"><div class="metric-card text-center"><h3 id="reportTotalRevenue">Kes --</h3><small>Revenue</small></div></div>
         <div class="col-md-3"><div class="metric-card text-center"><h3 id="reportTotalTickets">--</h3><small>Tickets Sold</small></div></div>
         <div class="col-md-3"><div class="metric-card text-center"><h3 id="reportTotalAttendees">--</h3><small>Attendees</small></div></div>
-        <div class="col-md-3"><div class="metric-card text-center"><h3 id="reportAvgOrderValue">$--</h3><small>Avg Order</small></div></div>
+        <div class="col-md-3"><div class="metric-card text-center"><h3 id="reportAvgOrderValue">Kes --</h3><small>Average Order</small></div></div>
     </div>
     <div class="row g-4 mb-4">
         <div class="col-lg-6"><div class="chart-card"><h5>Revenue Trend</h5><canvas id="revenueTrendChart"></canvas></div></div>
