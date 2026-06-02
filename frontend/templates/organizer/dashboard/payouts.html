@@ -3,6 +3,161 @@
 {% block title %}Payouts | EventHub Organizer{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/organizers/payouts.css">
+<style>
+    /* Clean, premium dark background */
+    body {
+        background-color: #000000 !important;
+    }
+
+    .metric-card, .chart-card {
+        background: #080808 !important; /* Softer solid black for cards */
+        border: 1px solid #141414 !important; /* Subtle divider-like borders */
+        border-radius: 16px !important;
+        padding: 1.5rem !important; /* Generous breathing space */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+        color: #ffffff !important;
+    }
+
+    .metric-card h3 {
+        color: #ff6a00 !important; /* Brand orange highlight for values */
+        font-weight: 700 !important;
+    }
+
+    .metric-card small {
+        color: #888888 !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+    }
+
+    .chart-card h5 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        margin-bottom: 1.2rem !important;
+        border-bottom: 1px solid #1a1a1a !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    /* Minimal table styling */
+    .table {
+        background-color: transparent !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .table thead th {
+        background-color: #000000 !important;
+        color: #ffffff !important; /* Bold white */
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        border-bottom: 2px solid #1a1a1a !important;
+        padding: 14px 12px !important;
+        text-align: left;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #111111 !important; /* Subtle dividers */
+        background: transparent !important;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(255, 106, 0, 0.02) !important;
+    }
+
+    .table tbody td {
+        padding: 14px 12px !important; /* Cell padding */
+        color: #ffffff !important; /* Regular white text */
+        background: transparent !important;
+        border: none !important;
+        vertical-align: middle;
+        text-align: left;
+    }
+
+    /* Inputs in minimal dark theme */
+    .form-control {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+        padding: 10px 14px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: #ff6a00 !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 106, 0, 0.15) !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+
+    .form-control::placeholder {
+        color: #64748b !important;
+    }
+
+    /* Custom pagination pill buttons */
+    .pagination {
+        gap: 6px;
+    }
+
+    .page-link {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 30px !important;
+        padding: 6px 16px !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .page-item.active .page-link {
+        background-color: #ff6a00 !important;
+        border-color: #ff6a00 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255, 106, 0, 0.35) !important;
+    }
+
+    .page-link:hover {
+        border-color: #ff6a00 !important;
+        color: #ff6a00 !important;
+        box-shadow: 0 0 8px rgba(255, 106, 0, 0.15) !important;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        background-color: #080808 !important;
+        border: 1px solid #1a1a1a !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+        color: #ffffff !important;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #1a1a1a !important;
+    }
+
+    .modal-header h5 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #1a1a1a !important;
+    }
+
+    .btn-close {
+        filter: invert(1) !important;
+    }
+
+    hr {
+        border-color: #1a1a1a !important;
+        opacity: 1 !important;
+    }
+</style>
 {% endblock %}
 {% block content %}
 <div>
