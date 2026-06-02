@@ -57,7 +57,7 @@
                 <div class="user-profile">
                     <img src="https://ui-avatars.com/api/?background=ff6b00&color=fff&name=Organizer" alt="Profile">
                     <div class="profile-meta">
-                        <span class="profile-name">Alex Morgan</span>
+                        <span class="profile-name" id="organizerProfileEmail">{{ user.email|default:"Organizer" }}</span>
                         <span class="profile-role">Event Organizer</span>
                     </div>
                 </div>
@@ -74,6 +74,28 @@
 <script src="/static/js/organizer/api.service.js"></script>
 <script src="/static/js/organizer/api.endpoints.js"></script>
 <script src="/static/js/organizer/dashboard.js"></script>
+<script>
+    (function syncOrganizerProfileEmail() {
+        const el = document.getElementById('organizerProfileEmail');
+        if (!el) return;
+
+        // Session-rendered email if available.
+        const serverEmail = (el.textContent || '').trim();
+        if (serverEmail && serverEmail !== 'Organizer') return;
+
+        // Token-based login fallback used by current organizer auth flow.
+        try {
+            const raw = localStorage.getItem('organizer_user');
+            if (!raw) return;
+            const user = JSON.parse(raw);
+            if (user && user.email) {
+                el.textContent = user.email;
+            }
+        } catch (e) {
+            // Keep default label when storage is unavailable.
+        }
+    })();
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
