@@ -304,7 +304,7 @@
             return;
         }
 
-        container.innerHTML = filtered.map(e => {
+        eventsContainer.innerHTML = filtered.map(e => {
             const isPub = e.status === 'published';
             const badgeClass = isPub ? 'badge-published' : (e.status === 'cancelled' ? 'badge-cancelled' : 'badge-draft');
             const percent = e.capacity > 0 ? Math.min(100, ((e.sold || 0) / e.capacity) * 100) : 0;
