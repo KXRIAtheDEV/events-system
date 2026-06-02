@@ -109,9 +109,9 @@ async function loadStats() {
         const stats = await response.json();
         
         document.getElementById('pendingPayouts').textContent = stats.pending_count || 0;
-        document.getElementById('totalPendingAmount').textContent = `KSh ${formatNumber(stats.total_pending_amount || 0)}`;
-        document.getElementById('totalPaid').textContent = `KSh ${formatNumber(stats.total_paid_amount || 0)}`;
-        document.getElementById('paidThisMonth').textContent = `KSh ${formatNumber(stats.paid_this_month || 0)}`;
+        document.getElementById('totalPendingAmount').textContent = `Kes ${formatNumber(stats.total_pending_amount || 0)}`;
+        document.getElementById('totalPaid').textContent = `Kes ${formatNumber(stats.total_paid_amount || 0)}`;
+        document.getElementById('paidThisMonth').textContent = `Kes ${formatNumber(stats.paid_this_month || 0)}`;
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -130,9 +130,9 @@ function renderPayouts() {
             <td><strong>${escapeHtml(payout.organizer_name || payout.organizer?.name || 'N/A')}</strong>${payout.organizer_email ? `<br><small class="text-muted">${escapeHtml(payout.organizer_email)}</small>` : ''}</td>
             <td>${escapeHtml(payout.period || '-')}</td>
             <td>${payout.events_count || 0}</td>
-            <td>KSh ${formatNumber(payout.ticket_sales || 0)}</td>
-            <td>KSh ${formatNumber(payout.platform_fee || 0)}</td>
-            <td><strong class="amount">KSh ${formatNumber(payout.payout_amount || 0)}</strong></td>
+            <td>Kes ${formatNumber(payout.ticket_sales || 0)}</td>
+            <td>Kes ${formatNumber(payout.platform_fee || 0)}</td>
+            <td><strong class="amount">Kes ${formatNumber(payout.payout_amount || 0)}</strong></td>
             <td>${getStatusBadge(payout.status)}</td>
             <td>${formatDate(payout.requested_date)}</td>
             <td class="action-buttons">
@@ -227,7 +227,7 @@ async function openProcessModal(payoutId) {
         
         elements.payoutInfo.innerHTML = `
             <p><strong>Organizer:</strong> ${escapeHtml(selectedPayout.organizer_name || selectedPayout.organizer?.name)}</p>
-            <p><strong>Amount:</strong> KSh ${formatNumber(selectedPayout.payout_amount)}</p>
+            <p><strong>Amount:</strong> Kes ${formatNumber(selectedPayout.payout_amount)}</p>
             <p><strong>Period:</strong> ${escapeHtml(selectedPayout.period || '-')}</p>
             <p><strong>Events:</strong> ${selectedPayout.events_count || 0}</p>
         `;
@@ -346,15 +346,15 @@ async function viewPayoutDetails(payoutId) {
             </div>
             <div class="detail-row">
                 <span class="detail-label">Ticket Sales:</span>
-                <span class="detail-value">KSh ${formatNumber(payout.ticket_sales || 0)}</span>
+                <span class="detail-value">Kes ${formatNumber(payout.ticket_sales || 0)}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Platform Fee:</span>
-                <span class="detail-value">KSh ${formatNumber(payout.platform_fee || 0)}</span>
+                <span class="detail-value">Kes ${formatNumber(payout.platform_fee || 0)}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Payout Amount:</span>
-                <span class="detail-value amount-positive">KSh ${formatNumber(payout.payout_amount || 0)}</span>
+                <span class="detail-value amount-positive">Kes ${formatNumber(payout.payout_amount || 0)}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Status:</span>

@@ -1,23 +1,23 @@
 /* ============================================
-   STATS CARDS CSS - EventHub Style
+   STATS CARDS CSS - Dashboard Statistics
    ============================================ */
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-xl);
-    margin-bottom: var(--spacing-2xl);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .stat-card {
     background: white;
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
+    border-radius: 20px;
+    padding: 1.2rem;
     display: flex;
     align-items: center;
-    gap: var(--spacing-lg);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    transition: all var(--transition-normal);
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     position: relative;
     overflow: hidden;
 }
@@ -29,34 +29,32 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--np-gradient);
-    transform: scaleX(0);
-    transition: transform var(--transition-normal);
-}
-
-.stat-card:hover::before {
-    transform: scaleX(1);
+    background: linear-gradient(135deg, #f59e0b, #ec6408);
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.15);
 }
 
 .stat-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.05));
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(135deg, #fef3c7, #fffbeb);
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.05);
 }
 
 .stat-icon i {
-    font-size: 1.5rem;
-    color: var(--np-gold);
+    font-size: 1.6rem;
+    color: #f59e0b;
 }
 
 .stat-info {
@@ -64,67 +62,50 @@
 }
 
 .stat-info h3 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin-bottom: var(--spacing-xs);
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1e293b;
     line-height: 1.2;
-    color: var(--np-dark);
 }
 
 .stat-info span {
     font-size: 0.7rem;
-    color: var(--np-gray);
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 600;
-}
-
-.stat-trend {
-    font-size: 0.7rem;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-full);
-    background: var(--np-bg);
-}
-
-.stat-trend.up {
-    color: #10b981;
-}
-
-.stat-trend.down {
-    color: #ef4444;
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
     .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-lg);
-    }
-}
-
-@media (max-width: 640px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-md);
+        gap: 1rem;
     }
     
     .stat-card {
-        padding: var(--spacing-lg);
+        padding: 1rem;
     }
     
     .stat-icon {
-        width: 44px;
-        height: 44px;
+        width: 45px;
+        height: 45px;
     }
     
     .stat-icon i {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
     
     .stat-info h3 {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 0.8rem;
     }
 }

@@ -99,7 +99,7 @@ async function loadRevenueChart() {
             data: {
                 labels: data.labels || [],
                 datasets: [{
-                    label: 'Revenue (KSh)',
+                    label: 'Revenue (Kes)',
                     data: data.values || [],
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -269,7 +269,7 @@ function refreshActivity() {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 function formatRelativeTime(dateString) {

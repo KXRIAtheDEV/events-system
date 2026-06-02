@@ -1,527 +1,328 @@
 // ============================================
-// ATTENDEE BOOKINGS - Complete Functionality
-// Uses centralized AttendeeAPIEndpoints
+// BOOKINGS MODULE - Real Data from Payment
 // ============================================
 
-let currentPage = 1;
-let totalPages = 1;
-let currentTab = 'all';
-let currentSearch = '';
-let currentDateRange = 'all';
 let allBookings = [];
+let currentTab = 'all';
+let currentPage = 1;
+let itemsPerPage = 10;
+let currentSearch = '';
 
-// DOM Elements
-const bookingsListEl = document.getElementById('bookingsList');
-const paginationEl = document.getElementById('pagination');
-const searchInput = document.getElementById('searchBookings');
-const dateRangeSelect = document.getElementById('dateRange');
-
-// Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait for API to be ready
-    if (window.AttendeeAPIEndpoints && window.AttendeeAPIEndpoints.bookings) {
-        loadBookings();
-    } else {
-        console.error('AttendeeAPI not loaded. Check script order.');
-        if (bookingsListEl) {
-            bookingsListEl.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h3>Configuration Error</h3>
-                    <p>API not initialized. Please refresh the page.</p>
-                </div>
-            `;
-        }
-    }
+    loadBookingsFromStorage();
     setupEventListeners();
 });
 
 function setupEventListeners() {
+    const searchInput = document.getElementById('searchBookings');
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(function() {
-            currentSearch = this.value;
+        searchInput.addEventListener('input', function(e) {
+            currentSearch = e.target.value.toLowerCase();
             currentPage = 1;
-            filterAndDisplayBookings();
-        }, 500));
-    }
-    
-    if (dateRangeSelect) {
-        dateRangeSelect.addEventListener('change', function() {
-            currentDateRange = this.value;
-            currentPage = 1;
-            filterAndDisplayBookings();
+            renderBookings();
         });
     }
 }
 
-// Tab switching
-function switchTab(tab) {
-    currentTab = tab;
-    currentPage = 1;
-    
-    // Update active tab UI
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-    
-    filterAndDisplayBookings();
-}
-
-// Load bookings from API
-async function loadBookings() {
-    showLoading();
-    
+function loadBookingsFromStorage() {
     try {
-        const result = await window.AttendeeAPIEndpoints.bookings.getHistory(currentPage, 10);
-        allBookings = result.results || result.bookings || [];
-        filterAndDisplayBookings();
+        const savedBookings = localStorage.getItem('eventhub_bookings');
         
-        if (result.total_pages) {
-            totalPages = result.total_pages;
-        } else if (result.pagination && result.pagination.total_pages) {
-            totalPages = result.pagination.total_pages;
+        if (savedBookings) {
+            allBookings = JSON.parse(savedBookings);
+            console.log('Loaded bookings:', allBookings.length);
+        } else {
+            allBookings = [];
         }
         
+        renderBookings();
+        updateBookingCount();
     } catch (error) {
         console.error('Error loading bookings:', error);
-        showError(error.message || 'Failed to load bookings. Please try again.');
     }
 }
 
-// Filter and display bookings based on current filters
-function filterAndDisplayBookings() {
+function updateBookingCount() {
+    const countElement = document.getElementById('bookingCount');
+    if (countElement) {
+        countElement.textContent = allBookings.length;
+    }
+}
+
+function getFilteredBookings() {
     let filtered = [...allBookings];
-    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    // Filter by tab
     if (currentTab === 'upcoming') {
-        filtered = filtered.filter(b => 
-            b.status === 'confirmed' && new Date(b.event_date) > now
-        );
+        filtered = filtered.filter(booking => {
+            const eventDates = booking.items.map(item => new Date(item.date));
+            return eventDates.some(date => date >= today);
+        });
     } else if (currentTab === 'past') {
-        filtered = filtered.filter(b => 
-            new Date(b.event_date) < now
-        );
-    } else if (currentTab === 'cancelled') {
-        filtered = filtered.filter(b => b.status === 'cancelled');
+        filtered = filtered.filter(booking => {
+            const eventDates = booking.items.map(item => new Date(item.date));
+            return eventDates.every(date => date < today);
+        });
     }
     
-    // Filter by search
     if (currentSearch) {
-        const searchLower = currentSearch.toLowerCase();
-        filtered = filtered.filter(b => 
-            (b.booking_id && b.booking_id.toLowerCase().includes(searchLower)) ||
-            (b.event_title && b.event_title.toLowerCase().includes(searchLower))
+        filtered = filtered.filter(booking => 
+            booking.id.toLowerCase().includes(currentSearch) ||
+            booking.receipt_number?.toLowerCase().includes(currentSearch) ||
+            booking.items.some(item => item.title.toLowerCase().includes(currentSearch))
         );
     }
     
-    // Filter by date range
-    if (currentDateRange !== 'all') {
-        const days = parseInt(currentDateRange);
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
-        filtered = filtered.filter(b => new Date(b.created_at) >= cutoffDate);
-    }
-    
-    // Paginate
-    const start = (currentPage - 1) * 10;
-    const paginated = filtered.slice(start, start + 10);
-    const totalFiltered = filtered.length;
-    totalPages = Math.ceil(totalFiltered / 10);
-    
-    displayBookings(paginated);
-    renderPagination(currentPage, totalPages);
-    
-    // Update empty state if needed
-    if (paginated.length === 0 && totalFiltered === 0) {
-        showEmptyState();
-    }
+    filtered.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
+    return filtered;
 }
 
-// Display bookings in the UI
-function displayBookings(bookings) {
-    if (!bookingsListEl) return;
+function renderBookings() {
+    const container = document.getElementById('bookingsList');
+    if (!container) return;
     
-    if (!bookings || bookings.length === 0) {
-        bookingsListEl.innerHTML = `
+    const filtered = getFilteredBookings();
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const paginatedBookings = filtered.slice(start, start + itemsPerPage);
+    
+    if (paginatedBookings.length === 0) {
+        container.innerHTML = `
             <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h3>No Bookings Found</h3>
-                <p>You haven't made any bookings in this category.</p>
-                <a href="/attendee/events/" class="btn-primary">Browse Events</a>
+                <i class="fas fa-receipt"></i>
+                <h3>No bookings found</h3>
+                <p>You haven't made any bookings yet.</p>
+                <a href="/events/" class="btn-primary">Browse Events</a>
             </div>
         `;
-        return;
-    }
-    
-    bookingsListEl.innerHTML = bookings.map(booking => `
-        <div class="booking-card" onclick="viewBookingDetail('${booking.booking_id}')">
-            <div class="booking-header">
-                <div class="booking-info">
-                    <span class="booking-id">
-                        <i class="fas fa-hashtag"></i> <code>${escapeHtml(booking.booking_id)}</code>
-                    </span>
-                    <span class="booking-date">
-                        <i class="far fa-calendar-alt"></i> Booked on ${formatDate(booking.created_at)}
-                    </span>
-                </div>
-                <div class="booking-status ${booking.status}">
-                    <i class="fas ${getStatusIcon(booking.status)}"></i> ${capitalize(booking.status)}
-                </div>
-            </div>
-            <div class="booking-body">
-                <h4>${escapeHtml(booking.event_title)}</h4>
-                <div class="booking-details">
-                    <span><i class="fas fa-calendar"></i> ${formatDate(booking.event_date)}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(booking.venue)}</span>
-                    <span><i class="fas fa-ticket-alt"></i> ${booking.quantity} ticket(s)</span>
-                    <span><i class="fas fa-credit-card"></i> ${formatCurrency(booking.total_amount)}</span>
-                </div>
-            </div>
-            <div class="booking-footer">
-                <button class="btn-outline" onclick="event.stopPropagation(); viewInvoice('${booking.booking_id}')">
-                    <i class="fas fa-download"></i> Invoice
-                </button>
-                ${booking.status === 'confirmed' && new Date(booking.event_date) > new Date() ? `
-                    <button class="btn-danger" onclick="event.stopPropagation(); cancelBooking('${booking.booking_id}')">
-                        <i class="fas fa-times"></i> Cancel Booking
-                    </button>
-                ` : ''}
-                <button class="btn-primary" onclick="event.stopPropagation(); viewTickets('${booking.booking_id}')">
-                    <i class="fas fa-ticket-alt"></i> View Tickets
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Show loading state
-function showLoading() {
-    if (bookingsListEl) {
-        bookingsListEl.innerHTML = `
-            <div class="loading-state">
-                <div class="loading-spinner"></div>
-                <p>Loading your bookings...</p>
-            </div>
-        `;
-    }
-}
-
-// Show error state
-function showError(message) {
-    if (bookingsListEl) {
-        bookingsListEl.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h3>Error Loading Bookings</h3>
-                <p>${message}</p>
-                <button class="btn-primary" onclick="loadBookings()">Try Again</button>
-            </div>
-        `;
-    }
-}
-
-// Show empty state
-function showEmptyState() {
-    if (bookingsListEl) {
-        bookingsListEl.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h3>No Bookings Found</h3>
-                <p>You don't have any bookings matching your filters.</p>
-                <button class="btn-outline" onclick="resetFilters()">Clear Filters</button>
-            </div>
-        `;
-    }
-}
-
-// Reset all filters
-function resetFilters() {
-    currentTab = 'all';
-    currentSearch = '';
-    currentDateRange = 'all';
-    currentPage = 1;
-    
-    // Reset UI elements
-    if (searchInput) searchInput.value = '';
-    if (dateRangeSelect) dateRangeSelect.value = 'all';
-    
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    const allTab = document.querySelector('.tab-btn[data-tab="all"]');
-    if (allTab) allTab.classList.add('active');
-    
-    loadBookings();
-}
-
-// View booking detail modal
-async function viewBookingDetail(bookingId) {
-    if (window.Loader) window.Loader.show('Loading booking details...');
-    
-    try {
-        const booking = await window.AttendeeAPIEndpoints.bookings.getDetail(bookingId);
-        showBookingDetailModal(booking);
-    } catch (error) {
-        console.error('Error loading booking details:', error);
-        showToast('Failed to load booking details', 'error');
-    } finally {
-        if (window.Loader) window.Loader.hide();
-    }
-}
-
-// Show booking detail modal
-function showBookingDetailModal(booking) {
-    const modalBody = document.getElementById('bookingModalBody');
-    const printBtn = document.getElementById('printBookingBtn');
-    
-    if (!modalBody) return;
-    
-    modalBody.innerHTML = `
-        <div class="booking-detail-modal">
-            <div class="detail-header">
-                <div>
-                    <h3>Booking #${escapeHtml(booking.booking_id)}</h3>
-                    <span class="booking-status ${booking.status}">
-                        <i class="fas ${getStatusIcon(booking.status)}"></i> ${capitalize(booking.status)}
-                    </span>
-                </div>
-                <div class="booking-date-detail">
-                    <i class="far fa-calendar-alt"></i> ${formatDateTime(booking.created_at)}
-                </div>
-            </div>
-            
-            <div class="detail-section">
-                <h4>Booking Information</h4>
-                <div class="detail-row">
-                    <span class="label">Booking ID:</span>
-                    <span class="value"><code>${escapeHtml(booking.booking_id)}</code></span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Payment Method:</span>
-                    <span class="value">${booking.payment_method || 'N/A'}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Transaction ID:</span>
-                    <span class="value">${escapeHtml(booking.transaction_id || 'N/A')}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Total Amount:</span>
-                    <span class="value amount">${formatCurrency(booking.total_amount)}</span>
-                </div>
-            </div>
-            
-            <div class="detail-section">
-                <h4>Event Information</h4>
-                <div class="detail-row">
-                    <span class="label">Event:</span>
-                    <span class="value">${escapeHtml(booking.event_title)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Date & Time:</span>
-                    <span class="value">${formatDateTime(booking.event_date)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Venue:</span>
-                    <span class="value">${escapeHtml(booking.venue)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Location:</span>
-                    <span class="value">${escapeHtml(booking.city)}, ${escapeHtml(booking.country)}</span>
-                </div>
-            </div>
-            
-            <div class="detail-section">
-                <h4>Tickets</h4>
-                <table class="tickets-table">
-                    <thead>
-                        <tr>
-                            <th>Ticket Type</th>
-                            <th>Quantity</th>
-                            <th>Unit Price</th>
-                            <th>Subtotal</th>
-                        </thead>
-                        <tbody>
-                            ${booking.tickets && booking.tickets.length ? booking.tickets.map(t => `
-                                <tr>
-                                    <td>${escapeHtml(t.ticket_type)}</td>
-                                    <td>${t.quantity}</td>
-                                    <td>${formatCurrency(t.price)}</td>
-                                    <td>${formatCurrency(t.price * t.quantity)}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr><td colspan="4">No ticket details available</td></tr>
-                            `}
-                        </tbody>
-                        <tfoot>
-                            <tr><td colspan="3"><strong>Total</strong></td>
-                            <td><strong>${formatCurrency(booking.total_amount)}</strong></td>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-        `;
-    
-    // Store booking data for print
-    window.currentBooking = booking;
-    if (printBtn) printBtn.style.display = 'inline-flex';
-    
-    const modal = document.getElementById('bookingModal');
-    if (modal) modal.style.display = 'flex';
-}
-
-// Close booking modal
-function closeBookingModal() {
-    const modal = document.getElementById('bookingModal');
-    if (modal) modal.style.display = 'none';
-    window.currentBooking = null;
-}
-
-// Print booking
-function printBooking() {
-    if (window.currentBooking) {
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Booking #${window.currentBooking.booking_id}</title>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-                <style>
-                    body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .status { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
-                    .status.confirmed { background: #d1fae5; color: #065f46; }
-                    .detail-row { display: flex; padding: 8px 0; border-bottom: 1px solid #eee; }
-                    .label { width: 150px; font-weight: 600; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
-                    th { background: #f5f5f5; }
-                    .total { font-weight: 700; font-size: 1.1em; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>EventHub Booking Confirmation</h1>
-                    <p>Booking #${window.currentBooking.booking_id}</p>
-                    <span class="status ${window.currentBooking.status}">${window.currentBooking.status}</span>
-                </div>
-                ${document.querySelector('.booking-detail-modal')?.innerHTML || ''}
-                <p style="margin-top: 30px; text-align: center; color: #666;">Thank you for choosing EventHub!</p>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-    }
-}
-
-// Cancel booking
-async function cancelBooking(bookingId) {
-    const confirmed = confirm('Are you sure you want to cancel this booking? Refunds may take 5-7 business days.');
-    if (!confirmed) return;
-    
-    if (window.Loader) window.Loader.show('Cancelling booking...');
-    
-    try {
-        await window.AttendeeAPIEndpoints.bookings.cancel(bookingId);
-        showToast('Booking cancelled successfully', 'success');
-        loadBookings();
-    } catch (error) {
-        console.error('Error cancelling booking:', error);
-        showToast(error.message || 'Failed to cancel booking', 'error');
-    } finally {
-        if (window.Loader) window.Loader.hide();
-    }
-}
-
-// View invoice
-function viewInvoice(bookingId) {
-    window.AttendeeAPIEndpoints.bookings.downloadInvoice(bookingId);
-    showToast('Download started', 'success');
-}
-
-// View tickets
-function viewTickets(bookingId) {
-    window.location.href = `/attendee/tickets/?booking=${bookingId}`;
-}
-
-// Export bookings
-function exportBookings() {
-    showToast('Export feature coming soon', 'info');
-}
-
-// Render pagination
-function renderPagination(current, total) {
-    if (!paginationEl || total <= 1) {
+        const paginationEl = document.getElementById('pagination');
         if (paginationEl) paginationEl.innerHTML = '';
         return;
     }
     
-    let html = '';
-    html += `<button ${current === 1 ? 'disabled' : ''} onclick="changePage(${current - 1})">&laquo; Prev</button>`;
+    container.innerHTML = paginatedBookings.map(booking => `
+        <div class="booking-card" onclick="viewBookingDetail('${booking.id}')">
+            <div class="booking-header">
+                <div>
+                    <span class="booking-id">#${booking.id.substring(0, 8)}...</span>
+                    <span class="booking-status status-confirmed">
+                        <i class="fas fa-check-circle"></i> ${booking.status || 'Confirmed'}
+                    </span>
+                </div>
+                <div class="booking-date">${formatDate(booking.booking_date)}</div>
+            </div>
+            <div class="booking-items">
+                ${booking.items.slice(0, 2).map(item => `
+                    <div class="booking-item">
+                        <div class="booking-item-image" style="background-image: url('${item.image || '/static/images/placeholder.jpg'}')"></div>
+                        <div class="booking-item-details">
+                            <div class="booking-item-title">${escapeHtml(item.title)}</div>
+                            <div class="booking-item-meta">
+                                <i class="fas fa-calendar"></i> ${formatDate(item.date)} &nbsp;|&nbsp;
+                                <i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.location.split(',')[0])} &nbsp;|&nbsp;
+                                <i class="fas fa-ticket-alt"></i> ${item.quantity} ticket(s)
+                            </div>
+                        </div>
+                        <div class="booking-item-price">${formatCurrency(item.price * item.quantity)}</div>
+                    </div>
+                `).join('')}
+                ${booking.items.length > 2 ? `<div class="booking-more">+${booking.items.length - 2} more event(s)</div>` : ''}
+            </div>
+            <div class="booking-footer">
+                <div class="booking-total">
+                    <span>Total Paid:</span>
+                    <strong>${formatCurrency(booking.total_amount)}</strong>
+                </div>
+                <div class="booking-actions">
+                    <button class="view-details-btn" onclick="event.stopPropagation(); viewBookingDetail('${booking.id}')">
+                        <i class="fas fa-receipt"></i> Details
+                    </button>
+                    <button class="view-tickets-btn" onclick="event.stopPropagation(); viewTicketsForBooking('${booking.id}')">
+                        <i class="fas fa-ticket-alt"></i> Tickets
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
     
-    let startPage = Math.max(1, current - 2);
-    let endPage = Math.min(total, current + 2);
-    
-    if (startPage > 1) {
-        html += `<button onclick="changePage(1)">1</button>`;
-        if (startPage > 2) html += `<span class="ellipsis">...</span>`;
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-    }
-    
-    if (endPage < total) {
-        if (endPage < total - 1) html += `<span class="ellipsis">...</span>`;
-        html += `<button onclick="changePage(${total})">${total}</button>`;
-    }
-    
-    html += `<button ${current === total ? 'disabled' : ''} onclick="changePage(${current + 1})">Next &raquo;</button>`;
-    paginationEl.innerHTML = html;
+    renderPagination(totalPages);
 }
 
-// Change page
-function changePage(page) {
-    if (page !== currentPage && page >= 1 && page <= totalPages) {
-        currentPage = page;
-        filterAndDisplayBookings();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+function renderPagination(totalPages) {
+    const container = document.getElementById('pagination');
+    if (!container || totalPages <= 1) {
+        container.innerHTML = '';
+        return;
     }
+    
+    let html = '<div class="pagination">';
+    for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
 }
 
-// Helper functions
-function getStatusIcon(status) {
-    const icons = {
-        'confirmed': 'fa-check-circle',
-        'pending': 'fa-clock',
-        'cancelled': 'fa-times-circle',
-        'refunded': 'fa-undo-alt',
-        'completed': 'fa-check-double'
-    };
-    return icons[status] || 'fa-question-circle';
+function goToPage(page) {
+    currentPage = page;
+    renderBookings();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function capitalize(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
+function switchTab(tab) {
+    currentTab = tab;
+    currentPage = 1;
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tab) {
+            btn.classList.add('active');
+        }
+    });
+    
+    renderBookings();
+}
+
+function viewBookingDetail(bookingId) {
+    window.location.href = `/bookings/detail/?id=${bookingId}`;
+}
+
+function viewTicketsForBooking(bookingId) {
+    // Redirect to tickets page with booking ID as query parameter
+    window.location.href = `/tickets/?booking_id=${bookingId}`;
+}
+
+function loadBookingDetail() {
+    const container = document.getElementById('bookingDetailContent');
+    if (!container) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('id');
+    
+    if (!bookingId) {
+        container.innerHTML = '<div class="error-state">Booking not found</div>';
+        return;
+    }
+    
+    let booking = allBookings.find(b => b.id === bookingId);
+    
+    if (!booking) {
+        const savedBookings = localStorage.getItem('eventhub_bookings');
+        if (savedBookings) {
+            allBookings = JSON.parse(savedBookings);
+            booking = allBookings.find(b => b.id === bookingId);
+        }
+    }
+    
+    if (!booking) {
+        container.innerHTML = '<div class="error-state">Booking not found</div>';
+        return;
+    }
+    
+    renderBookingDetail(booking);
+}
+
+function renderBookingDetail(booking) {
+    const container = document.getElementById('bookingDetailContent');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="booking-detail-card">
+            <div class="booking-detail-header">
+                <h2>Booking #${booking.id}</h2>
+                <span class="booking-status status-confirmed">${booking.status || 'Confirmed'}</span>
+            </div>
+            
+            <div class="info-section">
+                <h3>Booking Information</h3>
+                <div class="info-row">
+                    <div class="info-label">Booking Date:</div>
+                    <div class="info-value">${new Date(booking.booking_date).toLocaleString()}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Payment Method:</div>
+                    <div class="info-value">${booking.payment_method || 'M-Pesa'}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Receipt Number:</div>
+                    <div class="info-value">${booking.receipt_number || 'N/A'}</div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Billing Information</h3>
+                <div class="info-row">
+                    <div class="info-label">Full Name:</div>
+                    <div class="info-value">${escapeHtml(booking.billing_info?.name || 'N/A')}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email:</div>
+                    <div class="info-value">${escapeHtml(booking.billing_info?.email || 'N/A')}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Phone:</div>
+                    <div class="info-value">${escapeHtml(booking.billing_info?.phone || 'N/A')}</div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Tickets</h3>
+                ${booking.items.map((item, index) => `
+                    <div class="ticket-item">
+                        <div class="ticket-item-header">
+                            <div class="ticket-item-title">${escapeHtml(item.title)}</div>
+                            <div class="ticket-item-price">${formatCurrency(item.price * item.quantity)}</div>
+                        </div>
+                        <div class="ticket-details">
+                            <div><i class="fas fa-calendar"></i> ${formatDate(item.date)}</div>
+                            <div><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.location)}</div>
+                            <div><i class="fas fa-ticket-alt"></i> ${item.quantity} ticket(s) at ${formatCurrency(item.price)} each</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="booking-total-section">
+                <div class="breakdown">
+                    <div>Subtotal: ${formatCurrency(booking.subtotal)}</div>
+                    <div>Booking Fee: ${formatCurrency(booking.booking_fee || 0)}</div>
+                    ${booking.discount ? `<div>Discount: -${formatCurrency(booking.discount)}</div>` : ''}
+                </div>
+                <div class="total-amount">Total Paid: ${formatCurrency(booking.total_amount)}</div>
+            </div>
+            
+            <div class="detail-actions">
+                <button class="btn-primary" onclick="viewTicketsForBooking('${booking.id}')">
+                    <i class="fas fa-ticket-alt"></i> View Tickets
+                </button>
+                <button class="btn-back" onclick="window.location.href='/bookings/'">
+                    <i class="fas fa-arrow-left"></i> Back to Bookings
+                </button>
+            </div>
+        </div>
+    `;
 }
 
 function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-KE');
-}
-
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-KE');
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return 'TBA';
+    }
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    try {
+        const val = Number(amount);
+        if (isNaN(val)) return 'KES 0';
+        return `KES ${val.toLocaleString('en-KE')}`;
+    } catch (e) {
+        return 'KES 0';
+    }
 }
 
 function escapeHtml(text) {
@@ -531,35 +332,32 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func.apply(this, args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function exportBookings() {
+    const filtered = getFilteredBookings();
+    if (filtered.length === 0) {
+        alert('No bookings to export');
+        return;
+    }
+    
+    let csv = 'Booking ID,Date,Receipt Number,Event,Quantity,Amount\n';
+    filtered.forEach(booking => {
+        booking.items.forEach(item => {
+            csv += `${booking.id},${new Date(booking.booking_date).toLocaleDateString()},${booking.receipt_number},${item.title},${item.quantity},${item.price * item.quantity}\n`;
+        });
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bookings_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 5000);
-}
-
-// Make functions global for onclick handlers
 window.switchTab = switchTab;
+window.goToPage = goToPage;
 window.viewBookingDetail = viewBookingDetail;
-window.closeBookingModal = closeBookingModal;
-window.printBooking = printBooking;
-window.cancelBooking = cancelBooking;
-window.viewInvoice = viewInvoice;
-window.viewTickets = viewTickets;
+window.viewTicketsForBooking = viewTicketsForBooking;
 window.exportBookings = exportBookings;
-window.resetFilters = resetFilters;
-window.changePage = changePage;
-window.loadBookings = loadBookings;
+window.loadBookingDetail = loadBookingDetail;

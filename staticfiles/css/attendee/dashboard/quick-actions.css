@@ -1,60 +1,72 @@
 /* ============================================
-   QUICK ACTIONS CSS - EventHub Style
+   QUICK ACTIONS CSS - Dashboard Actions
    ============================================ */
 
 .quick-actions-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-md);
+    gap: 1rem;
 }
 
 .quick-action-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-lg);
-    background: var(--np-bg);
-    border: none;
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    width: 100%;
-}
-
-.quick-action-btn i {
-    font-size: 1.5rem;
-    color: var(--np-gold);
-    transition: all var(--transition-normal);
-}
-
-.quick-action-btn span {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--np-dark);
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    text-align: center;
 }
 
 .quick-action-btn:hover {
-    background: var(--np-gradient);
+    background: #fef3c7;
     transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
 }
 
-.quick-action-btn:hover i,
-.quick-action-btn:hover span {
-    color: white;
+.quick-action-btn i {
+    font-size: 1.3rem;
+    color: #f59e0b;
+    transition: transform 0.2s ease;
+}
+
+.quick-action-btn:hover i {
+    transform: scale(1.1);
+}
+
+.quick-action-btn span {
+    font-size: 0.7rem;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .quick-actions-grid {
+        gap: 0.8rem;
+    }
+    
+    .quick-action-btn {
+        padding: 0.8rem;
+    }
+    
+    .quick-action-btn i {
+        font-size: 1.1rem;
+    }
 }
 
 @media (max-width: 480px) {
     .quick-actions-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-sm);
+        gap: 0.6rem;
     }
     
     .quick-action-btn {
-        flex-direction: row;
-        justify-content: center;
-        gap: var(--spacing-md);
-        padding: var(--spacing-md);
+        padding: 0.6rem;
+    }
+    
+    .quick-action-btn span {
+        font-size: 0.65rem;
     }
 }

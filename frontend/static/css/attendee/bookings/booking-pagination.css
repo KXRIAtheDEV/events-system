@@ -1,93 +1,35 @@
 /* ============================================
-   BOOKING PAGINATION - EventHub Style
+   BOOKING PAGINATION STYLES
    ============================================ */
 
 .pagination {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-2xl);
+    gap: 0.5rem;
+    margin-top: 2rem;
     flex-wrap: wrap;
-    padding: var(--spacing-md) 0;
 }
 
-/* Pagination Buttons */
-.pagination button {
-    padding: 0.5rem 1rem;
-    min-width: 40px;
+.page-btn {
+    padding: 0.4rem 0.8rem;
+    min-width: 36px;
+    border: 1px solid #e2e8f0;
     background: white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: var(--radius-md);
+    border-radius: 8px;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    font-size: 0.85rem;
-    font-weight: 500;
-    font-family: 'Inter', sans-serif;
-    color: var(--np-dark);
-}
-
-.pagination button:hover:not(:disabled) {
-    background: var(--np-gradient);
-    color: white;
-    border-color: transparent;
-    transform: translateY(-2px);
-}
-
-.pagination button:active:not(:disabled) {
-    transform: translateY(0);
-}
-
-.pagination button.active {
-    background: var(--np-gradient);
-    color: white;
-    border-color: transparent;
-}
-
-.pagination button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Pagination Info Text */
-.pagination-info {
-    text-align: center;
-    margin-top: var(--spacing-lg);
+    transition: all 0.2s ease;
+    color: #1e293b;
     font-size: 0.8rem;
-    font-family: 'Inter', sans-serif;
-    color: var(--np-gray);
 }
 
-/* Pagination with Ellipsis */
-.pagination .ellipsis {
-    padding: 0.5rem 0.25rem;
-    color: var(--np-gray);
-    font-size: 0.85rem;
+.page-btn:hover {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
 }
 
-/* Compact Pagination for Mobile */
-@media (max-width: 640px) {
-    .pagination {
-        gap: var(--spacing-xs);
-    }
-    
-    .pagination button {
-        padding: 0.4rem 0.8rem;
-        min-width: 34px;
-        font-size: 0.75rem;
-    }
-}
-
-/* Small Screens */
-@media (max-width: 480px) {
-    .pagination {
-        gap: 0.25rem;
-    }
-    
-    .pagination button {
-        padding: 0.35rem 0.6rem;
-        min-width: 30px;
-        font-size: 0.7rem;
-    }
+.page-btn.active {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
 }

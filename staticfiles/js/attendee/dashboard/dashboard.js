@@ -1,300 +1,233 @@
 // ============================================
-// ATTENDEE DASHBOARD - Complete Functionality
+// DASHBOARD MODULE - Fetches real data
 // ============================================
 
-let refreshInterval = null;
+let allTickets = [];
+let allBookings = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    setCurrentDate();
-    loadUserName();
-    loadDashboard();
-    setupAutoRefresh();
+    loadDashboardData();
+    displayCurrentDate();
+    displayUserName();
 });
 
-function setCurrentDate() {
-    const dateSpan = document.getElementById('currentDate');
-    if (dateSpan) {
-        dateSpan.textContent = new Date().toLocaleDateString('en-KE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+function displayCurrentDate() {
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateElement.textContent = now.toLocaleDateString('en-US', options);
     }
 }
 
-function loadUserName() {
+function displayUserName() {
     const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
     const userNameSpan = document.getElementById('userName');
-    if (userNameSpan && user.name) {
-        userNameSpan.textContent = user.name.split(' ')[0];
+    if (userNameSpan) {
+        const name = user.name || user.first_name || user.username || 'Attendee';
+        userNameSpan.textContent = name;
     }
 }
 
-async function loadDashboard() {
-    if (window.Loader) window.Loader.show('Loading dashboard...');
-    
+function loadDashboardData() {
+    loadTicketsAndBookings();
+    loadRecentActivity();
+    loadStats();
+}
+
+function loadTicketsAndBookings() {
     try {
-        await Promise.all([
-            loadStats(),
-            loadUpcomingTickets(),
-            loadRecentActivity(),
-            loadRecommendations(),
-            loadStatsOverview()
-        ]);
+        const savedBookings = localStorage.getItem('eventhub_bookings');
+        
+        if (savedBookings) {
+            allBookings = JSON.parse(savedBookings);
+            
+            allTickets = [];
+            allBookings.forEach(booking => {
+                booking.items.forEach(item => {
+                    for (let i = 0; i < item.quantity; i++) {
+                        allTickets.push({
+                            id: `${item.id}_${i}`,
+                            title: item.title,
+                            date: item.date,
+                            location: item.location,
+                            price: item.price,
+                            image: item.image,
+                            booking_id: booking.id
+                        });
+                    }
+                });
+            });
+        }
+        
+        displayUpcomingTickets();
     } catch (error) {
-        console.error('Error loading dashboard:', error);
-        showToast('Failed to load dashboard data', 'error');
-    } finally {
-        if (window.Loader) window.Loader.hide();
+        console.error('Error loading tickets:', error);
     }
 }
 
-async function loadStats() {
-    try {
-        const stats = await window.AttendeeAPIEndpoints.dashboard.getStats();
-        
-        const totalTickets = document.getElementById('totalTickets');
-        const totalSpent = document.getElementById('totalSpent');
-        const upcomingEvents = document.getElementById('upcomingEvents');
-        const reviewsWritten = document.getElementById('reviewsWritten');
-        
-        if (totalTickets) totalTickets.textContent = formatNumber(stats.total_tickets || 0);
-        if (totalSpent) totalSpent.textContent = formatCurrency(stats.total_spent || 0);
-        if (upcomingEvents) upcomingEvents.textContent = formatNumber(stats.upcoming_events || 0);
-        if (reviewsWritten) reviewsWritten.textContent = formatNumber(stats.reviews_written || 0);
-        
-        updateTrend('ticketsTrend', stats.tickets_trend);
-        updateTrend('spentTrend', stats.spent_trend);
-        updateTrend('upcomingTrend', stats.upcoming_trend);
-        updateTrend('reviewsTrend', stats.reviews_trend);
-        
-    } catch (error) {
-        console.error('Error loading stats:', error);
-    }
-}
-
-function updateTrend(elementId, trend) {
-    const element = document.getElementById(elementId);
-    if (!element || !trend) return;
-    
-    const isPositive = trend.percentage >= 0;
-    element.className = `stat-trend ${isPositive ? 'up' : 'down'}`;
-    element.innerHTML = `${isPositive ? '↑' : '↓'} ${Math.abs(trend.percentage)}%`;
-}
-
-async function loadUpcomingTickets() {
+function displayUpcomingTickets() {
     const container = document.getElementById('upcomingTicketsList');
     if (!container) return;
     
-    try {
-        const result = await window.AttendeeAPIEndpoints.tickets.getUpcoming();
-        const tickets = result.results || result;
-        
-        if (!tickets || tickets.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-ticket-alt"></i>
-                    <h4>No Upcoming Tickets</h4>
-                    <p>You don't have any upcoming events.</p>
-                    <a href="/attendee/events/" class="btn-sm btn-primary">Browse Events</a>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = tickets.slice(0, 3).map(ticket => `
-            <div class="upcoming-ticket" onclick="window.location.href='/attendee/tickets/detail/?ticket=${ticket.ticket_number}'">
-                <div class="ticket-event">
-                    <h4>${escapeHtml(ticket.event?.title || 'Event')}</h4>
-                    <div class="ticket-date">
-                        <i class="fas fa-calendar"></i> ${formatDate(ticket.event?.start_date)}
-                    </div>
-                    <div class="ticket-venue">
-                        <i class="fas fa-map-marker-alt"></i> ${escapeHtml(ticket.event?.venue_name || 'TBD')}
-                    </div>
-                </div>
-                <div class="ticket-status ${ticket.status}">
-                    ${ticket.checked_in ? 'Checked In' : 'Valid'}
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading upcoming tickets:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h4>Unable to Load Tickets</h4>
-                <button class="btn-sm btn-outline" onclick="loadUpcomingTickets()">Retry</button>
-            </div>
-        `;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const upcomingTickets = allTickets
+        .filter(ticket => new Date(ticket.date) >= today)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 3);
+    
+    if (upcomingTickets.length === 0) {
+        container.innerHTML = '<div class="empty-state">No upcoming tickets. <a href="/events/">Browse Events</a></div>';
+        return;
     }
+    
+    container.innerHTML = upcomingTickets.map(ticket => `
+        <div class="ticket-item" onclick="window.location.href='/tickets/detail/?id=${ticket.id}'">
+            <div class="ticket-item-image" style="background-image: url('${ticket.image || '/static/images/placeholder.jpg'}')"></div>
+            <div class="ticket-item-info">
+                <div class="ticket-item-title">${escapeHtml(ticket.title)}</div>
+                <div class="ticket-item-date">${formatDate(ticket.date)}</div>
+            </div>
+            <div class="ticket-item-price">${formatCurrency(ticket.price)}</div>
+        </div>
+    `).join('');
 }
 
-async function loadRecentActivity() {
+function loadRecentActivity() {
     const container = document.getElementById('recentActivityList');
     if (!container) return;
     
-    try {
-        const activities = await window.AttendeeAPIEndpoints.dashboard.getRecentActivity();
-        
-        if (!activities || activities.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h4>No Recent Activity</h4>
-                    <p>Your recent activity will appear here.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = activities.slice(0, 5).map(activity => `
-            <div class="activity-item" onclick="window.location.href='${activity.action_url || '#'}'">
-                <div class="activity-icon ${activity.type}">
-                    <i class="fas ${getActivityIcon(activity.type)}"></i>
-                </div>
-                <div class="activity-content">
-                    <div class="activity-title">${escapeHtml(activity.title)}</div>
-                    <div class="activity-description">${escapeHtml(activity.description)}</div>
-                    <div class="activity-time">${formatRelativeTime(activity.created_at)}</div>
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading recent activity:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h4>Unable to Load Activity</h4>
-                <button class="btn-sm btn-outline" onclick="loadRecentActivity()">Retry</button>
-            </div>
-        `;
-    }
-}
-
-async function loadRecommendations() {
-    const container = document.getElementById('recommendationsList');
-    if (!container) return;
+    const activities = [];
     
-    try {
-        const recommendations = await window.AttendeeAPIEndpoints.dashboard.getRecommendations();
+    allBookings.forEach(booking => {
+        activities.push({
+            type: 'booking',
+            title: `Booking Confirmed`,
+            description: `Booking #${booking.id.substring(0, 8)} - Total: ${formatCurrency(booking.total_amount)}`,
+            time: booking.booking_date,
+            icon: 'fa-receipt'
+        });
         
-        if (!recommendations || recommendations.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-lightbulb"></i>
-                    <h4>No Recommendations</h4>
-                    <p>Start browsing events to get personalized recommendations.</p>
-                    <a href="/attendee/events/" class="btn-sm btn-primary">Browse Events</a>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = recommendations.slice(0, 3).map(event => `
-            <div class="recommendation-card" onclick="window.location.href='/attendee/events/detail/?id=${event.id}'">
-                <div class="recommendation-image" style="background-image: url('${event.banner_image || '/static/images/placeholder-event.jpg'}')"></div>
-                <div class="recommendation-content">
-                    <h4>${escapeHtml(event.title)}</h4>
-                    <div class="recommendation-meta">
-                        <span><i class="fas fa-calendar"></i> ${formatDate(event.start_date)}</span>
-                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.city)}</span>
-                    </div>
-                    <div class="recommendation-price">${formatCurrency(event.min_price)}</div>
-                    <div class="recommendation-reason">
-                        <i class="fas fa-magic"></i> ${escapeHtml(event.match_reason || 'Recommended for you')}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading recommendations:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h4>Unable to Load Recommendations</h4>
-                <button class="btn-sm btn-outline" onclick="loadRecommendations()">Retry</button>
-            </div>
-        `;
+        booking.items.forEach(item => {
+            activities.push({
+                type: 'ticket',
+                title: `Tickets Purchased`,
+                description: `${item.quantity} ticket(s) for ${item.title}`,
+                time: booking.booking_date,
+                icon: 'fa-ticket-alt'
+            });
+        });
+    });
+    
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+    const recentActivities = activities.slice(0, 5);
+    
+    if (recentActivities.length === 0) {
+        container.innerHTML = '<div class="empty-state">No recent activity. Start booking events!</div>';
+        return;
     }
+    
+    container.innerHTML = recentActivities.map(activity => `
+        <div class="activity-item activity-${activity.type}">
+            <div class="activity-icon">
+                <i class="fas ${activity.icon}"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-title">${escapeHtml(activity.title)}</div>
+                <div class="activity-description">${escapeHtml(activity.description)}</div>
+                <div class="activity-time">
+                    <i class="fas fa-clock"></i>
+                    ${formatRelativeTime(activity.time)}
+                </div>
+            </div>
+        </div>
+    `).join('');
 }
 
-async function loadStatsOverview() {
-    try {
-        const stats = await window.AttendeeAPIEndpoints.dashboard.getStats();
-        
-        const mostActiveMonth = document.getElementById('mostActiveMonth');
-        const favoriteCategory = document.getElementById('favoriteCategory');
-        const totalAttended = document.getElementById('totalAttended');
-        const memberSince = document.getElementById('memberSince');
-        
-        if (mostActiveMonth) mostActiveMonth.textContent = stats.most_active_month || '-';
-        if (favoriteCategory) favoriteCategory.textContent = stats.favorite_category || '-';
-        if (totalAttended) totalAttended.textContent = formatNumber(stats.total_attended || 0);
-        if (memberSince) memberSince.textContent = formatDate(stats.member_since);
-        
-    } catch (error) {
-        console.error('Error loading stats overview:', error);
+function loadStats() {
+    const totalTickets = allTickets.length;
+    const totalSpent = allBookings.reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingEvents = allTickets.filter(ticket => new Date(ticket.date) >= today).length;
+    
+    const reviews = JSON.parse(localStorage.getItem('eventhub_reviews') || '{}');
+    let reviewsCount = 0;
+    Object.keys(reviews).forEach(eventId => {
+        reviewsCount += reviews[eventId].length;
+    });
+    
+    document.getElementById('totalTickets').textContent = totalTickets;
+    document.getElementById('totalSpent').textContent = formatCurrency(totalSpent);
+    document.getElementById('upcomingEvents').textContent = upcomingEvents;
+    document.getElementById('reviewsWritten').textContent = reviewsCount;
+    
+    const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
+    const memberSince = user.date_joined || (allBookings.length > 0 ? allBookings[allBookings.length - 1].booking_date : new Date().toISOString());
+    document.getElementById('memberSince').textContent = formatDate(memberSince);
+    
+    const pastEvents = allTickets.filter(ticket => new Date(ticket.date) < today).length;
+    document.getElementById('eventsAttended').textContent = pastEvents;
+    
+    // Calculate favorite category
+    const categoryCount = {};
+    allTickets.forEach(ticket => {
+        const cat = ticket.category || 'General';
+        categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+    });
+    let favoriteCategory = '-';
+    let maxCount = 0;
+    for (const [cat, count] of Object.entries(categoryCount)) {
+        if (count > maxCount) {
+            maxCount = count;
+            favoriteCategory = cat;
+        }
     }
+    document.getElementById('favoriteCategory').textContent = favoriteCategory;
 }
 
 function refreshActivity() {
     loadRecentActivity();
-    showToast('Activity refreshed', 'success');
-}
-
-function setupAutoRefresh() {
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(() => {
-        loadStats();
-        loadRecentActivity();
-    }, 60000);
-}
-
-function getActivityIcon(type) {
-    const icons = {
-        'booking': 'fa-ticket-alt',
-        'payment': 'fa-credit-card',
-        'refund': 'fa-undo-alt',
-        'review': 'fa-star',
-        'checkin': 'fa-check-circle',
-        'default': 'fa-bell'
-    };
-    return icons[type] || icons.default;
-}
-
-function formatNumber(num) {
-    return Number(num).toLocaleString('en-KE');
-}
-
-function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    showToast('Activity refreshed!', 'success');
 }
 
 function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-KE', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return 'TBA';
+    }
 }
 
 function formatRelativeTime(dateString) {
-    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
     if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
+    return formatDate(dateString);
+}
+
+function formatCurrency(amount) {
+    try {
+        const val = Number(amount);
+        if (isNaN(val)) return 'KES 0';
+        return `KES ${val.toLocaleString('en-KE')}`;
+    } catch (e) {
+        return 'KES 0';
+    }
 }
 
 function escapeHtml(text) {
@@ -305,14 +238,31 @@ function escapeHtml(text) {
 }
 
 function showToast(message, type = 'success') {
-    const existingToast = document.querySelector('.toast-notification');
+    const existingToast = document.querySelector('.custom-toast');
     if (existingToast) existingToast.remove();
     
     const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    toast.className = `custom-toast toast-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 20px;
+        border-radius: 12px;
+        color: white;
+        font-size: 0.85rem;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        animation: slideInRight 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    `;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${message}`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 5000);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 window.refreshActivity = refreshActivity;

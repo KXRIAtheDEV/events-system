@@ -4,65 +4,40 @@
 {% block title %}My Tickets - EventHub{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/attendee/typography.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/tickets/tickets.css' %}?v=2.0">
-<link rel="stylesheet" href="{% static 'css/attendee/tickets/ticket-card.css' %}?v=2.0">
-<style>
-    /* Foolproof light high-contrast ticket overrides */
-    .ticket-card {
-        background: #ffffff !important;
-    }
-    .ticket-header {
-        background: linear-gradient(135deg, #f1f5f9, #f8fafc) !important;
-    }
-    .event-info h3 {
-        color: #0f172a !important;
-    }
-    .event-meta, .event-meta span {
-        color: #334155 !important;
-    }
-    .event-meta span i {
-        color: #475569 !important;
-    }
-    .ticket-footer {
-        background: #f8fafc !important;
-    }
-    .ticket-footer .btn-outline {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/attendee/tickets/tickets.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendee/tickets/ticket-card.css' %}">
 {% endblock %}
 
-{% block attendee_content %}
+{% block content %}
 <div class="tickets-container">
     <div class="page-header">
         <div>
             <h1><i class="fas fa-ticket-alt"></i> My Tickets</h1>
             <p class="text-muted">View and manage your event tickets</p>
         </div>
+        <div class="action-buttons">
+            <button class="btn-events" onclick="window.location.href='/events/'">
+                <i class="fas fa-calendar-alt"></i> Browse Events
+            </button>
+        </div>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs-container">
         <button class="tab-btn active" data-tab="upcoming" onclick="switchTab('upcoming')">Upcoming Events</button>
         <button class="tab-btn" data-tab="past" onclick="switchTab('past')">Past Events</button>
     </div>
 
-    <!-- Search -->
-    <div class="filters-card">
-        <div class="filter-group search-group">
+    <div class="search-container">
+        <div class="search-group">
             <i class="fas fa-search"></i>
             <input type="text" id="searchTickets" placeholder="Search by event or ticket number...">
         </div>
     </div>
 
-    <!-- Tickets List -->
     <div id="ticketsList" class="tickets-list">
         <div class="loading-state">
             <div class="loading-spinner"></div>
-            <p>Loading tickets...</p>
+            <p>Loading your tickets...</p>
         </div>
     </div>
 </div>

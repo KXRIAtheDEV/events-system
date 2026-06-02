@@ -80,7 +80,7 @@ async function loadUserDetail() {
                             <div class="info-row"><span>Total Events:</span><span>${user.total_events || 0}</span></div>
                             <div class="info-row"><span>Total Tickets Sold:</span><span>${user.total_tickets || 0}</span></div>
                             <div class="info-row"><span>Total Revenue:</span><span>${formatCurrency(user.total_revenue || 0)}</span></div>
-                            <div class="info-row"><span>Average Rating:</span><span>${user.avg_rating || 0} ★</span></div>
+                            <div class="info-row"><span>Average Rating:</span><span>${user.avg_rating || 0} â˜…</span></div>
                         </div>
                     </div>
                 ` : ''}
@@ -198,7 +198,7 @@ function formatDateTime(dateString) {
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
 }
 
 function escapeHtml(text) {

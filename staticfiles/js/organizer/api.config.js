@@ -231,7 +231,7 @@ const ORGANIZER_API_CONFIG = {
             devices: '/checkin/devices/',
             registerDevice: '/checkin/devices/register/',
             deviceDetail: (id) => `/checkin/devices/${id}/`,
-            revokeDevice: (id) => `/checkin/devices/${id}/revoke/',
+            revokeDevice: (id) => `/checkin/devices/${id}/revoke/`,
             sessions: '/checkin/sessions/',
             activeSession: '/checkin/sessions/active/',
             createSession: '/checkin/sessions/create/',
@@ -253,7 +253,7 @@ const ORGANIZER_API_CONFIG = {
             team: '/settings/team/',
             addTeamMember: '/settings/team/add/',
             updateTeamMember: (id) => `/settings/team/${id}/update/`,
-            removeTeamMember: (id) => `/settings/team/${id}/remove/',
+            removeTeamMember: (id) => `/settings/team/${id}/remove/`,
             apiKeys: '/settings/api-keys/',
             createApiKey: '/settings/api-keys/create/',
             revokeApiKey: (id) => `/settings/api-keys/${id}/revoke/`

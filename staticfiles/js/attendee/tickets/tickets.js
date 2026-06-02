@@ -1,421 +1,542 @@
 // ============================================
-// ATTENDEE TICKETS - Complete Functionality
+// TICKETS MODULE - Fixed PDF Export
 // ============================================
 
+let allTickets = [];
 let currentTab = 'upcoming';
 let currentSearch = '';
-let allTickets = [];
+let currentBookingId = null;
 
-// DOM Elements
-const ticketsList = document.getElementById('ticketsList');
-const searchInput = document.getElementById('searchTickets');
-
-// Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    loadTickets();
+    const urlParams = new URLSearchParams(window.location.search);
+    currentBookingId = urlParams.get('booking_id');
+    
+    loadTicketsFromBookings();
     setupEventListeners();
     
-    // Check if on QR page
-    if (window.location.pathname.includes('/qr/')) {
-        loadQRCode();
-    }
-    
-    // Check if on detail page
-    if (window.location.pathname.includes('/detail/')) {
+    const path = window.location.pathname;
+    if (path.includes('/detail/')) {
         loadTicketDetail();
+    } else if (path.includes('/qr/')) {
+        loadQRCode();
     }
 });
 
 function setupEventListeners() {
+    const searchInput = document.getElementById('searchTickets');
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(function() {
-            currentSearch = this.value;
-            filterAndDisplayTickets();
-        }, 500));
+        searchInput.addEventListener('input', function(e) {
+            currentSearch = e.target.value.toLowerCase();
+            renderTickets();
+        });
     }
 }
 
-function switchTab(tab) {
-    currentTab = tab;
-    
-    // Update active tab UI
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
-    
-    filterAndDisplayTickets();
-}
-
-async function loadTickets() {
-    if (ticketsList) {
-        ticketsList.innerHTML = `
-            <div class="loading-state">
-                <div class="loading-spinner"></div>
-                <p>Loading tickets...</p>
-            </div>
-        `;
-    }
-    
+function loadTicketsFromBookings() {
     try {
-        let result;
+        const savedBookings = localStorage.getItem('eventhub_bookings');
         
-        if (currentTab === 'upcoming') {
-            result = await window.AttendeeAPIEndpoints.tickets.getUpcoming();
-        } else {
-            result = await window.AttendeeAPIEndpoints.tickets.getPast();
+        if (savedBookings) {
+            const bookings = JSON.parse(savedBookings);
+            allTickets = [];
+            
+            let filteredBookings = bookings;
+            if (currentBookingId) {
+                filteredBookings = bookings.filter(booking => booking.id === currentBookingId);
+            }
+            
+            filteredBookings.forEach(booking => {
+                booking.items.forEach((item, itemIndex) => {
+                    for (let i = 0; i < item.quantity; i++) {
+                        allTickets.push({
+                            id: `${booking.id}_${item.id}_${i}`,
+                            booking_id: booking.id,
+                            title: item.title,
+                            category: item.category,
+                            date: item.date,
+                            location: item.location,
+                            price: item.price,
+                            image: item.image,
+                            ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
+                            status: 'active',
+                            purchased_date: booking.booking_date,
+                            receipt_number: booking.receipt_number,
+                            quantity: item.quantity
+                        });
+                    }
+                });
+            });
         }
         
-        allTickets = result.results || result;
-        filterAndDisplayTickets();
-        
+        renderTickets();
+        updateHeaderInfo();
     } catch (error) {
         console.error('Error loading tickets:', error);
-        if (ticketsList) {
-            ticketsList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h3>Failed to Load Tickets</h3>
-                    <p>Please try again later.</p>
-                    <button class="btn-primary" onclick="loadTickets()">Retry</button>
-                </div>
-            `;
-        }
     }
 }
 
-function filterAndDisplayTickets() {
-    if (!ticketsList) return;
-    
+function updateHeaderInfo() {
+    const headerSubtitle = document.querySelector('.page-header .text-muted');
+    if (currentBookingId && headerSubtitle) {
+        headerSubtitle.innerHTML = `Showing tickets for booking: ${currentBookingId.substring(0, 8)}...`;
+    }
+}
+
+function getFilteredTickets() {
     let filtered = [...allTickets];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    // Filter by search
+    if (currentTab === 'upcoming') {
+        filtered = filtered.filter(ticket => new Date(ticket.date) >= today);
+    } else if (currentTab === 'past') {
+        filtered = filtered.filter(ticket => new Date(ticket.date) < today);
+    }
+    
     if (currentSearch) {
-        const searchLower = currentSearch.toLowerCase();
         filtered = filtered.filter(ticket => 
-            (ticket.ticket_number && ticket.ticket_number.toLowerCase().includes(searchLower)) ||
-            (ticket.event?.title && ticket.event.title.toLowerCase().includes(searchLower))
+            ticket.title.toLowerCase().includes(currentSearch) ||
+            ticket.ticket_code.toLowerCase().includes(currentSearch)
         );
     }
     
-    displayTickets(filtered);
+    if (currentTab === 'upcoming') {
+        filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+    } else {
+        filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    
+    return filtered;
 }
 
-function displayTickets(tickets) {
-    if (!ticketsList) return;
+function renderTickets() {
+    const container = document.getElementById('ticketsList');
+    if (!container) return;
     
-    if (!tickets || tickets.length === 0) {
-        ticketsList.innerHTML = `
+    const filtered = getFilteredTickets();
+    
+    if (filtered.length === 0) {
+        let emptyMessage = currentTab === 'upcoming' ? 'You have no upcoming events.' : 'You have no past events.';
+        if (currentBookingId) {
+            emptyMessage = 'No tickets found for this booking.';
+        }
+        container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-ticket-alt"></i>
-                <h3>No ${currentTab} Tickets</h3>
-                <p>You don't have any ${currentTab} tickets at the moment.</p>
-                ${currentTab === 'upcoming' ? '<a href="/attendee/events/" class="btn-primary">Browse Events</a>' : ''}
+                <h3>No tickets found</h3>
+                <p>${emptyMessage}</p>
+                <a href="/events/" class="browse-btn">Browse Events</a>
             </div>
         `;
         return;
     }
     
-    ticketsList.innerHTML = tickets.map(ticket => `
-        <div class="ticket-card" onclick="viewTicketDetail('${ticket.ticket_number}')">
+    container.innerHTML = filtered.map(ticket => `
+        <div class="ticket-card">
             <div class="ticket-header">
-                <div class="event-info">
-                    <h3>${escapeHtml(ticket.event?.title || 'Event')}</h3>
-                    <div class="event-meta">
-                        <span><i class="fas fa-calendar"></i> ${formatDate(ticket.event?.start_date)}</span>
-                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(ticket.event?.venue_name || 'TBD')}</span>
+                <div class="ticket-image" style="background-image: url('${ticket.image || '/static/images/placeholder.jpg'}')"></div>
+                <div class="ticket-info">
+                    <div class="ticket-title">${escapeHtml(ticket.title)}</div>
+                    <div class="ticket-meta">
+                        <span><i class="fas fa-calendar"></i> ${formatDate(ticket.date)}</span>
+                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(ticket.location.split(',')[0])}</span>
                     </div>
                 </div>
-                <div class="ticket-status ${ticket.status}">
-                    <i class="fas ${getStatusIcon(ticket.status)}"></i> ${getStatusText(ticket.status)}
-                </div>
+                <div class="ticket-status status-active">Active</div>
             </div>
             <div class="ticket-body">
-                <div class="ticket-details">
-                    <div class="detail">
-                        <span class="label">Ticket Number</span>
-                        <span class="value">${escapeHtml(ticket.ticket_number)}</span>
-                    </div>
-                    <div class="detail">
-                        <span class="label">Ticket Type</span>
-                        <span class="value">${escapeHtml(ticket.ticket_type || 'Standard')}</span>
-                    </div>
-                    <div class="detail">
-                        <span class="label">Quantity</span>
-                        <span class="value">${ticket.quantity || 1}</span>
-                    </div>
-                    <div class="detail">
-                        <span class="label">Price</span>
-                        <span class="value">${formatCurrency(ticket.price)}</span>
-                    </div>
+                <div class="ticket-code">
+                    <span class="code-label">Ticket Code:</span>
+                    <span class="code-value">${ticket.ticket_code}</span>
+                </div>
+                <div class="ticket-price">
+                    <span>Price:</span>
+                    <strong>${formatCurrency(ticket.price)}</strong>
                 </div>
             </div>
             <div class="ticket-footer">
-                <button class="btn-outline" onclick="event.stopPropagation(); viewQRCode('${ticket.ticket_number}')">
-                    <i class="fas fa-qrcode"></i> Show QR Code
+                <button class="btn-qr" onclick="viewQRCode('${ticket.ticket_code}')">
+                    <i class="fas fa-qrcode"></i> View QR
                 </button>
-                <button class="btn-outline" onclick="event.stopPropagation(); downloadTicket('${ticket.ticket_number}')">
-                    <i class="fas fa-download"></i> Download PDF
+                <button class="btn-detail" onclick="viewTicketDetail('${ticket.id}')">
+                    <i class="fas fa-info-circle"></i> Details
                 </button>
-                ${ticket.status === 'valid' && currentTab === 'upcoming' ? `
-                    <button class="btn-danger" onclick="event.stopPropagation(); requestRefund('${ticket.ticket_number}')">
-                        <i class="fas fa-undo-alt"></i> Request Refund
-                    </button>
-                ` : ''}
             </div>
         </div>
     `).join('');
 }
 
-async function viewTicketDetail(ticketNumber) {
-    window.location.href = `/attendee/tickets/detail/?ticket=${ticketNumber}`;
+function viewTicketDetail(ticketId) {
+    window.location.href = `/tickets/detail/?id=${encodeURIComponent(ticketId)}`;
 }
 
-async function loadTicketDetail() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const ticketNumber = urlParams.get('ticket');
-    
-    if (!ticketNumber) {
-        window.location.href = '/attendee/tickets/';
-        return;
-    }
-    
+function viewQRCode(ticketCode) {
+    window.location.href = `/tickets/qr/?code=${encodeURIComponent(ticketCode)}`;
+}
+
+function loadTicketDetail() {
     const container = document.getElementById('ticketDetailContent');
     if (!container) return;
     
-    container.innerHTML = `
-        <div class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>Loading ticket details...</p>
-        </div>
-    `;
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('id');
     
-    try {
-        const ticket = await window.AttendeeAPIEndpoints.tickets.getDetail(ticketNumber);
-        displayTicketDetail(ticket);
-    } catch (error) {
-        console.error('Error loading ticket detail:', error);
+    if (!ticketId) {
+        container.innerHTML = '<div class="error-state">Ticket ID not provided</div>';
+        return;
+    }
+    
+    let ticket = allTickets.find(t => t.id === ticketId);
+    
+    if (!ticket) {
+        const savedBookings = localStorage.getItem('eventhub_bookings');
+        if (savedBookings) {
+            const bookings = JSON.parse(savedBookings);
+            for (const booking of bookings) {
+                for (const item of booking.items) {
+                    for (let i = 0; i < item.quantity; i++) {
+                        const tempId = `${booking.id}_${item.id}_${i}`;
+                        if (tempId === ticketId) {
+                            ticket = {
+                                id: tempId,
+                                booking_id: booking.id,
+                                title: item.title,
+                                category: item.category,
+                                date: item.date,
+                                location: item.location,
+                                price: item.price,
+                                image: item.image,
+                                ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
+                                status: 'active',
+                                purchased_date: booking.booking_date,
+                                receipt_number: booking.receipt_number,
+                                quantity: item.quantity
+                            };
+                            break;
+                        }
+                    }
+                    if (ticket) break;
+                }
+                if (ticket) break;
+            }
+        }
+    }
+    
+    if (!ticket) {
         container.innerHTML = `
-            <div class="empty-state">
+            <div class="error-state">
                 <i class="fas fa-exclamation-circle"></i>
-                <h3>Failed to Load Ticket</h3>
-                <p>Please try again later.</p>
-                <button class="btn-primary" onclick="location.reload()">Retry</button>
+                <p>Ticket not found</p>
+                <button onclick="window.location.href='/tickets/'" class="btn-back">Back to Tickets</button>
             </div>
         `;
+        return;
     }
+    
+    renderTicketDetail(ticket);
 }
 
-function displayTicketDetail(ticket) {
+function renderTicketDetail(ticket) {
     const container = document.getElementById('ticketDetailContent');
     if (!container) return;
     
     container.innerHTML = `
         <div class="ticket-detail-card">
             <div class="card-header">
-                <h3><i class="fas fa-ticket-alt"></i> Ticket Information</h3>
+                <h3><i class="fas fa-ticket-alt"></i> ${escapeHtml(ticket.title)}</h3>
             </div>
             <div class="card-body">
                 <div class="detail-row">
-                    <span class="detail-label">Ticket Number</span>
-                    <span class="detail-value"><code>${escapeHtml(ticket.ticket_number)}</code></span>
+                    <div class="detail-label">Event Date:</div>
+                    <div class="detail-value">${formatDate(ticket.date)}</div>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Event Name</span>
-                    <span class="detail-value">${escapeHtml(ticket.event?.title)}</span>
+                    <div class="detail-label">Venue:</div>
+                    <div class="detail-value">${escapeHtml(ticket.location)}</div>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Event Date</span>
-                    <span class="detail-value">${formatDateTime(ticket.event?.start_date)}</span>
+                    <div class="detail-label">Ticket Price:</div>
+                    <div class="detail-value">${formatCurrency(ticket.price)}</div>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Venue</span>
-                    <span class="detail-value">${escapeHtml(ticket.event?.venue_name)}</span>
+                    <div class="detail-label">Ticket Code:</div>
+                    <div class="detail-value"><strong>${ticket.ticket_code}</strong></div>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Ticket Type</span>
-                    <span class="detail-value">${escapeHtml(ticket.ticket_type || 'Standard')}</span>
+                    <div class="detail-label">Purchased On:</div>
+                    <div class="detail-value">${formatDate(ticket.purchased_date)}</div>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Quantity</span>
-                    <span class="detail-value">${ticket.quantity || 1}</span>
+                    <div class="detail-label">Booking ID:</div>
+                    <div class="detail-value">${ticket.booking_id || 'N/A'}</div>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Price</span>
-                    <span class="detail-value amount">${formatCurrency(ticket.price)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Status</span>
-                    <span class="detail-value">${getStatusBadge(ticket.status)}</span>
-                </div>
-                ${ticket.checked_in_at ? `
-                <div class="detail-row">
-                    <span class="detail-label">Checked In</span>
-                    <span class="detail-value">${formatDateTime(ticket.checked_in_at)}</span>
-                </div>
-                ` : ''}
-                
-                <div class="ticket-actions">
-                    <button class="btn-outline" onclick="viewQRCode('${ticket.ticket_number}')">
-                        <i class="fas fa-qrcode"></i> Show QR Code
-                    </button>
-                    <button class="btn-outline" onclick="downloadTicket('${ticket.ticket_number}')">
-                        <i class="fas fa-download"></i> Download PDF
-                    </button>
-                    ${ticket.status === 'valid' ? `
-                        <button class="btn-danger" onclick="requestRefund('${ticket.ticket_number}')">
-                            <i class="fas fa-undo-alt"></i> Request Refund
-                        </button>
-                    ` : ''}
-                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn-qr" onclick="viewQRCode('${ticket.ticket_code}')">
+                    <i class="fas fa-qrcode"></i> View QR Code
+                </button>
+                <button class="btn-back" onclick="window.location.href='/tickets/'">
+                    <i class="fas fa-arrow-left"></i> Back to Tickets
+                </button>
             </div>
         </div>
     `;
 }
 
-async function loadQRCode() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const ticketNumber = urlParams.get('ticket');
+function loadQRCode() {
+    const container = document.getElementById('qrCodeDisplay');
+    const ticketInfoDiv = document.getElementById('ticketInfo');
     
-    if (!ticketNumber) {
-        window.location.href = '/attendee/tickets/';
+    if (!container) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketCode = urlParams.get('code');
+    
+    if (!ticketCode) {
+        container.innerHTML = '<div class="error-state">No ticket code provided</div>';
         return;
     }
     
-    const qrWrapper = document.getElementById('qrCodeDisplay');
-    const ticketInfo = document.getElementById('ticketInfo');
+    let ticket = allTickets.find(t => t.ticket_code === ticketCode);
     
-    try {
-        const qrData = await window.AttendeeAPIEndpoints.tickets.getQRCode(ticketNumber);
-        const ticket = await window.AttendeeAPIEndpoints.tickets.getDetail(ticketNumber);
-        
-        if (qrWrapper) {
-            qrWrapper.innerHTML = `<img src="${qrData.qr_code_url}" alt="QR Code">`;
+    if (!ticket) {
+        const savedBookings = localStorage.getItem('eventhub_bookings');
+        if (savedBookings) {
+            const bookings = JSON.parse(savedBookings);
+            for (const booking of bookings) {
+                for (const item of booking.items) {
+                    const tempCode = item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`;
+                    if (tempCode === ticketCode) {
+                        ticket = {
+                            id: `${booking.id}_${item.id}_0`,
+                            booking_id: booking.id,
+                            title: item.title,
+                            category: item.category,
+                            date: item.date,
+                            location: item.location,
+                            price: item.price,
+                            image: item.image,
+                            ticket_code: tempCode,
+                            status: 'active',
+                            purchased_date: booking.booking_date,
+                            receipt_number: booking.receipt_number
+                        };
+                        break;
+                    }
+                }
+                if (ticket) break;
+            }
         }
-        
-        if (ticketInfo) {
-            ticketInfo.innerHTML = `
-                <div class="info-row">
-                    <span class="info-label">Event</span>
-                    <span class="info-value">${escapeHtml(ticket.event?.title)}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Date</span>
-                    <span class="info-value">${formatDate(ticket.event?.start_date)}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Venue</span>
-                    <span class="info-value">${escapeHtml(ticket.event?.venue_name)}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Ticket Number</span>
-                    <span class="info-value"><code>${escapeHtml(ticket.ticket_number)}</code></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Attendee</span>
-                    <span class="info-value">${escapeHtml(ticket.attendee_name || 'You')}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Ticket Type</span>
-                    <span class="info-value">${escapeHtml(ticket.ticket_type || 'Standard')}</span>
-                </div>
-            `;
-        }
-        
-        // Setup download button
-        const downloadBtn = document.getElementById('downloadTicketBtn');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => downloadTicket(ticketNumber));
-        }
-        
-    } catch (error) {
-        console.error('Error loading QR code:', error);
-        if (qrWrapper) {
-            qrWrapper.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h3>Failed to Load QR Code</h3>
-                    <p>Please try again later.</p>
-                </div>
-            `;
-        }
+    }
+    
+    if (!ticket) {
+        container.innerHTML = '<div class="error-state">Ticket not found</div>';
+        if (ticketInfoDiv) ticketInfoDiv.innerHTML = '';
+        return;
+    }
+    
+    const qrData = `${ticket.ticket_code}|${ticket.title}|${ticket.date}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+    
+    container.innerHTML = `
+        <div class="qr-code">
+            <img src="${qrUrl}" alt="QR Code">
+            <p class="qr-note">Scan this code at the venue entrance</p>
+        </div>
+    `;
+    
+    if (ticketInfoDiv) {
+        ticketInfoDiv.innerHTML = `
+            <div class="info-row">
+                <span class="info-label">Event:</span>
+                <span class="info-value">${escapeHtml(ticket.title)}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date:</span>
+                <span class="info-value">${formatDate(ticket.date)}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Venue:</span>
+                <span class="info-value">${escapeHtml(ticket.location)}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Ticket Code:</span>
+                <span class="info-value"><strong>${ticket.ticket_code}</strong></span>
+            </div>
+        `;
+    }
+    
+    const exportBtn = document.getElementById('downloadTicketBtn');
+    if (exportBtn) {
+        exportBtn.onclick = () => exportTicketAsPDF(ticket);
     }
 }
 
-function viewQRCode(ticketNumber) {
-    window.open(`/attendee/tickets/qr/?ticket=${ticketNumber}`, '_blank');
-}
-
-function downloadTicket(ticketNumber) {
-    window.AttendeeAPIEndpoints.tickets.download(ticketNumber);
-    showToast('Download started', 'success');
-}
-
-async function requestRefund(ticketNumber) {
-    const reason = prompt('Please explain why you need a refund:');
-    if (!reason) return;
+function exportTicketAsPDF(ticket) {
+    const qrData = `${ticket.ticket_code}|${ticket.title}|${ticket.date}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
     
-    if (window.Loader) window.Loader.show('Submitting refund request...');
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Ticket - ${ticket.title}</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: 'Segoe UI', Arial, sans-serif; 
+                    background: #f5f5f5;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 100vh;
+                    padding: 20px;
+                }
+                .ticket-card {
+                    max-width: 450px;
+                    width: 100%;
+                    background: white;
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                }
+                .ticket-header {
+                    background: linear-gradient(135deg, #f59e0b, #ec6408);
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                }
+                .ticket-header h1 {
+                    font-size: 22px;
+                    margin-bottom: 5px;
+                }
+                .ticket-header p {
+                    font-size: 12px;
+                    opacity: 0.9;
+                }
+                .ticket-body {
+                    padding: 20px;
+                }
+                .info-row {
+                    display: flex;
+                    margin-bottom: 12px;
+                    padding-bottom: 8px;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                .info-label {
+                    width: 100px;
+                    font-weight: 600;
+                    color: #475569;
+                    font-size: 13px;
+                }
+                .info-value {
+                    flex: 1;
+                    color: #1e293b;
+                    font-size: 13px;
+                }
+                .qr-section {
+                    text-align: center;
+                    margin: 20px 0;
+                    padding: 15px;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                }
+                .qr-section img {
+                    width: 150px;
+                    height: 150px;
+                }
+                .qr-section p {
+                    font-size: 11px;
+                    color: #64748b;
+                    margin-top: 8px;
+                }
+                .ticket-footer {
+                    background: #f8fafc;
+                    padding: 12px;
+                    text-align: center;
+                    font-size: 10px;
+                    color: #94a3b8;
+                    border-top: 1px solid #e2e8f0;
+                }
+                @media print {
+                    body { background: white; padding: 0; }
+                    .ticket-card { box-shadow: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <h1>${escapeHtml(ticket.title)}</h1>
+                    <p>Event Ticket</p>
+                </div>
+                <div class="ticket-body">
+                    <div class="info-row">
+                        <div class="info-label">Event Date:</div>
+                        <div class="info-value">${formatDate(ticket.date)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Venue:</div>
+                        <div class="info-value">${escapeHtml(ticket.location)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Ticket Price:</div>
+                        <div class="info-value">${formatCurrency(ticket.price)}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Ticket Code:</div>
+                        <div class="info-value"><strong>${ticket.ticket_code}</strong></div>
+                    </div>
+                    <div class="qr-section">
+                        <img src="${qrUrl}" alt="QR Code">
+                        <p>Scan this QR code at the venue entrance</p>
+                    </div>
+                </div>
+                <div class="ticket-footer">
+                    <p>Present this ticket at the venue entrance</p>
+                    <p>Booking ID: ${ticket.booking_id}</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function switchTab(tab) {
+    currentTab = tab;
     
-    try {
-        await window.AttendeeAPIEndpoints.tickets.requestRefund(ticketNumber, reason);
-        showToast('Refund request submitted successfully', 'success');
-        loadTickets();
-    } catch (error) {
-        console.error('Error requesting refund:', error);
-        showToast(error.message || 'Failed to submit refund request', 'error');
-    } finally {
-        if (window.Loader) window.Loader.hide();
-    }
-}
-
-// Helper functions
-function getStatusIcon(status) {
-    const icons = {
-        'valid': 'fa-check-circle',
-        'checked_in': 'fa-check-double',
-        'expired': 'fa-clock',
-        'refunded': 'fa-undo-alt'
-    };
-    return icons[status] || 'fa-question-circle';
-}
-
-function getStatusText(status) {
-    const texts = {
-        'valid': 'Valid',
-        'checked_in': 'Checked In',
-        'expired': 'Expired',
-        'refunded': 'Refunded'
-    };
-    return texts[status] || status;
-}
-
-function getStatusBadge(status) {
-    const badges = {
-        'valid': '<span class="status-badge status-valid">Valid</span>',
-        'checked_in': '<span class="status-badge status-checked-in">Checked In</span>',
-        'expired': '<span class="status-badge status-expired">Expired</span>',
-        'refunded': '<span class="status-badge status-refunded">Refunded</span>'
-    };
-    return badges[status] || `<span class="status-badge">${status}</span>`;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tab) {
+            btn.classList.add('active');
+        }
+    });
+    
+    renderTickets();
 }
 
 function formatDate(dateString) {
-    if (!dateString) return 'TBD';
-    return new Date(dateString).toLocaleDateString('en-KE', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-KE');
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return 'TBA';
+    }
 }
 
 function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    try {
+        const val = Number(amount);
+        if (isNaN(val)) return 'KES 0';
+        return `KES ${val.toLocaleString('en-KE')}`;
+    } catch (e) {
+        return 'KES 0';
+    }
 }
 
 function escapeHtml(text) {
@@ -425,32 +546,8 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function showToast(message, type = 'success') {
-    const existingToast = document.querySelector('.toast-notification');
-    if (existingToast) existingToast.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${escapeHtml(message)}</span>`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 5000);
-}
-
-// Make functions global
 window.switchTab = switchTab;
 window.viewTicketDetail = viewTicketDetail;
 window.viewQRCode = viewQRCode;
-window.downloadTicket = downloadTicket;
-window.requestRefund = requestRefund;
+window.loadTicketDetail = loadTicketDetail;
+window.loadQRCode = loadQRCode;

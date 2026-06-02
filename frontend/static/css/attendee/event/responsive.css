@@ -1,167 +1,440 @@
 /* ============================================
-   EVENTS RESPONSIVE CSS - EventHub Style
+   RESPONSIVE CSS - Mobile & Tablet Styles
    ============================================ */
 
-/* Tablet Landscape */
-@media (max-width: 1024px) {
-    .events-grid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: var(--spacing-xl);
+/* Large Desktop (1200px and above) */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1400px;
     }
     
-    .event-content-grid {
+    .events-grid {
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 2rem;
+    }
+}
+
+/* Desktop (992px to 1199px) */
+@media (max-width: 1199px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+    
+    .events-grid {
+        gap: 1.5rem;
+    }
+    
+    .event-detail-layout {
+        gap: 1.5rem;
+    }
+}
+
+/* Tablet (768px to 991px) */
+@media (max-width: 991px) {
+    /* Events Page */
+    .events-header h1 {
+        font-size: 2rem;
+    }
+    
+    .events-header p {
+        font-size: 0.9rem;
+    }
+    
+    .events-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    
+    /* Event Detail */
+    .event-content-wrapper {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
     .event-sidebar {
         position: static;
-    }
-}
-
-/* Tablet Portrait */
-@media (max-width: 768px) {
-    .events-container,
-    .search-results-container,
-    .event-detail-container {
-        padding: 0 var(--spacing-lg);
-    }
-    
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .filters-row {
-        flex-direction: column;
-    }
-    
-    .filter-group {
+        max-width: 450px;
+        margin: 0 auto;
         width: 100%;
     }
     
-    .events-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
+    .event-title-section h1 {
+        font-size: 1.6rem;
     }
     
-    .event-banner-large {
-        height: 300px;
+    .event-image-container {
+        aspect-ratio: 16/9;
     }
     
-    .event-banner-overlay h1 {
-        font-size: 1.5rem;
+    /* Filters */
+    .filters-wrapper {
+        gap: 0.8rem;
     }
     
-    .event-info-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-md);
+    .filter-select {
+        padding: 0.6rem 1.8rem 0.6rem 1rem;
+        font-size: 0.8rem;
     }
     
-    .event-section {
-        padding: var(--spacing-lg);
-    }
-    
-    .ticket-type {
-        flex-direction: column;
-        text-align: center;
-        gap: var(--spacing-md);
-    }
-    
-    .ticket-quantity {
-        margin-left: 0;
-        justify-content: center;
-    }
-    
-    .event-actions {
-        flex-direction: column;
-    }
-    
-    .similar-events-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .reviews-header {
-        flex-direction: column;
-    }
-    
-    .rating-summary {
-        flex-direction: column;
-        text-align: center;
+    .search-group input {
+        padding: 0.6rem 1rem 0.6rem 2.2rem;
+        width: 220px;
+        font-size: 0.8rem;
     }
 }
 
-/* Mobile Large */
-@media (max-width: 640px) {
-    .events-container,
-    .search-results-container,
-    .event-detail-container {
-        padding: 0 var(--spacing-md);
+/* Mobile Landscape (576px to 767px) */
+@media (max-width: 767px) {
+    /* Events Page */
+    .events-page {
+        padding: 1rem 0 2rem;
     }
     
-    .page-header h1 {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .events-header {
+        margin-bottom: 2rem;
+    }
+    
+    .events-header h1 {
+        font-size: 1.6rem;
+    }
+    
+    .events-header p {
+        font-size: 0.8rem;
+    }
+    
+    .filters-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filters-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+    }
+    
+    .filter-select,
+    .search-group input {
+        width: 100%;
+        padding: 0.6rem 1rem;
+    }
+    
+    .search-group input {
+        padding-left: 2.2rem;
+    }
+    
+    .events-grid {
+        gap: 1rem;
+        grid-template-columns: 1fr;
+    }
+    
+    .pagination-wrapper {
+        gap: 0.4rem;
+    }
+    
+    .page-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+        min-width: 35px;
+    }
+    
+    /* Event Detail */
+    .event-detail-page {
+        padding: 1rem 0 2rem;
+    }
+    
+    .event-title-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .event-title-section h1 {
         font-size: 1.3rem;
     }
     
-    .event-banner-large {
-        height: 250px;
+    .event-rating {
+        align-self: flex-start;
     }
     
-    .event-banner-overlay {
-        padding: var(--spacing-lg);
-    }
-    
-    .event-banner-overlay h1 {
-        font-size: 1.2rem;
-    }
-    
-    .price-range-inputs {
+    .event-meta {
         flex-direction: column;
+        gap: 0.5rem;
     }
     
-    .price-range-inputs span {
-        display: none;
+    .event-meta span {
+        font-size: 0.75rem;
     }
     
-    .review-header {
-        flex-direction: column;
-        align-items: flex-start;
+    .event-tabs {
+        gap: 0.2rem;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
-}
-
-/* Mobile Small */
-@media (max-width: 480px) {
-    .event-banner-large {
+    
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+    
+    /* Features Grid */
+    .event-features ul {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .event-features li {
+        font-size: 0.7rem;
+        padding: 0.4rem;
+    }
+    
+    /* Location Tab */
+    .location-map iframe {
         height: 200px;
     }
     
-    .event-section h3 {
+    .location-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-live-location,
+    .btn-refresh-location {
+        justify-content: center;
+        padding: 0.6rem;
+        font-size: 0.7rem;
+    }
+    
+    .directions .btn-outline {
+        padding: 0.5rem 1rem;
+        font-size: 0.7rem;
+        justify-content: center;
+    }
+    
+    .location-tips {
+        font-size: 0.65rem;
+    }
+    
+    /* Ticket Card */
+    .ticket-card {
+        padding: 1rem;
+    }
+    
+    .ticket-card h3 {
         font-size: 1rem;
     }
     
-    .organizer-info {
+    .current-price {
+        font-size: 1.3rem;
+    }
+    
+    .qty-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    #ticketQuantity {
+        width: 50px;
+        font-size: 0.8rem;
+    }
+    
+    .total-amount {
+        font-size: 0.9rem;
+    }
+    
+    .book-now-btn {
+        padding: 0.6rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Mobile Portrait (up to 575px) */
+@media (max-width: 575px) {
+    .events-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .event-title-section h1 {
+        font-size: 1.1rem;
+    }
+    
+    .tab-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.7rem;
+    }
+    
+    .event-description h3,
+    .event-organizer h3,
+    .event-features h3,
+    .event-location h3 {
+        font-size: 0.9rem;
+    }
+    
+    .event-description p,
+    .event-organizer p {
+        font-size: 0.75rem;
+    }
+    
+    .location-map iframe {
+        height: 180px;
+    }
+    
+    .current-price {
+        font-size: 1.2rem;
+    }
+    
+    .original-price {
+        font-size: 0.65rem;
+    }
+    
+    .qty-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    #ticketQuantity {
+        width: 45px;
+        font-size: 0.75rem;
+    }
+    
+    .total-amount {
+        font-size: 0.85rem;
+    }
+    
+    .book-now-btn {
+        padding: 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    .ticket-info p {
+        font-size: 0.55rem;
+    }
+    
+    .reviews-summary {
         flex-direction: column;
         text-align: center;
     }
     
-    .rating-value {
-        font-size: 2rem;
+    .rating-number {
+        font-size: 1.3rem;
+    }
+    
+    .review-card {
+        padding: 0.6rem;
+    }
+    
+    .reviewer-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+    
+    .review-title {
+        font-size: 0.8rem;
+    }
+    
+    .review-content {
+        font-size: 0.7rem;
+    }
+    
+    .modal-content {
+        padding: 1rem;
+        width: 95%;
+    }
+    
+    .toast {
+        bottom: 0.5rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        max-width: calc(100% - 1rem);
+        text-align: center;
     }
 }
 
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .event-card {
-        cursor: pointer;
+/* Small Mobile (up to 360px) */
+@media (max-width: 360px) {
+    .events-header h1 {
+        font-size: 1.2rem;
     }
     
-    .event-card:active {
-        transform: scale(0.99);
+    .event-title-section h1 {
+        font-size: 1rem;
     }
     
-    .filter-group select,
-    .filter-group input,
-    .quantity-minus,
-    .quantity-plus {
-        min-height: 44px;
+    .tab-btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.65rem;
+    }
+    
+    .current-price {
+        font-size: 1rem;
+    }
+    
+    .total-amount {
+        font-size: 0.8rem;
+    }
+    
+    .qty-btn {
+        width: 25px;
+        height: 25px;
+        font-size: 0.7rem;
+    }
+    
+    #ticketQuantity {
+        width: 40px;
+        font-size: 0.7rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .event-sidebar,
+    .event-tabs,
+    .filters-section,
+    .pagination,
+    .location-controls,
+    .book-now-btn,
+    .write-review-btn,
+    .wishlist-btn,
+    .directions,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .event-content-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .tab-content {
+        display: block !important;
+    }
+    
+    .event-main-image {
+        max-height: 250px;
+    }
+    
+    .event-features ul {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .review-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .container {
+        padding: 0;
+        margin: 0;
     }
 }

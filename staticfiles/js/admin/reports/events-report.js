@@ -228,7 +228,7 @@ function renderEventsPagination(current, total) {
 
 function changeEventsPage(page) { currentPage = page; loadEventsTable(); }
 
-function formatCurrency(amount) { return `KSh ${Number(amount).toLocaleString('en-KE')}`; }
+function formatCurrency(amount) { return `Kes ${Number(amount).toLocaleString('en-KE')}`; }
 function formatNumber(num) { return Number(num).toLocaleString('en-KE'); }
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('en-KE') : 'N/A'; }
 

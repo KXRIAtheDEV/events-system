@@ -1,30 +1,32 @@
 /* ============================================
-   ACTIVITY LIST CSS - EventHub Style
+   ACTIVITY CSS - Recent Activity Timeline
    ============================================ */
 
 .activity-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 0.8rem;
 }
 
 .activity-item {
     display: flex;
+    gap: 0.8rem;
     align-items: flex-start;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-lg);
-    transition: background var(--transition-fast);
-    cursor: pointer;
+    padding: 0.8rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    transition: all 0.2s ease;
 }
 
 .activity-item:hover {
-    background: var(--np-bg);
+    background: #fef3c7;
+    transform: translateX(3px);
 }
 
 .activity-icon {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
+    background: #fef3c7;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -32,34 +34,9 @@
     flex-shrink: 0;
 }
 
-.activity-icon.booking {
-    background: #d1fae5;
-    color: #10b981;
-}
-
-.activity-icon.payment {
-    background: #dbeafe;
-    color: #3b82f6;
-}
-
-.activity-icon.refund {
-    background: #fef3c7;
+.activity-icon i {
     color: #f59e0b;
-}
-
-.activity-icon.review {
-    background: #fce7f3;
-    color: #ec489a;
-}
-
-.activity-icon.checkin {
-    background: #d1fae5;
-    color: #10b981;
-}
-
-.activity-icon.default {
-    background: #f1f5f9;
-    color: #64748b;
+    font-size: 0.8rem;
 }
 
 .activity-content {
@@ -67,32 +44,69 @@
 }
 
 .activity-title {
+    font-size: 0.8rem;
     font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: var(--spacing-xs);
-    color: var(--np-dark);
+    color: #1e293b;
+    margin-bottom: 0.2rem;
 }
 
 .activity-description {
-    font-size: 0.8rem;
-    color: var(--np-gray);
-    margin-bottom: var(--spacing-xs);
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-bottom: 0.2rem;
 }
 
 .activity-time {
-    font-size: 0.7rem;
-    color: var(--np-light-gray);
-}
-
-.activity-link {
-    color: var(--np-gold);
-    font-size: 0.8rem;
-    text-decoration: none;
+    font-size: 0.65rem;
+    color: #94a3b8;
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
+    gap: 0.3rem;
 }
 
-.activity-link:hover {
-    text-decoration: underline;
+.activity-time i {
+    font-size: 0.6rem;
+}
+
+/* Activity Type Variations */
+.activity-booking {
+    border-left: 3px solid #10b981;
+}
+
+.activity-ticket {
+    border-left: 3px solid #f59e0b;
+}
+
+.activity-review {
+    border-left: 3px solid #8b5cf6;
+}
+
+.activity-wishlist {
+    border-left: 3px solid #ef4444;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .activity-item {
+        padding: 0.6rem;
+    }
+    
+    .activity-icon {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .activity-icon i {
+        font-size: 0.7rem;
+    }
+    
+    .activity-title {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .activity-item {
+        flex-wrap: wrap;
+    }
 }

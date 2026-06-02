@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Animate counter values
             animateCounter(elements.eventsCount, stats.events_count || 0, 800);
             animateCounter(elements.ticketsCount, stats.tickets_sold || 0, 1000);
-            animateCounter(elements.revenueCount, stats.revenue || 0, 1200, 'KSh ');
+            animateCounter(elements.revenueCount, stats.revenue || 0, 1200, 'Kes ');
             animateCounter(elements.attendeesCount, stats.attendees || 0, 1000);
         } catch (error) {
             console.error("Error updating metrics:", error);
@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-weight: 500;">${event.sold} / ${event.capacity}</div>
                         <div style="font-size: 0.75rem; color: var(--gray-muted);">Tickets</div>
                     </td>
-                    <td style="font-weight: 600; color: var(--dark);">KSh ${(event.revenue || 0).toLocaleString()}</td>
+                    <td style="font-weight: 600; color: var(--dark);">Kes ${(event.revenue || 0).toLocaleString()}</td>
                     <td>
                         <span class="status-badge ${event.status}">${event.status}</span>
                     </td>
@@ -294,11 +294,20 @@ document.addEventListener("DOMContentLoaded", () => {
     function toggleModal(show = true) {
         if (show) {
             elements.createEventModal.classList.add("active");
-            // Set default date to today plus 1 week
+            // Set default date to today plus 1 week using correct YYYY-MM-DD formatting
             const nextWeek = new Date();
             nextWeek.setDate(nextWeek.getDate() + 7);
-            nextWeek.setMinutes(nextWeek.getMinutes() - nextWeek.getTimezoneOffset());
-            document.getElementById("eventDate").value = nextWeek.toISOString().slice(0, 16);
+            const year = nextWeek.getFullYear();
+            const month = String(nextWeek.getMonth() + 1).padStart(2, '0');
+            const day = String(nextWeek.getDate()).padStart(2, '0');
+            
+            const eventDateInput = document.getElementById("eventDate");
+            if (eventDateInput) {
+                eventDateInput.value = `${year}-${month}-${day}`;
+                if (window.AppCalendar) {
+                    eventDateInput.min = window.AppCalendar.getTodayDateString();
+                }
+            }
         } else {
             elements.createEventModal.classList.remove("active");
             elements.createEventForm.reset();
@@ -329,21 +338,31 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
 
         const name = document.getElementById("eventName").value.trim();
+        const description = document.getElementById("eventDescription").value.trim();
         const date = document.getElementById("eventDate").value;
-        const location = document.getElementById("eventLocation").value.trim();
+        const startTime = document.getElementById("eventStartTime").value;
+        const endTime = document.getElementById("eventEndTime").value;
+        const venue = document.getElementById("eventVenue").value.trim();
+        const address = document.getElementById("eventAddress").value.trim();
         const capacity = document.getElementById("ticketCapacity").value;
         const price = document.getElementById("ticketPrice").value;
+        const image = document.getElementById("eventImage").value.trim();
         const category = document.getElementById("eventCategory").value;
         const status = document.getElementById("eventStatus").value;
 
-        if (!name || !date || !location || !capacity || !price || !category) {
+        if (!name || !date || !startTime || !endTime || !venue || !address || !capacity || !price || !category) {
             showToast("Please fill in all mandatory fields.", "error");
+            return;
+        }
+
+        if (window.AppCalendar && window.AppCalendar.isPastDate(date)) {
+            showToast("Cannot create an event in a past date.", "error");
             return;
         }
 
         try {
             const newEvent = await window.OrganizerAPI.events.create({
-                name, date, location, capacity, price, category, status
+                name, description, date, startTime, endTime, venue, address, capacity, price, image, category, status
             });
 
             if (newEvent) {
@@ -355,7 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error creating event:", error);
-            showToast("Something went wrong while publishing the event.", "error");
+            showToast(error.message || "Something went wrong while publishing the event.", "error");
         }
     });
 

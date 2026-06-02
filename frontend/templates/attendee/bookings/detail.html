@@ -4,11 +4,10 @@
 {% block title %}Booking Details - EventHub{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/attendee/typography.css' %}">
 <link rel="stylesheet" href="{% static 'css/attendee/bookings/bookings.css' %}">
 {% endblock %}
 
-{% block attendee_content %}
+{% block content %}
 <div class="booking-detail-container">
     <div class="page-header">
         <div>
@@ -16,9 +15,6 @@
             <p class="text-muted">View complete booking information</p>
         </div>
         <div class="action-buttons">
-            <button class="btn-outline" onclick="window.print()">
-                <i class="fas fa-print"></i> Print
-            </button>
             <button class="btn-outline" onclick="window.history.back()">
                 <i class="fas fa-arrow-left"></i> Back
             </button>
@@ -36,4 +32,10 @@
 
 {% block extra_js %}
 <script src="{% static 'js/attendee/bookings/bookings.js' %}"></script>
+<script>
+    // Load booking detail when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBookingDetail();
+    });
+</script>
 {% endblock %}

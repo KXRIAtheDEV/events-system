@@ -104,7 +104,7 @@ async function loadStats() {
         const stats = await response.json();
         
         document.getElementById('totalTransactions').textContent = stats.total_count || 0;
-        document.getElementById('totalVolume').textContent = `KSh ${formatNumber(stats.total_volume || 0)}`;
+        document.getElementById('totalVolume').textContent = `Kes ${formatNumber(stats.total_volume || 0)}`;
         document.getElementById('successCount').textContent = stats.success_count || 0;
         document.getElementById('pendingCount').textContent = stats.pending_count || 0;
     } catch (error) {
@@ -125,7 +125,7 @@ function renderTransactions() {
             <td>${formatDateTime(transaction.created_at || transaction.date)}</td>
             <td>${escapeHtml(transaction.customer_name || transaction.customer?.name || 'N/A')}<br><small class="text-muted">${escapeHtml(transaction.customer_email || '')}</small></td>
             <td>${escapeHtml(transaction.event_name || transaction.event?.name || '-')}</td>
-            <td class="amount">KSh ${formatNumber(transaction.amount)}</td>
+            <td class="amount">Kes ${formatNumber(transaction.amount)}</td>
             <td>${getStatusBadge(transaction.status)}</td>
             <td class="action-buttons">
                 <button class="action-btn view" onclick="viewTransactionDetails('${transaction.id}')" title="View">
@@ -239,7 +239,7 @@ async function viewTransactionDetails(transactionId) {
             </div>
             <div class="detail-row">
                 <span class="detail-label">Amount:</span>
-                <span class="detail-value amount-positive">KSh ${formatNumber(selectedTransaction.amount)}</span>
+                <span class="detail-value amount-positive">Kes ${formatNumber(selectedTransaction.amount)}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Status:</span>
@@ -266,7 +266,7 @@ function openRefundModal(transactionId) {
 async function processRefund() {
     if (!selectedTransaction) return;
     
-    if (!confirm(`Refund KSh ${formatNumber(selectedTransaction.amount)} to ${selectedTransaction.customer_name || selectedTransaction.customer?.name}?`)) {
+    if (!confirm(`Refund Kes ${formatNumber(selectedTransaction.amount)} to ${selectedTransaction.customer_name || selectedTransaction.customer?.name}?`)) {
         return;
     }
     
@@ -369,7 +369,7 @@ function generateTransactionsPDF(transactions, stats) {
     
     const summaryData = [
         ['Total Transactions', formatNumber(stats.total_count || 0)],
-        ['Total Volume', `KSh ${formatNumber(stats.total_volume || 0)}`],
+        ['Total Volume', `Kes ${formatNumber(stats.total_volume || 0)}`],
         ['Successful Transactions', formatNumber(stats.success_count || 0)],
         ['Pending Transactions', formatNumber(stats.pending_count || 0)],
         ['Failed Transactions', formatNumber(stats.failed_count || 0)],
@@ -399,7 +399,7 @@ function generateTransactionsPDF(transactions, stats) {
         formatDateTime(transaction.created_at || transaction.date),
         transaction.customer_name || transaction.customer?.name || 'N/A',
         transaction.event_name || transaction.event?.name || '-',
-        `KSh ${formatNumber(transaction.amount)}`,
+        `Kes ${formatNumber(transaction.amount)}`,
         transaction.status
     ]);
     

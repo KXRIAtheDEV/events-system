@@ -1,5 +1,5 @@
 // ============================================
-// ATTENDEE SEARCH - Complete Functionality
+// ATTENDEE SEARCH - Using Global Loader & Mock Data
 // ============================================
 
 let currentPage = 1;
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     currentQuery = urlParams.get('q') || '';
     
     if (searchQueryInfo) {
-        searchQueryInfo.textContent = `Showing results for "${escapeHtml(currentQuery)}"`;
+        searchQueryInfo.innerHTML = `Showing results for "<strong>${escapeHtml(currentQuery)}</strong>"`;
     }
     
     loadCategories();
@@ -61,10 +61,12 @@ function setupEventListeners() {
 
 async function loadCategories() {
     try {
-        const categories = await window.AttendeeAPIEndpoints.events.getCategories();
-        if (categoryFilter && categories && categories.length) {
-            categoryFilter.innerHTML = '<option value="">All Categories</option>' + 
-                categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        if (window.MockEventsData && window.MockEventsData.categories) {
+            const categories = window.MockEventsData.categories;
+            if (categoryFilter && categories && categories.length) {
+                categoryFilter.innerHTML = '<option value="">All Categories</option>' + 
+                    categories.map(c => `<option value="${c.slug}">${escapeHtml(c.name)}</option>`).join('');
+            }
         }
     } catch (error) {
         console.error('Error loading categories:', error);
@@ -72,21 +74,51 @@ async function loadCategories() {
 }
 
 async function loadSearchResults() {
-    if (window.Loader) window.Loader.show('Searching...');
+    // Use global loader if available
+    if (window.PageLoader) {
+        window.PageLoader.show('Searching for events...');
+    }
     
     try {
-        const result = await window.AttendeeAPIEndpoints.events.search(currentQuery, {
-            page: currentPage,
-            category: currentFilters.category,
-            city: currentFilters.city,
-            sort: currentFilters.sort
-        });
+        let results = [];
         
-        const events = result.results || result;
-        const total = result.count || events.length;
-        totalPages = result.total_pages || Math.ceil(total / 12);
+        if (window.MockEventsData) {
+            results = window.MockEventsData.searchEvents(currentQuery);
+            
+            // Apply filters
+            if (currentFilters.category) {
+                results = results.filter(e => e.category === currentFilters.category);
+            }
+            
+            if (currentFilters.city) {
+                results = results.filter(e => e.location.toLowerCase().includes(currentFilters.city.toLowerCase()));
+            }
+            
+            // Apply sorting
+            switch(currentFilters.sort) {
+                case 'date_asc':
+                    results.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    break;
+                case 'date_desc':
+                    results.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    break;
+                case 'price_asc':
+                    results.sort((a, b) => a.price - b.price);
+                    break;
+                case 'price_desc':
+                    results.sort((a, b) => b.price - a.price);
+                    break;
+                default:
+                    results.sort((a, b) => new Date(a.date) - new Date(b.date));
+            }
+        }
         
-        displayResults(events);
+        const total = results.length;
+        totalPages = Math.ceil(total / 12);
+        const start = (currentPage - 1) * 12;
+        const paginatedResults = results.slice(start, start + 12);
+        
+        displayResults(paginatedResults);
         renderPagination(currentPage, totalPages);
         
         if (resultsCount) {
@@ -101,12 +133,15 @@ async function loadSearchResults() {
                     <i class="fas fa-exclamation-circle"></i>
                     <h3>Search Failed</h3>
                     <p>${error.message || 'Please try again later.'}</p>
-                    <button class="btn-primary" onclick="loadSearchResults()">Retry</button>
+                    <button class="btn-primary" onclick="location.reload()">Retry</button>
                 </div>
             `;
         }
     } finally {
-        if (window.Loader) window.Loader.hide();
+        // Hide global loader
+        if (window.PageLoader) {
+            setTimeout(() => window.PageLoader.hide(), 300);
+        }
     }
 }
 
@@ -120,32 +155,35 @@ function displayResults(events) {
                 <h3>No results found</h3>
                 <p>We couldn't find any events matching "${escapeHtml(currentQuery)}".</p>
                 <p>Try adjusting your search terms or browse all events.</p>
-                <a href="/attendee/events/" class="btn-primary">Browse All Events</a>
+                <a href="/events/" class="btn-primary">Browse All Events</a>
             </div>
         `;
         return;
     }
     
     searchResultsGrid.innerHTML = events.map(event => `
-        <div class="event-card" onclick="window.location.href='/attendee/events/detail/?id=${event.id}'">
-            <div class="event-banner" style="background-image: url('${event.banner_image || '/static/images/placeholder.jpg'}')">
+        <div class="premium-card" onclick="window.location.href='/events/detail/?id=${event.id}'" style="cursor: pointer;">
+            <div class="card-image-container">
+                <img src="${event.image}" alt="${event.title}" class="card-bg-image">
+                <div class="card-gradient-overlay"></div>
                 ${event.is_featured ? '<span class="featured-badge">Featured</span>' : ''}
-                <span class="event-category">${escapeHtml(event.category_name || 'Event')}</span>
+                <span class="event-category">${escapeHtml(event.category_name)}</span>
             </div>
-            <div class="event-content">
-                <h3 class="event-title">${escapeHtml(event.title)}</h3>
-                <div class="event-meta">
-                    <span><i class="fas fa-calendar"></i> ${formatDate(event.start_date)}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.city)}</span>
+            <div class="card-content">
+                <h3 class="card-title">${escapeHtml(event.title)}</h3>
+                <div class="card-meta">
+                    <span><i class="fas fa-calendar"></i> ${formatDate(event.date)}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location.split(',')[0])}</span>
                 </div>
-                <div class="event-footer">
-                    <div class="event-price">${formatCurrency(event.min_price)}</div>
-                    <div class="event-availability">
-                        ${event.available_tickets > 0 ? 
-                            `<span>${event.available_tickets} left</span>` : 
-                            '<span class="sold-out">Sold Out</span>'}
-                    </div>
-                </div>
+                <div class="card-price">KES ${event.price.toLocaleString()}</div>
+            </div>
+            <div class="card-actions">
+                <button class="card-action-btn view-details-btn" onclick="event.stopPropagation(); window.location.href='/events/detail/?id=${event.id}'">
+                    <i class="fas fa-info-circle"></i> Details
+                </button>
+                <button class="card-action-btn add-to-cart-btn" onclick="event.stopPropagation(); addToCart(${event.id})">
+                    <i class="fas fa-cart-plus"></i> Add to Cart
+                </button>
             </div>
         </div>
     `).join('');
@@ -158,17 +196,18 @@ function renderPagination(current, total) {
         return;
     }
     
-    let html = '';
-    html += `<button ${current === 1 ? 'disabled' : ''} onclick="changePage(${current - 1})">&laquo; Prev</button>`;
+    let html = '<div class="pagination-wrapper">';
+    html += `<button class="page-btn" ${current === 1 ? 'disabled' : ''} onclick="changePage(${current - 1})">&laquo; Prev</button>`;
     
     let startPage = Math.max(1, current - 2);
     let endPage = Math.min(total, current + 2);
     
     for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+        html += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
     }
     
-    html += `<button ${current === total ? 'disabled' : ''} onclick="changePage(${current + 1})">Next &raquo;</button>`;
+    html += `<button class="page-btn" ${current === total ? 'disabled' : ''} onclick="changePage(${current + 1})">Next &raquo;</button>`;
+    html += '</div>';
     container.innerHTML = html;
 }
 
@@ -182,11 +221,7 @@ function changePage(page) {
 
 function formatDate(dateString) {
     if (!dateString) return 'TBD';
-    return new Date(dateString).toLocaleDateString('en-KE');
-}
-
-function formatCurrency(amount) {
-    return `KSh ${Number(amount).toLocaleString('en-KE')}`;
+    return new Date(dateString).toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function escapeHtml(text) {
@@ -196,5 +231,26 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function addToCart(eventId) {
+    const token = localStorage.getItem('attendee_access_token');
+    
+    if (!token) {
+        showToast('Please login to add to cart', 'info');
+        setTimeout(() => window.location.href = '/login/', 1500);
+        return;
+    }
+    
+    showToast('Added to cart!', 'success');
+}
+
 // Make functions global
 window.changePage = changePage;
+window.addToCart = addToCart;

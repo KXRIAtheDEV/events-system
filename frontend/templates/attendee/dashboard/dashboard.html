@@ -4,12 +4,7 @@
 {% block title %}Dashboard - EventHub{% endblock %}
 
 {% block extra_css %}
-<!-- Dashboard CSS -->
 <link rel="stylesheet" href="{% static 'css/attendee/dashboard/dashboard.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/dashboard/stats-cards.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/dashboard/activity.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/dashboard/quick-actions.css' %}">
-<link rel="stylesheet" href="{% static 'css/attendee/dashboard/recommendations.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -27,38 +22,42 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid" id="statsContainer">
+    <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+            <div class="stat-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
             <div class="stat-info">
                 <h3 id="totalTickets">0</h3>
                 <span>Total Tickets</span>
             </div>
-            <div class="stat-trend" id="ticketsTrend"></div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-icon">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
             <div class="stat-info">
-                <h3 id="totalSpent">Kes 0</h3>
+                <h3 id="totalSpent">KES 0</h3>
                 <span>Total Spent</span>
             </div>
-            <div class="stat-trend" id="spentTrend"></div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
+            <div class="stat-icon">
+                <i class="fas fa-calendar-week"></i>
+            </div>
             <div class="stat-info">
                 <h3 id="upcomingEvents">0</h3>
                 <span>Upcoming Events</span>
             </div>
-            <div class="stat-trend" id="upcomingTrend"></div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-icon">
+                <i class="fas fa-star"></i>
+            </div>
             <div class="stat-info">
                 <h3 id="reviewsWritten">0</h3>
                 <span>Reviews Written</span>
             </div>
-            <div class="stat-trend" id="reviewsTrend"></div>
         </div>
     </div>
 
@@ -70,7 +69,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3><i class="fas fa-ticket-alt"></i> Upcoming Tickets</h3>
-                    <a href="/attendee/tickets/" class="btn-sm btn-outline">View All</a>
+                    <a href="/tickets/" class="btn-sm">View All</a>
                 </div>
                 <div class="card-body">
                     <div id="upcomingTicketsList" class="upcoming-tickets-list">
@@ -86,7 +85,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3><i class="fas fa-history"></i> Recent Activity</h3>
-                    <button class="btn-sm btn-outline" onclick="refreshActivity()">
+                    <button class="btn-sm" onclick="refreshActivity()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
@@ -103,22 +102,6 @@
 
         <!-- Right Column -->
         <div class="dashboard-right">
-            <!-- Recommendations -->
-            <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-lightbulb"></i> Recommended For You</h3>
-                    <a href="/events/" class="btn-sm btn-outline">Browse More</a>
-                </div>
-                <div class="card-body">
-                    <div id="recommendationsList" class="recommendations-list">
-                        <div class="loading-state">
-                            <div class="loading-spinner"></div>
-                            <p>Finding recommendations...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Quick Actions -->
             <div class="card">
                 <div class="card-header">
@@ -126,27 +109,35 @@
                 </div>
                 <div class="card-body">
                     <div class="quick-actions-grid">
-                        <button class="quick-action-btn" onclick="window.location.href='/events/'">
+                        <a href="/events/" class="quick-action-btn">
                             <i class="fas fa-calendar"></i>
                             <span>Browse Events</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="window.location.href='/attendee/tickets/'">
+                        </a>
+                        <a href="/tickets/" class="quick-action-btn">
                             <i class="fas fa-ticket-alt"></i>
                             <span>My Tickets</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="window.location.href='/wishlist/'">
+                        </a>
+                        <a href="/bookings/" class="quick-action-btn">
+                            <i class="fas fa-receipt"></i>
+                            <span>My Bookings</span>
+                        </a>
+                        <a href="/wishlist/" class="quick-action-btn">
                             <i class="fas fa-heart"></i>
                             <span>Wishlist</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="window.location.href='/support/'">
-                            <i class="fas fa-headset"></i>
-                            <span>Get Support</span>
-                        </button>
+                        </a>
+                        <a href="/cart/" class="quick-action-btn">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>My Cart</span>
+                        </a>
+                        <a href="/profile/" class="quick-action-btn">
+                            <i class="fas fa-user"></i>
+                            <span>My Profile</span>
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Overview -->
+            <!-- Your Stats -->
             <div class="card">
                 <div class="card-header">
                     <h3><i class="fas fa-chart-line"></i> Your Stats</h3>
@@ -154,16 +145,16 @@
                 <div class="card-body">
                     <div class="stats-overview">
                         <div class="overview-item">
-                            <div class="overview-label">Member Since</div>
-                            <div class="overview-value" id="memberSince">-</div>
+                            <span class="overview-label">Member Since</span>
+                            <span class="overview-value" id="memberSince">-</span>
                         </div>
                         <div class="overview-item">
-                            <div class="overview-label">Favorite Category</div>
-                            <div class="overview-value" id="favoriteCategory">-</div>
+                            <span class="overview-label">Events Attended</span>
+                            <span class="overview-value" id="eventsAttended">0</span>
                         </div>
                         <div class="overview-item">
-                            <div class="overview-label">Events Attended</div>
-                            <div class="overview-value" id="eventsAttended">0</div>
+                            <span class="overview-label">Favorite Category</span>
+                            <span class="overview-value" id="favoriteCategory">-</span>
                         </div>
                     </div>
                 </div>

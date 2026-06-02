@@ -1,0 +1,238 @@
+/* ============================================
+   ENHANCED LOADER - Arrow Spinner Design
+   Smaller Text with Better Font
+   ============================================ */
+
+.page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0.3s ease, opacity 0.3s ease;
+}
+
+.page-loader.active {
+    display: flex;
+}
+
+.loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    z-index: 1;
+}
+
+.loader-container {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+
+.loader-spinner-ring {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+}
+
+.spinner-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation: spinArrow 1.2s linear infinite;
+}
+
+.arrow-1 {
+    border: 2px solid transparent;
+    border-top-color: #f59e0b;
+    border-right-color: #fbbf24;
+    animation-delay: 0s;
+    animation-duration: 1s;
+}
+
+.arrow-2 {
+    border: 2px solid transparent;
+    border-top-color: #ef4444;
+    border-left-color: #f97316;
+    animation-delay: -0.3s;
+    animation-duration: 1.1s;
+}
+
+.arrow-3 {
+    border: 2px solid transparent;
+    border-bottom-color: #8b5cf6;
+    border-right-color: #ec4899;
+    animation-delay: -0.6s;
+    animation-duration: 1.2s;
+}
+
+.arrow-4 {
+    border: 2px solid transparent;
+    border-bottom-color: #06b6d4;
+    border-left-color: #3b82f6;
+    animation-delay: -0.9s;
+    animation-duration: 1.3s;
+}
+
+@keyframes spinArrow {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loader-center-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444, #8b5cf6, #06b6d4);
+    background-size: 300% 300%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: gradientShift 3s ease infinite;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}
+
+.loader-center-logo i {
+    font-size: 16px;
+    color: white;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.loader-text {
+    margin-top: 16px;
+    text-align: center;
+}
+
+/* Smaller Bold Text - Using Inter font */
+.loading-bold {
+    font-family: 'Inter', 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #FFFFFF !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+}
+
+/* Sequential Rotating Dots - Smaller */
+.dots-container {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: 2px;
+}
+
+.dots-container span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    display: inline-block;
+    background: #f59e0b;
+    opacity: 0.3;
+    transition: all 0.25s ease;
+}
+
+.dots-container span.active {
+    opacity: 1;
+    transform: scale(1.3);
+    background: #fbbf24;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.page-loader.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.page-loader.fade-out .loader-container {
+    animation: scaleDown 0.3s ease forwards;
+}
+
+@keyframes scaleDown {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(0.95);
+    }
+}
+
+@media (max-width: 768px) {
+    .loader-spinner-ring {
+        width: 50px;
+        height: 50px;
+    }
+    .loader-center-logo {
+        width: 28px;
+        height: 28px;
+    }
+    .loader-center-logo i {
+        font-size: 14px;
+    }
+    .loading-bold {
+        font-size: 12px;
+        letter-spacing: 1px;
+    }
+    .dots-container span {
+        width: 4px;
+        height: 4px;
+        gap: 3px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loader-spinner-ring {
+        width: 45px;
+        height: 45px;
+    }
+    .loader-center-logo {
+        width: 24px;
+        height: 24px;
+    }
+    .loader-center-logo i {
+        font-size: 12px;
+    }
+    .loading-bold {
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    .dots-container span {
+        width: 4px;
+        height: 4px;
+        gap: 3px;
+    }
+}
