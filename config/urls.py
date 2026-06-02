@@ -26,7 +26,8 @@ from bookings.views import (
     api_ticket_detail, api_ticket_qr, api_ticket_download,
     api_organizer_bookings_list, api_organizer_tickets_list,
     api_organizer_tickets_stats, api_organizer_ticket_verify,
-    api_organizer_ticket_checkin, api_organizer_attendees_list
+    api_organizer_ticket_checkin, api_organizer_attendees_list,
+    api_organizer_attendees_stats
 )
 from bookings.email_service import send_newsletter_confirmation
 from events.api_organizer_views import (
@@ -43,7 +44,8 @@ from events.api_organizer_views import (
     api_organizer_settings_team_remove,
     api_organizer_settings_apikeys,
     api_organizer_settings_apikeys_create,
-    api_organizer_settings_apikeys_revoke
+    api_organizer_settings_apikeys_revoke,
+    api_organizer_reviews_stats
 )
 import json
 
@@ -195,6 +197,8 @@ urlpatterns = [
     path('api/organizer/tickets/<str:ticket_number>/verify/', api_organizer_ticket_verify, name='api_organizer_ticket_verify'),
     path('api/organizer/tickets/<str:ticket_number>/checkin/', api_organizer_ticket_checkin, name='api_organizer_ticket_checkin'),
     path('api/organizer/attendees/', api_organizer_attendees_list, name='api_organizer_attendees_list'),
+    path('api/organizer/attendees/stats/', api_organizer_attendees_stats, name='api_organizer_attendees_stats'),
+    path('api/organizer/reviews/stats/', api_organizer_reviews_stats, name='api_organizer_reviews_stats'),
     
     # Organizer Settings Endpoints
     path('api/organizer/settings/general/', api_organizer_settings_general, name='api_organizer_settings_general'),

@@ -57,7 +57,7 @@ def organizer_dashboard_stats(request):
         if bearer_user:
             user = bearer_user
         else:
-            return JsonResponse({'error': 'Unauthorized'}, status=403)
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
             
     if getattr(user, 'role', None) != 'organizer' and not user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
@@ -80,15 +80,24 @@ def organizer_dashboard_stats(request):
         if event_revenues:
             top_event_name = sorted(event_revenues, reverse=True)[0][1]
             
+    revenue_value = float(revenue)
+    attendees_count = tickets_sold
+
     metrics = {
+        # Current keys used by organizer dashboard frontend
+        'total_events': events_count,
+        'total_tickets_sold': tickets_sold,
+        'total_revenue': revenue_value,
+        'total_attendees': attendees_count,
+        # Backward-compatible keys used in other modules
         'events_count': events_count,
         'tickets_sold': tickets_sold,
-        'revenue': float(revenue),
-        'attendees': tickets_sold,
+        'revenue': revenue_value,
+        'attendees': attendees_count,
         'top_event': top_event_name,
         'conversion_rate': 74 if events_count > 0 else 0,
         'new_followers': 32 if events_count > 0 else 0,
-        'pending_payout': float(revenue) * 0.85 if revenue > 0 else 0.00,
+        'pending_payout': revenue_value * 0.85 if revenue > 0 else 0.00,
     }
 
     return JsonResponse(metrics)

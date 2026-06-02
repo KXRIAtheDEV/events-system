@@ -372,8 +372,10 @@ def api_organizer_tickets_stats(request, event_id=None):
     
     return JsonResponse({
         'total': total,
+        'total_tickets': total,
         'checked_in': checked_in,
-        'recent': recent
+        'recent': recent,
+        'recent_checkins': recent
     })
 
 
@@ -471,5 +473,22 @@ def api_organizer_attendees_list(request):
         results.append(details)
         
     return JsonResponse(results, safe=False)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_attendees_stats(request):
+    """Aggregate attendee statistics for organizer dashboard pages."""
+    tickets = Ticket.objects.filter(event__organizer=request.user)
+    total_attendees = tickets.values('billing_email').distinct().count()
+    checked_in = tickets.filter(status='checked_in').values('billing_email').distinct().count()
+    events_count = tickets.values('event_id').distinct().count()
+
+    return JsonResponse({
+        'total_attendees': total_attendees,
+        'checked_in': checked_in,
+        'events_count': events_count
+    })
 
 
