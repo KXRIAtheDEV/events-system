@@ -9,4 +9,5 @@ urlpatterns = [
     path('events/', views.event_list, name='event_list'),
     path('organizer/dashboard/', views.organizer_dashboard, name='organizer_dashboard'),
     path('api/organizer/dashboard/stats/', views.organizer_dashboard_stats, name='organizer_dashboard_stats'),
+    path('api/organizer/dashboard/revenue/', views.organizer_dashboard_revenue, name='organizer_dashboard_revenue'),
 ]

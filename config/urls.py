@@ -16,7 +16,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from events.views import (
-    organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
+    organizer_dashboard_stats, organizer_dashboard_revenue, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
     api_featured_events, api_events_check_expired
 )
@@ -187,6 +187,7 @@ urlpatterns = [
     # Organizer API Endpoints
     path('api/organizer/', include('accounts.urls')),
     path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
+    path('api/organizer/dashboard/revenue/', organizer_dashboard_revenue, name='organizer_dashboard_revenue'),
     path('api/organizer/events/', api_organizer_events_list, name='api_organizer_events_list'),
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
     path('api/organizer/events/<int:event_id>/', api_organizer_events_detail, name='api_organizer_events_detail'),

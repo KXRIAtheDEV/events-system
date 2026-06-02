@@ -121,6 +121,100 @@ def organizer_dashboard_stats(request):
         }, status=200)
 
 
+def organizer_dashboard_revenue(request):
+    from accounts.auth import authenticate_bearer
+    from bookings.models import Ticket
+    from django.utils import timezone
+    from datetime import timedelta
+    import datetime
+    
+    user = request.user
+    if not user.is_authenticated:
+        bearer_user, error = authenticate_bearer(request)
+        if bearer_user:
+            user = bearer_user
+        else:
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
+            
+    if getattr(user, 'role', None) != 'organizer' and not user.is_superuser:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    period = request.GET.get('period', '12months')
+    
+    try:
+        tickets = Ticket.objects.filter(event__organizer=user).exclude(status__in=['cancelled', 'refunded'])
+        now = timezone.now()
+        
+        labels = []
+        values = []
+        
+        if period == '7days':
+            # Last 7 days (including today)
+            for i in range(6, -1, -1):
+                day = now - timedelta(days=i)
+                day_tickets = tickets.filter(
+                    purchase_date__year=day.year,
+                    purchase_date__month=day.month,
+                    purchase_date__day=day.day
+                )
+                revenue = sum(t.quantity * t.price for t in day_tickets)
+                labels.append(day.strftime('%a'))
+                values.append(float(revenue))
+                
+        elif period == '4weeks':
+            # Last 4 weeks (ending today)
+            for i in range(3, -1, -1):
+                start_date = now - timedelta(days=(i+1)*7)
+                end_date = now - timedelta(days=i*7)
+                week_tickets = tickets.filter(purchase_date__gte=start_date, purchase_date__lt=end_date)
+                revenue = sum(t.quantity * t.price for t in week_tickets)
+                labels.append(f"Week {4-i}")
+                values.append(float(revenue))
+                
+        elif period == 'ytd':
+            # Year-to-Date monthly (from January of the current year to the current month)
+            current_year = now.year
+            current_month = now.month
+            for m in range(1, current_month + 1):
+                start_date = timezone.make_aware(datetime.datetime(current_year, m, 1))
+                if m == 12:
+                    end_date = timezone.make_aware(datetime.datetime(current_year + 1, 1, 1))
+                else:
+                    end_date = timezone.make_aware(datetime.datetime(current_year, m + 1, 1))
+                    
+                month_tickets = tickets.filter(purchase_date__gte=start_date, purchase_date__lt=end_date)
+                revenue = sum(t.quantity * t.price for t in month_tickets)
+                labels.append(datetime.date(current_year, m, 1).strftime('%b'))
+                values.append(float(revenue))
+                
+        else:  # 12months (default)
+            # Last 12 months rolling (ending in the current month)
+            for i in range(11, -1, -1):
+                target_month = now.month - i
+                target_year = now.year
+                while target_month <= 0:
+                    target_month += 12
+                    target_year -= 1
+                    
+                start_date = timezone.make_aware(datetime.datetime(target_year, target_month, 1))
+                if target_month == 12:
+                    end_date = timezone.make_aware(datetime.datetime(target_year + 1, 1, 1))
+                else:
+                    end_date = timezone.make_aware(datetime.datetime(target_year, target_month + 1, 1))
+                    
+                month_tickets = tickets.filter(purchase_date__gte=start_date, purchase_date__lt=end_date)
+                revenue = sum(t.quantity * t.price for t in month_tickets)
+                labels.append(datetime.date(target_year, target_month, 1).strftime('%b'))
+                values.append(float(revenue))
+                
+        return JsonResponse({
+            'labels': labels,
+            'values': values
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 # ============ ATTENDEE EVENTS API ENDPOINTS ============
 
 from django.db.models import Q
