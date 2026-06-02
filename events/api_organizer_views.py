@@ -9,6 +9,7 @@ from datetime import timedelta
 import dateutil.parser
 
 from accounts.auth import authenticate_bearer
+from bookings.email_service import send_organizer_event_crud_email
 
 def organizer_required(view_func):
     """Decorator to ensure user is logged in and is an organizer."""
@@ -126,6 +127,18 @@ def api_organizer_events_create(request):
             status=db_status
         )
 
+        try:
+            details_str = f"{event.start_date.strftime('%B %d, %Y')} at {event.venue}"
+            send_organizer_event_crud_email(
+                organizer_email=request.user.email,
+                organizer_name=request.user.username,
+                event_title=event.title,
+                action='created',
+                details=details_str
+            )
+        except Exception as email_err:
+            print("Failed to dispatch organizer CRUD email:", email_err)
+
         return JsonResponse({
             'id': event.id,
             'name': event.title,
@@ -168,6 +181,19 @@ def api_organizer_events_update(request, event_id):
             event.status = 'published' if status == 'active' else 'draft'
             
         event.save()
+        
+        try:
+            details_str = f"{event.start_date.strftime('%B %d, %Y')} at {event.venue}"
+            send_organizer_event_crud_email(
+                organizer_email=request.user.email,
+                organizer_name=request.user.username,
+                event_title=event.title,
+                action='edited',
+                details=details_str
+            )
+        except Exception as email_err:
+            print("Failed to dispatch organizer CRUD email:", email_err)
+
         return JsonResponse({'success': True, 'message': 'Event updated successfully'})
     except Event.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Event not found'}, status=404)
@@ -181,7 +207,20 @@ def api_organizer_events_delete(request, event_id):
     """Delete an event."""
     try:
         event = Event.objects.get(id=event_id, organizer=request.user)
+        title = event.title
         event.delete()
+        
+        try:
+            send_organizer_event_crud_email(
+                organizer_email=request.user.email,
+                organizer_name=request.user.username,
+                event_title=title,
+                action='deleted',
+                details=None
+            )
+        except Exception as email_err:
+            print("Failed to dispatch organizer CRUD email:", email_err)
+
         return JsonResponse({'success': True, 'message': 'Event deleted successfully'})
     except Event.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Event not found'}, status=404)

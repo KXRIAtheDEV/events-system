@@ -43,6 +43,8 @@ class Event(models.Model):
     banner_image = models.URLField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     is_featured = models.BooleanField(default=False)
+    attendee_reviews_sent = models.BooleanField(default=False)
+    organizer_summary_sent = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

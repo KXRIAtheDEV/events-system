@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 
 def home(request):
@@ -292,6 +294,100 @@ def api_featured_events(request):
             'tickets_left': e.available_seats,
         })
     return JsonResponse({'success': True, 'events': results})
+
+
+import dateutil.parser
+from bookings.models import Ticket
+from bookings.email_service import send_attendee_review_request_email, send_organizer_performance_summary_email
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_events_check_expired(request):
+    """
+    Checks for completed events and dispatches automated post-event alerts.
+    Utilizes client-passed local time and date from the context frameworks.
+    """
+    try:
+        data = json.loads(request.body)
+        client_date = data.get('current_date')
+        client_time = data.get('current_time', '00:00')
+        
+        if not client_date:
+            return JsonResponse({'success': False, 'message': 'Date is required'}, status=400)
+            
+        # Parse client date and time context to obtain a datetime threshold
+        try:
+            client_dt = dateutil.parser.isoparse(f"{client_date}T{client_time}")
+            if timezone.is_naive(client_dt):
+                client_dt = timezone.make_aware(client_dt)
+        except ValueError:
+            client_dt = timezone.now()
+
+        # Query active published events that have passed this end datetime and need notification updates
+        events = Event.objects.filter(
+            status='published',
+            end_date__lte=client_dt
+        ).filter(
+            Q(attendee_reviews_sent=False) | Q(organizer_summary_sent=False)
+        )
+        
+        processed_attendees_emails = 0
+        processed_organizers_emails = 0
+        
+        for event in events:
+            # 1. Dispatch attendee review requests
+            if not event.attendee_reviews_sent:
+                # Find all tickets for this event
+                tickets = Ticket.objects.filter(event=event, status='valid')
+                
+                # Deduplicate attendee contacts
+                attendee_map = {}
+                for ticket in tickets:
+                    email = ticket.billing_email or (ticket.attendee.email if ticket.attendee else None)
+                    name = ticket.billing_name or (ticket.attendee.username if ticket.attendee else 'Attendee')
+                    if email:
+                        attendee_map[email] = name
+                        
+                for email, name in attendee_map.items():
+                    send_attendee_review_request_email(
+                        attendee_email=email,
+                        attendee_name=name,
+                        event_title=event.title,
+                        event_id=event.id
+                    )
+                    processed_attendees_emails += 1
+                    
+                event.attendee_reviews_sent = True
+                
+            # 2. Dispatch organizer performance summary reports
+            if not event.organizer_summary_sent:
+                tickets = Ticket.objects.filter(event=event, status='valid')
+                total_seats_sold = sum(t.quantity for t in tickets)
+                total_revenue = float(sum(t.quantity * t.price for t in tickets))
+                
+                send_organizer_performance_summary_email(
+                    organizer_email=event.organizer.email,
+                    organizer_name=event.organizer.organization_name or event.organizer.username,
+                    event_title=event.title,
+                    total_attendees=total_seats_sold,
+                    total_revenue=total_revenue
+                )
+                processed_organizers_emails += 1
+                event.organizer_summary_sent = True
+                
+            event.save()
+            
+        return JsonResponse({
+            'success': True,
+            'message': f"Post-event automations triggered successfully.",
+            'attendees_notified': processed_attendees_emails,
+            'organizers_notified': processed_organizers_emails
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
 

@@ -18,7 +18,7 @@ from django.contrib import messages
 from events.views import (
     organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_featured_events
+    api_featured_events, api_events_check_expired
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
@@ -129,7 +129,7 @@ def get_categories_list(request):
 from accounts.admin_api import (
     dashboard_stats, recent_events, recent_bookings, top_events,
     revenue_chart, categories_chart, events_list_api, categories_list_api,
-    users_list_api, user_profile, notifications_api, settings_api
+    users_list_api, user_profile, notifications_api, settings_api, api_admin_broadcast
 )
 
 # ============ ANALYTICS API ENDPOINTS ============
@@ -307,6 +307,8 @@ urlpatterns = [
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
     path('api/events/categories/', get_categories_list, name='api_categories'),
     path('newsletter/subscribe/', newsletter_subscribe, name='newsletter_subscribe'),
+    path('api/events/check-expired/', api_events_check_expired, name='api_events_check_expired'),
+    path('api/admin/broadcast/', api_admin_broadcast, name='api_admin_broadcast'),
     
     # Admin API Endpoints
     path('api/admin/dashboard/stats/', dashboard_stats, name='admin_dashboard_stats'),

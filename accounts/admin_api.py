@@ -113,3 +113,53 @@ def settings_api(request):
         'currency': 'KES',
         'platform_fee': 5
     })
+
+
+from bookings.email_service import send_admin_broadcast_email
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_admin_broadcast(request):
+    """
+    Broadcasts custom marketing emails to registered attendees or organizers.
+    Only accessible by staff/admin accounts.
+    """
+    if request.user.is_authenticated and not request.user.is_staff and not request.user.is_superuser:
+        return JsonResponse({'success': False, 'message': 'Unauthorized. Admin permissions required.'}, status=403)
+        
+    try:
+        data = json.loads(request.body)
+        audience = data.get('audience') # 'attendees' or 'organizers'
+        subject = data.get('subject', '').strip()
+        message = data.get('message', '').strip()
+        
+        if not audience or not subject or not message:
+            return JsonResponse({'success': False, 'message': 'Audience, subject, and message are required.'}, status=400)
+            
+        if audience == 'attendees':
+            users = User.objects.filter(role='attendee')
+            role_label = 'Attendee'
+        elif audience == 'organizers':
+            users = User.objects.filter(role='organizer')
+            role_label = 'Organizer'
+        else:
+            return JsonResponse({'success': False, 'message': 'Invalid audience target.'}, status=400)
+            
+        sent_count = 0
+        for u in users:
+            if u.email:
+                send_admin_broadcast_email(
+                    recipient_email=u.email,
+                    subject=subject,
+                    message=message,
+                    recipient_role=role_label
+                )
+                sent_count += 1
+                
+        return JsonResponse({
+            'success': True, 
+            'message': f"Successfully broadcasted '{subject}' campaign to {sent_count} {audience}!"
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)

@@ -342,14 +342,39 @@
         }
     }
 
+    // Automated post-event review checker triggered by frameworks
+    const checkExpiredEvents = async () => {
+        try {
+            if (!window.AppCalendar || !window.AppTime) return;
+            const today = window.AppCalendar.getTodayDateString();
+            const time = window.AppTime.getCurrentTimeString();
+            
+            console.log(`Context Framework executing post-event automated alerts check (Time context: ${today} ${time})`);
+            await fetch('/api/events/check-expired/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    current_date: today,
+                    current_time: time
+                })
+            });
+        } catch (err) {
+            console.warn('Auto post-expiry trigger failed:', err);
+        }
+    };
+
     // Instantiate and expose globally
     window.AppCalendar = new CalendarFramework();
     window.AppTime = new TimeFramework();
     window.AppLocation = new LocationFramework();
 
-    // Initialize location on load
+    // Initialize location and check for expired events on load
     document.addEventListener("DOMContentLoaded", () => {
         window.AppLocation.init();
+        // Give frameworks a moment to initialize before triggering checks
+        setTimeout(checkExpiredEvents, 2000);
     });
 
 })();
