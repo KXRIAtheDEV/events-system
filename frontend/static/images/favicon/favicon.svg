@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b" />
+      <stop offset="100%" style="stop-color:#ec6408" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Calendar icon only - no background box -->
+  <rect x="18" y="18" width="64" height="64" rx="10" fill="url(#grad)"/>
+  
+  <!-- Calendar top tabs -->
+  <rect x="28" y="8" width="10" height="12" rx="2" fill="#f59e0b"/>
+  <rect x="62" y="8" width="10" height="12" rx="2" fill="#ec6408"/>
+  
+  <!-- Calendar header bar -->
+  <rect x="18" y="32" width="64" height="4" fill="white" opacity="0.3"/>
+  
+  <!-- Calendar grid dots/lines -->
+  <circle cx="30" cy="45" r="2" fill="white" opacity="0.3"/>
+  <circle cx="50" cy="45" r="2" fill="white" opacity="0.3"/>
+  <circle cx="70" cy="45" r="2" fill="white" opacity="0.3"/>
+  
+  <circle cx="30" cy="55" r="2" fill="white" opacity="0.3"/>
+  <circle cx="50" cy="55" r="2" fill="white" opacity="0.3"/>
+  <circle cx="70" cy="55" r="2" fill="white" opacity="0.3"/>
+  
+  <circle cx="30" cy="65" r="2" fill="white" opacity="0.3"/>
+  <circle cx="50" cy="65" r="2" fill="white" opacity="0.3"/>
+  <circle cx="70" cy="65" r="2" fill="white" opacity="0.3"/>
+</svg>
