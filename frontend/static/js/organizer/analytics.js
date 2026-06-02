@@ -18,9 +18,6 @@ async function loadAnalytics(eventId) {
         document.getElementById('ticketsSoldKpi').innerText = data.tickets_sold || 0;
         document.getElementById('attendanceKpi').innerText = data.attendance || 0;
         document.getElementById('revenueKpi').innerText = 'Kes ' + (data.revenue || 0).toLocaleString();
-        const rate = data.total_tickets ? ((data.attendance || 0) / data.total_tickets * 100).toFixed(1) : 0;
-        document.getElementById('attendanceProgress').style.width = rate + '%';
-        document.getElementById('attendanceProgress').innerText = rate + '%';
         document.getElementById('kpiRow').style.display = 'flex';
         updateSalesChart(data.sales_data || []);
         updateDistributionChart(data.ticket_distribution || {});
