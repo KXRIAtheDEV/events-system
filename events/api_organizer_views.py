@@ -494,3 +494,18 @@ def api_organizer_settings_apikeys_revoke(request, key_id):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_reviews_stats(request):
+    """
+    Organizer reviews stats endpoint.
+    Reviews app currently has no persisted model, so return safe defaults.
+    """
+    return JsonResponse({
+        'avg_rating': 0,
+        'total_reviews': 0,
+        'response_rate': 0
+    })
+

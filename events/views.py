@@ -57,41 +57,68 @@ def organizer_dashboard_stats(request):
         if bearer_user:
             user = bearer_user
         else:
-            return JsonResponse({'error': 'Unauthorized'}, status=403)
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
             
     if getattr(user, 'role', None) != 'organizer' and not user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        events = Event.objects.filter(organizer=user)
+        events_count = events.count()
         
-    events = Event.objects.filter(organizer=user)
-    events_count = events.count()
-    
-    from bookings.models import Ticket
-    tickets = Ticket.objects.filter(event__organizer=user, status='valid')
-    tickets_sold = sum(t.quantity for t in tickets)
-    revenue = sum(t.quantity * t.price for t in tickets)
-    
-    # Calculate top event by tickets sold/revenue
-    top_event_name = 'No events yet'
-    if events_count > 0:
-        event_revenues = []
-        for e in events:
-            e_revenue = sum(t.quantity * t.price for t in tickets.filter(event=e))
-            event_revenues.append((e_revenue, e.title))
-        if event_revenues:
-            top_event_name = sorted(event_revenues, reverse=True)[0][1]
-            
-    metrics = {
-        'events_count': events_count,
-        'tickets_sold': tickets_sold,
-        'revenue': float(revenue),
-        'attendees': tickets_sold,
-        'top_event': top_event_name,
-        'conversion_rate': 74 if events_count > 0 else 0,
-        'new_followers': 32 if events_count > 0 else 0,
-        'pending_payout': float(revenue) * 0.85 if revenue > 0 else 0.00,
-    }
+        from bookings.models import Ticket
+        tickets = Ticket.objects.filter(event__organizer=user, status='valid')
+        tickets_sold = sum(t.quantity for t in tickets)
+        revenue = sum(t.quantity * t.price for t in tickets)
+        
+        # Calculate top event by tickets sold/revenue
+        top_event_name = 'No events yet'
+        if events_count > 0:
+            event_revenues = []
+            for e in events:
+                e_revenue = sum(t.quantity * t.price for t in tickets.filter(event=e))
+                event_revenues.append((e_revenue, e.title))
+            if event_revenues:
+                top_event_name = sorted(event_revenues, reverse=True)[0][1]
+                
+        revenue_value = float(revenue)
+        attendees_count = tickets_sold
 
-    return JsonResponse(metrics)
+        metrics = {
+            # Current keys used by organizer dashboard frontend
+            'total_events': events_count,
+            'total_tickets_sold': tickets_sold,
+            'total_revenue': revenue_value,
+            'total_attendees': attendees_count,
+            # Backward-compatible keys used in other modules
+            'events_count': events_count,
+            'tickets_sold': tickets_sold,
+            'revenue': revenue_value,
+            'attendees': attendees_count,
+            'top_event': top_event_name,
+            'conversion_rate': 74 if events_count > 0 else 0,
+            'new_followers': 32 if events_count > 0 else 0,
+            'pending_payout': revenue_value * 0.85 if revenue > 0 else 0.00,
+        }
+
+        return JsonResponse(metrics)
+    except Exception:
+        # If the DB is temporarily unavailable (e.g. DATABASE_URL/Supabase outage),
+        # return safe zeros so the dashboard remains usable.
+        return JsonResponse({
+            'total_events': 0,
+            'total_tickets_sold': 0,
+            'total_revenue': 0.0,
+            'total_attendees': 0,
+            'events_count': 0,
+            'tickets_sold': 0,
+            'revenue': 0.0,
+            'attendees': 0,
+            'top_event': 'Unavailable',
+            'conversion_rate': 0,
+            'new_followers': 0,
+            'pending_payout': 0.0,
+            'db_connected': False
+        }, status=200)
 
 
 # ============ ATTENDEE EVENTS API ENDPOINTS ============

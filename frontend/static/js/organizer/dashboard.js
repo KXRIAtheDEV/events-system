@@ -56,12 +56,30 @@ function escapeHtml(str) {
 let revenueChart = null;
 
 window.loadDashboardStats = async function() {
+    const totalEventsEl = document.getElementById('totalEvents');
+    const totalTicketsEl = document.getElementById('totalTicketsSold');
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    const totalAttendeesEl = document.getElementById('totalAttendees');
+
+    // dashboard.js is loaded globally from organizer base template.
+    // If we're not on the dashboard page, stats cards are absent.
+    if (!totalEventsEl || !totalTicketsEl || !totalRevenueEl || !totalAttendeesEl) {
+        return;
+    }
+
     try {
         const stats = await OrganizerAPI.dashboard.getStats();
-        document.getElementById('totalEvents').innerText = stats.total_events || 0;
-        document.getElementById('totalTicketsSold').innerText = (stats.total_tickets_sold || 0).toLocaleString();
-        document.getElementById('totalRevenue').innerText = '$' + (stats.total_revenue || 0).toLocaleString();
-        document.getElementById('totalAttendees').innerText = (stats.total_attendees || 0).toLocaleString();
+
+        // Support both legacy and current backend key names.
+        const totalEvents = stats.total_events ?? stats.events_count ?? 0;
+        const totalTicketsSold = stats.total_tickets_sold ?? stats.tickets_sold ?? 0;
+        const totalRevenue = stats.total_revenue ?? stats.revenue ?? 0;
+        const totalAttendees = stats.total_attendees ?? stats.attendees ?? 0;
+
+        totalEventsEl.innerText = totalEvents;
+        totalTicketsEl.innerText = Number(totalTicketsSold).toLocaleString();
+        totalRevenueEl.innerText = '$' + Number(totalRevenue).toLocaleString();
+        totalAttendeesEl.innerText = Number(totalAttendees).toLocaleString();
         if (stats.organizer_name) document.getElementById('organizerName').innerText = stats.organizer_name;
         if (stats.events_change) document.getElementById('eventsChange').innerHTML = (stats.events_change > 0 ? '+' : '') + stats.events_change + '%';
         if (stats.tickets_change) document.getElementById('ticketsChange').innerHTML = (stats.tickets_change > 0 ? '+' : '') + stats.tickets_change + '%';
@@ -69,7 +87,16 @@ window.loadDashboardStats = async function() {
         if (stats.attendees_change) document.getElementById('attendeesChange').innerHTML = (stats.attendees_change > 0 ? '+' : '') + stats.attendees_change + '%';
     } catch(e) {
         console.error(e);
-        window.showToast('Failed to load stats', 'error');
+        // If auth expired, send user to login instead of repeating toasts.
+        if (e && (e.status === 401 || e.status === 403)) {
+            window.location.href = '/login/';
+            return;
+        }
+        // Keep dashboard usable even when stats endpoint has transient issues.
+        totalEventsEl.innerText = '0';
+        totalTicketsEl.innerText = '0';
+        totalRevenueEl.innerText = '$0';
+        totalAttendeesEl.innerText = '0';
     }
 };
 
