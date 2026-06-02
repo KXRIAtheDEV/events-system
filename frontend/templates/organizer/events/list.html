@@ -93,8 +93,9 @@
             <div class="col-md-3">
                 <select id="statusFilter" class="form-select border-secondary">
                     <option value="">All Statuses</option>
-                    <option value="active">Published</option>
+                    <option value="published">Published</option>
                     <option value="draft">Drafts</option>
+                    <option value="cancelled">Cancelled</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -205,14 +206,34 @@
 {% block extra_js %}
 <script>
     let eventsData = [];
+    const eventsContainer = document.getElementById('eventsContainer');
+
+    function notify(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+        if (type === 'error') {
+            console.error(message);
+        } else {
+            console.log(message);
+        }
+    }
 
     async function loadEvents() {
         try {
             const res = await OrganizerAPI.events.getAll();
-            eventsData = Array.isArray(res) ? res : (res.results || []);
+            eventsData = Array.isArray(res) ? res : (res?.results || []);
             renderEvents();
         } catch (err) {
-            window.showToast('Failed to load events', 'error');
+            notify('Failed to load events', 'error');
+            eventsContainer.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-danger"></i>
+                    <h5>Failed to load events</h5>
+                    <p>There was a connection or server authorization issue. Please refresh or try again.</p>
+                </div>
+            `;
         }
     }
 
@@ -222,15 +243,16 @@
         const category = document.getElementById('categoryFilter').value;
 
         const filtered = eventsData.filter(e => {
-            const matchQuery = !query || e.name.toLowerCase().includes(query) || e.location.toLowerCase().includes(query);
+            const eventName = (e.name || e.title || "").toLowerCase();
+            const eventLocation = (e.location || e.venue || "").toLowerCase();
+            const matchQuery = !query || eventName.includes(query) || eventLocation.includes(query);
             const matchStatus = !status || e.status === status;
             const matchCat = !category || e.category === category;
             return matchQuery && matchStatus && matchCat;
         });
 
-        const container = document.getElementById('eventsContainer');
         if (filtered.length === 0) {
-            container.innerHTML = `
+            eventsContainer.innerHTML = `
                 <div class="text-center py-5 text-muted">
                     <i class="fa-solid fa-calendar-xmark fa-3x mb-3 text-secondary"></i>
                     <h5>No events found</h5>
@@ -241,31 +263,32 @@
         }
 
         container.innerHTML = filtered.map(e => {
-            const isPub = e.status === 'active';
+            const isPub = e.status === 'published';
             const badgeClass = isPub ? 'badge-published' : (e.status === 'cancelled' ? 'badge-cancelled' : 'badge-draft');
-            const percent = e.capacity > 0 ? Math.min(100, (e.sold / e.capacity) * 100) : 0;
+            const percent = e.capacity > 0 ? Math.min(100, ((e.sold || 0) / e.capacity) * 100) : 0;
             const defaultImage = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80";
-            const imageUrl = e.image || defaultImage;
+            const imageUrl = e.image_url || e.image || defaultImage;
+            const eventName = e.name || e.title || "Untitled Event";
 
             return `
                 <div class="col-md-6 col-lg-4">
                     <div class="event-card">
                         <div class="event-banner" style="background-image: url('${imageUrl}')">
-                            <span class="event-badge ${badgeClass}">${e.status === 'active' ? 'Published' : e.status.toUpperCase()}</span>
+                            <span class="event-badge ${badgeClass}">${isPub ? 'Published' : (e.status || 'DRAFT').toUpperCase()}</span>
                         </div>
                         <div class="p-4">
-                            <span class="text-warning font-weight-bold" style="font-size: 0.8rem; text-transform: uppercase;">${e.category}</span>
-                            <h4 class="text-white mt-1 mb-2 text-truncate" title="${e.name}">${e.name}</h4>
+                            <span class="text-warning font-weight-bold" style="font-size: 0.8rem; text-transform: uppercase;">${e.category || 'General'}</span>
+                            <h4 class="text-white mt-1 mb-2 text-truncate" title="${eventName}">${eventName}</h4>
                             <div class="text-muted small mb-3">
-                                <div class="mb-1"><i class="fa-regular fa-clock me-2"></i>${new Date(e.date).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})}</div>
-                                <div><i class="fa-solid fa-map-pin me-2"></i>${e.location}</div>
+                                <div class="mb-1"><i class="fa-regular fa-clock me-2"></i>${e.date ? new Date(e.date).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}) : 'Date TBA'}</div>
+                                <div><i class="fa-solid fa-map-pin me-2"></i>${e.location || 'Location TBA'}</div>
                             </div>
 
                             <!-- Capacity meter -->
                             <div class="mb-4">
                                 <div class="d-flex justify-content-between text-muted small mb-1">
                                     <span>Tickets Sold</span>
-                                    <span class="text-white font-weight-bold">${e.sold} / ${e.capacity}</span>
+                                    <span class="text-white font-weight-bold">${e.sold || 0} / ${e.capacity || 0}</span>
                                 </div>
                                 <div class="capacity-bar">
                                     <div class="capacity-fill" style="width: ${percent}%"></div>
@@ -275,7 +298,7 @@
                             <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
                                 <div>
                                     <div class="text-muted small">Revenue</div>
-                                    <strong class="text-success" style="font-size: 1.1rem;">KSh ${e.revenue.toLocaleString()}</strong>
+                                    <strong class="text-success" style="font-size: 1.1rem;">KSh ${(e.revenue || 0).toLocaleString()}</strong>
                                 </div>
                                 <div class="btn-group">
                                     <button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
@@ -298,10 +321,10 @@
                 if (confirm("Are you sure you want to permanently delete this event? This action cannot be undone.")) {
                     try {
                         await OrganizerAPI.events.delete(id);
-                        window.showToast("Event deleted successfully", "success");
+                        notify("Event deleted successfully", "success");
                         loadEvents();
                     } catch (err) {
-                        window.showToast("Failed to delete event", "error");
+                        notify("Failed to delete event", "error");
                     }
                 }
             };
@@ -331,12 +354,12 @@
 
         try {
             await OrganizerAPI.events.create(data);
-            window.showToast("Event created successfully!", "success");
+            notify("Event created successfully!", "success");
             bootstrap.Modal.getInstance(document.getElementById('createEventModal')).hide();
             document.getElementById('createEventForm').reset();
             loadEvents();
         } catch (err) {
-            window.showToast(err.message || "Failed to create event", "error");
+            notify(err.message || "Failed to create event", "error");
         }
     };
 

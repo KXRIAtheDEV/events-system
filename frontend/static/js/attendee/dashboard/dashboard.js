@@ -164,7 +164,49 @@ function loadStats() {
 
 function refreshActivity() {
     loadRecentActivity();
+<<<<<<< HEAD
     showToast('Activity refreshed!', 'success');
+=======
+    showToast('Activity refreshed', 'success');
+}
+
+function setupAutoRefresh() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+        loadStats();
+        loadRecentActivity();
+    }, 60000);
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'booking': 'fa-ticket-alt',
+        'payment': 'fa-credit-card',
+        'refund': 'fa-undo-alt',
+        'review': 'fa-star',
+        'checkin': 'fa-check-circle',
+        'wishlist': 'fa-heart',
+        'profile': 'fa-user-edit',
+        'default': 'fa-bell'
+    };
+    return icons[type] || icons.default;
+}
+
+function viewTicket(ticketId) {
+    window.location.href = `/attendee/tickets/detail/?ticket=${ticketId}`;
+}
+
+function viewEvent(eventId) {
+    window.location.href = `/events/detail/?id=${eventId}`;
+}
+
+function formatNumber(num) {
+    return Number(num).toLocaleString('en-KE');
+}
+
+function formatCurrency(amount) {
+    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
+>>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
 }
 
 function formatDate(dateString) {

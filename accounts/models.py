@@ -14,6 +14,16 @@ class User(AbstractUser):
     date_of_birth = models.DateField(null=True, blank=True)
     location = models.CharField(max_length=100, blank=True)
     
+    # Organizer settings fields
+    website = models.URLField(max_length=200, blank=True)
+    bio = models.TextField(blank=True)
+    bank_name = models.CharField(max_length=100, blank=True)
+    account_number = models.CharField(max_length=50, blank=True)
+    account_holder = models.CharField(max_length=150, blank=True)
+    routing_number = models.CharField(max_length=50, blank=True)
+    team_members = models.JSONField(default=list, blank=True)
+    api_keys = models.JSONField(default=list, blank=True)
+    
     def __str__(self):
         return f"{self.username} ({self.role})"
 

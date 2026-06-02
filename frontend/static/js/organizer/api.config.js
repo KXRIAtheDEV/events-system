@@ -1,34 +1,19 @@
 // ============================================
 // ORGANIZER API CONFIGURATION
 // Single source of truth for all organizer endpoints
-// EventHub Organizer Portal - Complete Configuration
 // ============================================
 
 const ORGANIZER_API_CONFIG = {
-    // Base URLs
     BASE_URL: window.location.origin,
     API_BASE: '/api/organizer',
-    
-    // Enable/Disable Mock Data (set to false in production)
     USE_MOCK: false,
-    
-    // Request timeout in milliseconds
     TIMEOUT: 30000,
-    
-    // Cache TTL in milliseconds
-    CACHE_TTL: 300000, // 5 minutes
-    
-    // Headers
+    CACHE_TTL: 300000,
     HEADERS: {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
     },
-    
-    // API Endpoints organized by module
     ENDPOINTS: {
-        // ============================================
-        // AUTHENTICATION & ACCOUNT
-        // ============================================
         AUTH: {
             register: '/auth/register/',
             login: '/auth/login/',
@@ -41,10 +26,6 @@ const ORGANIZER_API_CONFIG = {
             refreshToken: '/auth/refresh-token/',
             checkStatus: '/auth/check-status/'
         },
-        
-        // ============================================
-        // PROFILE & BUSINESS MANAGEMENT
-        // ============================================
         PROFILE: {
             detail: '/profile/',
             update: '/profile/update/',
@@ -56,10 +37,6 @@ const ORGANIZER_API_CONFIG = {
             bankDetails: '/profile/bank-details/',
             updateBankDetails: '/profile/bank-details/update/'
         },
-        
-        // ============================================
-        // DASHBOARD
-        // ============================================
         DASHBOARD: {
             stats: '/dashboard/stats/',
             revenue: '/dashboard/revenue/',
@@ -68,10 +45,6 @@ const ORGANIZER_API_CONFIG = {
             performance: '/dashboard/performance/',
             notifications: '/dashboard/notifications/'
         },
-        
-        // ============================================
-        // EVENT MANAGEMENT
-        // ============================================
         EVENTS: {
             list: '/events/',
             detail: (id) => `/events/${id}/`,
@@ -84,38 +57,24 @@ const ORGANIZER_API_CONFIG = {
             publish: (id) => `/events/${id}/publish/`,
             unpublish: (id) => `/events/${id}/unpublish/`,
             status: (id) => `/events/${id}/status/`,
-            
-            // Event Details
             tickets: (id) => `/events/${id}/tickets/`,
             addTicketType: (id) => `/events/${id}/tickets/add/`,
             updateTicketType: (eventId, ticketId) => `/events/${eventId}/tickets/${ticketId}/update/`,
             deleteTicketType: (eventId, ticketId) => `/events/${eventId}/tickets/${ticketId}/delete/`,
-            
-            // Event Schedule
             schedule: (id) => `/events/${id}/schedule/`,
             addScheduleItem: (id) => `/events/${id}/schedule/add/`,
             updateScheduleItem: (eventId, itemId) => `/events/${eventId}/schedule/${itemId}/update/`,
             deleteScheduleItem: (eventId, itemId) => `/events/${eventId}/schedule/${itemId}/delete/`,
-            
-            // Event Media
             uploadImage: (id) => `/events/${id}/upload-image/`,
             deleteImage: (eventId, imageId) => `/events/${eventId}/images/${imageId}/delete/`,
             uploadGallery: (id) => `/events/${id}/upload-gallery/`,
             deleteGallery: (eventId, imageId) => `/events/${eventId}/gallery/${imageId}/delete/`,
-            
-            // Event Settings
             settings: (id) => `/events/${id}/settings/`,
             updateSettings: (id) => `/events/${id}/settings/update/`,
-            
-            // Event Analytics
             analytics: (id) => `/events/${id}/analytics/`,
             salesReport: (id) => `/events/${id}/sales-report/`,
             attendanceReport: (id) => `/events/${id}/attendance-report/`
         },
-        
-        // ============================================
-        // TICKET MANAGEMENT
-        // ============================================
         TICKETS: {
             list: '/tickets/',
             detail: (ticketNumber) => `/tickets/${ticketNumber}/`,
@@ -128,10 +87,6 @@ const ORGANIZER_API_CONFIG = {
             recentCheckins: (eventId) => `/tickets/recent-checkins/${eventId}/`,
             search: '/tickets/search/'
         },
-        
-        // ============================================
-        // BOOKINGS MANAGEMENT
-        // ============================================
         BOOKINGS: {
             list: '/bookings/',
             detail: (id) => `/bookings/${id}/`,
@@ -141,10 +96,6 @@ const ORGANIZER_API_CONFIG = {
             sendReminder: (id) => `/bookings/${id}/send-reminder/`,
             viewAttendee: (id) => `/bookings/${id}/attendee/`
         },
-        
-        // ============================================
-        // ATTENDEE MANAGEMENT
-        // ============================================
         ATTENDEES: {
             list: '/attendees/',
             detail: (id) => `/attendees/${id}/`,
@@ -155,10 +106,6 @@ const ORGANIZER_API_CONFIG = {
             sendMessage: (id) => `/attendees/${id}/send-message/`,
             bulkMessage: '/attendees/bulk-message/'
         },
-        
-        // ============================================
-        // PAYOUTS & EARNINGS
-        // ============================================
         PAYOUTS: {
             summary: '/payouts/summary/',
             history: '/payouts/history/',
@@ -170,10 +117,6 @@ const ORGANIZER_API_CONFIG = {
             statements: '/payouts/statements/',
             downloadStatement: (id) => `/payouts/statements/${id}/download/`
         },
-        
-        // ============================================
-        // PROMOTIONS & DISCOUNTS
-        // ============================================
         PROMOTIONS: {
             list: '/promotions/',
             detail: (id) => `/promotions/${id}/`,
@@ -185,10 +128,6 @@ const ORGANIZER_API_CONFIG = {
             stats: (id) => `/promotions/${id}/stats/`,
             validate: '/promotions/validate/'
         },
-        
-        // ============================================
-        // REVIEWS & RATINGS
-        // ============================================
         REVIEWS: {
             list: '/reviews/',
             eventReviews: (eventId) => `/reviews/event/${eventId}/`,
@@ -197,10 +136,6 @@ const ORGANIZER_API_CONFIG = {
             stats: '/reviews/stats/',
             export: '/reviews/export/'
         },
-        
-        // ============================================
-        // NOTIFICATIONS
-        // ============================================
         NOTIFICATIONS: {
             list: '/notifications/',
             unread: '/notifications/unread/',
@@ -210,10 +145,6 @@ const ORGANIZER_API_CONFIG = {
             updatePreferences: '/notifications/preferences/update/',
             sendToAttendees: '/notifications/send-to-attendees/'
         },
-        
-        // ============================================
-        // REPORTS & ANALYTICS
-        // ============================================
         REPORTS: {
             sales: '/reports/sales/',
             events: '/reports/events/',
@@ -223,10 +154,6 @@ const ORGANIZER_API_CONFIG = {
             dashboard: '/reports/dashboard/',
             performance: '/reports/performance/'
         },
-        
-        // ============================================
-        // CHECK-IN MANAGEMENT
-        // ============================================
         CHECKIN: {
             devices: '/checkin/devices/',
             registerDevice: '/checkin/devices/register/',
@@ -239,10 +166,6 @@ const ORGANIZER_API_CONFIG = {
             stats: '/checkin/stats/',
             realtime: '/checkin/realtime/'
         },
-        
-        // ============================================
-        // SETTINGS
-        // ============================================
         SETTINGS: {
             general: '/settings/general/',
             updateGeneral: '/settings/general/update/',
@@ -258,10 +181,6 @@ const ORGANIZER_API_CONFIG = {
             createApiKey: '/settings/api-keys/create/',
             revokeApiKey: (id) => `/settings/api-keys/${id}/revoke/`
         },
-        
-        // ============================================
-        // SUPPORT
-        // ============================================
         SUPPORT: {
             tickets: '/support/tickets/',
             create: '/support/tickets/create/',

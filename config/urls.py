@@ -16,9 +16,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from events.views import (
-    organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
+    organizer_dashboard_stats, organizer_dashboard_revenue, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_featured_events
+    api_featured_events, api_events_check_expired
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
@@ -26,14 +26,28 @@ from bookings.views import (
     api_ticket_detail, api_ticket_qr, api_ticket_download,
     api_organizer_bookings_list, api_organizer_tickets_list,
     api_organizer_tickets_stats, api_organizer_ticket_verify,
-    api_organizer_ticket_checkin, api_organizer_attendees_list
+    api_organizer_ticket_checkin, api_organizer_attendees_list,
+    api_organizer_attendees_stats
 )
 from bookings.email_service import send_newsletter_confirmation
 from events.api_organizer_views import (
     api_organizer_events_list,
     api_organizer_events_create,
+    api_organizer_events_detail,
     api_organizer_events_update,
-    api_organizer_events_delete
+    api_organizer_events_delete,
+    api_organizer_settings_general,
+    api_organizer_settings_general_update,
+    api_organizer_payouts_settings,
+    api_organizer_payouts_settings_update,
+    api_organizer_settings_team,
+    api_organizer_settings_team_add,
+    api_organizer_settings_team_remove,
+    api_organizer_settings_apikeys,
+    api_organizer_settings_apikeys_create,
+    api_organizer_settings_apikeys_revoke,
+    api_organizer_reviews_stats,
+    api_organizer_event_analytics
 )
 import json
 
@@ -126,125 +140,8 @@ def get_categories_list(request):
 
 # ============ ADMIN API ENDPOINTS ============
 
-from accounts.admin_api import (
-    dashboard_stats, recent_events, recent_bookings, top_events,
-    revenue_chart, categories_chart, events_list_api, categories_list_api,
-    users_list_api, user_profile, notifications_api, settings_api
-)
+from accounts import admin_api
 
-# ============ ANALYTICS API ENDPOINTS ============
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def analytics_categories(request):
-    return JsonResponse({
-        'labels': ['Music', 'Technology', 'Business', 'Sports', 'Arts', 'Food'],
-        'values': [245, 180, 120, 95, 78, 65]
-    })
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def analytics_top_events(request):
-    return JsonResponse({
-        'events': [
-            {'title': 'Tech Conference 2024', 'tickets_sold': 450, 'revenue': 2250000},
-            {'title': 'Summer Music Festival', 'tickets_sold': 380, 'revenue': 1330000},
-            {'title': 'Business Summit', 'tickets_sold': 210, 'revenue': 1575000},
-            {'title': 'Food Festival', 'tickets_sold': 180, 'revenue': 270000},
-            {'title': 'Sports Tournament', 'tickets_sold': 150, 'revenue': 225000}
-        ]
-    })
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def analytics_user_growth(request):
-    return JsonResponse({
-        'labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        'values': [45, 78, 112, 158, 203, 289]
-    })
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def analytics_kpi(request):
-    return JsonResponse({
-        'total_revenue': 5625000,
-        'total_tickets': 1370,
-        'active_users': 289,
-        'completed_events': 24,
-        'total_events': 45,
-        'total_bookings': 1370,
-        'conversion_rate': 68,
-        'avg_order_value': 4100
-    })
-
-# ============ EVENT APPROVAL API ENDPOINTS ============
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def api_pending_events(request):
-    return JsonResponse({'events': [], 'pagination': {'current_page': 1, 'total_pages': 1, 'total_items': 0}})
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def api_all_events(request):
-    return JsonResponse({'events': [], 'pagination': {'current_page': 1, 'total_pages': 1, 'total_items': 0}})
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def api_event_detail(request, event_id):
-    return JsonResponse({'event': {'id': event_id, 'title': 'Sample Event', 'status': 'pending'}})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_approve_event(request, event_id):
-    return JsonResponse({'success': True, 'message': 'Event approved successfully'})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_reject_event(request, event_id):
-    return JsonResponse({'success': True, 'message': 'Event rejected successfully'})
-
-@csrf_exempt
-@require_http_methods(["DELETE"])
-def api_delete_event(request, event_id):
-    return JsonResponse({'success': True, 'message': 'Event deleted successfully'})
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def api_event_history(request, event_id):
-    return JsonResponse({'history': []})
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def api_event_stats(request):
-    return JsonResponse({'stats': {'pending': 0, 'approved_this_month': 0, 'rejected_this_month': 0}})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_bulk_approve(request):
-    return JsonResponse({'success': True, 'message': 'Events approved successfully'})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_bulk_reject(request):
-    return JsonResponse({'success': True, 'message': 'Events rejected successfully'})
-
-# ============ NOTIFICATIONS API ENDPOINTS ============
-
-@csrf_exempt
-@require_http_methods(["GET"])
-def api_notifications_recent(request):
-    return JsonResponse({'notifications': [], 'unread_count': 0})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_notification_mark_read(request, notification_id):
-    return JsonResponse({'success': True})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_notifications_mark_all_read(request):
-    return JsonResponse({'success': True})
 
 # ============ MAIN URL PATTERNS ============
 
@@ -291,8 +188,11 @@ urlpatterns = [
     # Organizer API Endpoints
     path('api/organizer/', include('accounts.urls')),
     path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
+    path('api/organizer/dashboard/revenue/', organizer_dashboard_revenue, name='organizer_dashboard_revenue'),
     path('api/organizer/events/', api_organizer_events_list, name='api_organizer_events_list'),
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
+    path('api/organizer/events/<int:event_id>/', api_organizer_events_detail, name='api_organizer_events_detail'),
+    path('api/organizer/events/<int:event_id>/analytics/', api_organizer_event_analytics, name='api_organizer_event_analytics'),
     path('api/organizer/events/<int:event_id>/update/', api_organizer_events_update, name='api_organizer_events_update'),
     path('api/organizer/events/<int:event_id>/delete/', api_organizer_events_delete, name='api_organizer_events_delete'),
     path('api/organizer/bookings/', api_organizer_bookings_list, name='api_organizer_bookings_list'),
@@ -302,48 +202,135 @@ urlpatterns = [
     path('api/organizer/tickets/<str:ticket_number>/verify/', api_organizer_ticket_verify, name='api_organizer_ticket_verify'),
     path('api/organizer/tickets/<str:ticket_number>/checkin/', api_organizer_ticket_checkin, name='api_organizer_ticket_checkin'),
     path('api/organizer/attendees/', api_organizer_attendees_list, name='api_organizer_attendees_list'),
+    path('api/organizer/attendees/stats/', api_organizer_attendees_stats, name='api_organizer_attendees_stats'),
+    path('api/organizer/reviews/stats/', api_organizer_reviews_stats, name='api_organizer_reviews_stats'),
+    
+    # Organizer Settings Endpoints
+    path('api/organizer/settings/general/', api_organizer_settings_general, name='api_organizer_settings_general'),
+    path('api/organizer/settings/general/update/', api_organizer_settings_general_update, name='api_organizer_settings_general_update'),
+    path('api/organizer/payouts/settings/', api_organizer_payouts_settings, name='api_organizer_payouts_settings'),
+    path('api/organizer/payouts/settings/update/', api_organizer_payouts_settings_update, name='api_organizer_payouts_settings_update'),
+    path('api/organizer/settings/team/', api_organizer_settings_team, name='api_organizer_settings_team'),
+    path('api/organizer/settings/team/add/', api_organizer_settings_team_add, name='api_organizer_settings_team_add'),
+    path('api/organizer/settings/team/<str:member_id>/remove/', api_organizer_settings_team_remove, name='api_organizer_settings_team_remove'),
+    path('api/organizer/settings/api-keys/', api_organizer_settings_apikeys, name='api_organizer_settings_apikeys'),
+    path('api/organizer/settings/api-keys/create/', api_organizer_settings_apikeys_create, name='api_organizer_settings_apikeys_create'),
+    path('api/organizer/settings/api-keys/<str:key_id>/revoke/', api_organizer_settings_apikeys_revoke, name='api_organizer_settings_apikeys_revoke'),
     
     path('api/bookings/checkout/', ticket_checkout_api, name='ticket_checkout_api'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
     path('api/events/categories/', get_categories_list, name='api_categories'),
     path('newsletter/subscribe/', newsletter_subscribe, name='newsletter_subscribe'),
-    
-    # Admin API Endpoints
-    path('api/admin/dashboard/stats/', dashboard_stats, name='admin_dashboard_stats'),
-    path('api/admin/events/recent/', recent_events, name='admin_recent_events'),
-    path('api/admin/bookings/recent/', recent_bookings, name='admin_recent_bookings'),
-    path('api/admin/events/top/', top_events, name='admin_top_events'),
-    path('api/admin/charts/revenue/', revenue_chart, name='admin_revenue_chart'),
-    path('api/admin/charts/categories/', categories_chart, name='admin_categories_chart'),
-    path('api/admin/events/', events_list_api, name='admin_events_list'),
-    path('api/admin/categories/', categories_list_api, name='admin_categories_list'),
-    path('api/admin/users/', users_list_api, name='admin_users_list'),
-    path('api/admin/user/profile/', user_profile, name='admin_user_profile'),
-    path('api/admin/notifications/', notifications_api, name='admin_notifications'),
-    path('api/admin/settings/', settings_api, name='admin_settings_api'),
-    
-    # Analytics API Endpoints
-    path('api/admin/analytics/categories/', analytics_categories, name='analytics_categories'),
-    path('api/admin/analytics/top-events/', analytics_top_events, name='analytics_top_events'),
-    path('api/admin/analytics/user-growth/', analytics_user_growth, name='analytics_user_growth'),
-    path('api/admin/analytics/kpi/', analytics_kpi, name='analytics_kpi'),
-    
-    # Event Approval API Endpoints
-    path('api/admin/events/pending/', api_pending_events, name='api_pending_events'),
-    path('api/admin/events/all/', api_all_events, name='api_all_events'),
-    path('api/admin/events/<int:event_id>/', api_event_detail, name='api_event_detail'),
-    path('api/admin/events/<int:event_id>/approve/', api_approve_event, name='api_approve_event'),
-    path('api/admin/events/<int:event_id>/reject/', api_reject_event, name='api_reject_event'),
-    path('api/admin/events/<int:event_id>/delete/', api_delete_event, name='api_delete_event'),
-    path('api/admin/events/<int:event_id>/history/', api_event_history, name='api_event_history'),
-    path('api/admin/events/stats/', api_event_stats, name='api_event_stats'),
-    path('api/admin/events/bulk-approve/', api_bulk_approve, name='api_bulk_approve'),
-    path('api/admin/events/bulk-reject/', api_bulk_reject, name='api_bulk_reject'),
-    
-    # Notifications API Endpoints
-    path('api/admin/notifications/recent/', api_notifications_recent, name='api_notifications_recent'),
-    path('api/admin/notifications/<int:notification_id>/read/', api_notification_mark_read, name='api_notification_mark_read'),
-    path('api/admin/notifications/mark-all-read/', api_notifications_mark_all_read, name='api_notifications_mark_all_read'),
+    path('api/events/check-expired/', api_events_check_expired, name='api_events_check_expired'),
+    # ============ ADMIN PORTAL API ENDPOINTS ============
+    # Dashboard
+    path('api/admin/dashboard/stats/', admin_api.dashboard_stats, name='admin_dashboard_stats'),
+    path('api/admin/dashboard/revenue-chart/', admin_api.revenue_chart, name='admin_revenue_chart'),
+    path('api/admin/dashboard/category-chart/', admin_api.categories_chart, name='admin_categories_chart'),
+    path('api/admin/dashboard/recent-activity/', admin_api.recent_activity, name='admin_recent_activity'),
+    path('api/admin/dashboard/top-events/', admin_api.top_events, name='admin_top_events'),
+    path('api/admin/dashboard/pending-count/', admin_api.pending_count, name='admin_pending_count'),
+
+    # Events Management
+    path('api/admin/events/', admin_api.events_list_api, name='admin_events_list'),
+    path('api/admin/events/pending/', admin_api.api_pending_events, name='api_pending_events'),
+    path('api/admin/events/pending/count/', admin_api.pending_count, name='admin_pending_count_legacy'),
+    path('api/admin/events/stats/', admin_api.api_event_stats, name='admin_event_stats'),
+    path('api/admin/categories/', admin_api.categories_list_api, name='admin_categories_list'),
+    path('api/admin/events/list/', admin_api.events_upcoming_api, name='admin_events_list_select'),
+    path('api/admin/events/upcoming/', admin_api.events_upcoming_api, name='admin_events_upcoming_select'),
+    path('api/admin/events/export/', admin_api.api_events_export, name='admin_events_export'),
+    path('api/admin/events/<int:event_id>/', admin_api.api_event_detail, name='api_event_detail'),
+    path('api/admin/events/<int:event_id>/approve/', admin_api.api_approve_event, name='api_approve_event'),
+    path('api/admin/events/<int:event_id>/reject/', admin_api.api_reject_event, name='api_reject_event'),
+    path('api/admin/events/<int:event_id>/delete/', admin_api.api_delete_event, name='api_delete_event'),
+    path('api/admin/events/<int:event_id>/history/', admin_api.api_event_history, name='api_event_history'),
+    path('api/admin/events/bulk-approve/', admin_api.api_bulk_approve, name='api_bulk_approve'),
+    path('api/admin/events/bulk-reject/', admin_api.api_bulk_reject, name='api_bulk_reject'),
+
+    # Bookings Management
+    path('api/admin/bookings/', admin_api.bookings_list_api, name='admin_bookings_list'),
+    path('api/admin/bookings/stats/', admin_api.bookings_stats, name='admin_bookings_stats'),
+    path('api/admin/bookings/export/', admin_api.bookings_export, name='admin_bookings_export'),
+    path('api/admin/bookings/<str:booking_id>/', admin_api.booking_detail, name='admin_booking_detail'),
+    path('api/admin/bookings/<str:booking_id>/refund/', admin_api.booking_refund, name='admin_booking_refund'),
+    path('api/admin/bookings/<str:booking_id>/cancel/', admin_api.booking_cancel, name='admin_booking_cancel'),
+
+    # Refunds Management
+    path('api/admin/refunds/', admin_api.refunds_list_api, name='admin_refunds_list'),
+    path('api/admin/refunds/stats/', admin_api.refunds_stats, name='admin_refunds_stats'),
+    path('api/admin/refunds/export/', admin_api.refunds_export, name='admin_refunds_export'),
+    path('api/admin/refunds/<int:refund_id>/', admin_api.refund_detail_api, name='admin_refund_detail'),
+    path('api/admin/refunds/<int:refund_id>/approve/', admin_api.refund_approve_api, name='admin_refund_approve'),
+    path('api/admin/refunds/<int:refund_id>/reject/', admin_api.refund_reject_api, name='admin_refund_reject'),
+
+    # Users Management
+    path('api/admin/users/', admin_api.users_list_api, name='admin_users_list'),
+    path('api/admin/users/stats/', admin_api.users_stats, name='admin_users_stats'),
+    path('api/admin/users/export/', admin_api.users_export, name='admin_users_export'),
+    path('api/admin/users/<int:user_id>/reset-password/', admin_api.user_reset_password, name='admin_user_reset_password'),
+    path('api/admin/users/<int:user_id>/suspend/', admin_api.user_suspend, name='admin_user_suspend'),
+    path('api/admin/users/<int:user_id>/activate/', admin_api.user_activate, name='admin_user_activate'),
+
+    # Tickets Management
+    path('api/admin/tickets/', admin_api.tickets_list_api, name='admin_tickets_list'),
+    path('api/admin/tickets/export/', admin_api.tickets_export, name='admin_tickets_export'),
+    path('api/admin/tickets/<str:ticket_number>/', admin_api.ticket_detail_api, name='admin_ticket_detail'),
+    path('api/admin/tickets/<str:ticket_number>/checkin/', admin_api.ticket_checkin_api, name='admin_ticket_checkin'),
+    path('api/admin/tickets/<str:ticket_number>/verify/', admin_api.ticket_verify_api, name='admin_ticket_verify'),
+    path('api/admin/tickets/<str:ticket_number>/download/', admin_api.ticket_download_api, name='admin_ticket_download'),
+    path('api/admin/events/<int:event_id>/stats/', admin_api.event_tickets_stats, name='admin_event_tickets_stats'),
+    path('api/admin/events/<int:event_id>/recent-checkins/', admin_api.event_recent_checkins, name='admin_event_recent_checkins'),
+
+    # Check-in History & Analytics Endpoints
+    path('api/admin/checkins/stats/', admin_api.checkin_stats, name='admin_checkin_stats'),
+    path('api/admin/checkins/events/', admin_api.checkin_events, name='admin_checkin_events'),
+    path('api/admin/checkins/recent/', admin_api.checkin_recent, name='admin_checkin_recent'),
+    path('api/admin/checkins/event/<int:event_id>/details/', admin_api.checkin_event_details, name='admin_checkin_event_details'),
+    path('api/admin/checkins/event/<int:event_id>/timeline/', admin_api.checkin_event_timeline, name='admin_checkin_event_timeline'),
+    path('api/admin/checkins/export/', admin_api.checkin_export, name='admin_checkin_export'),
+    path('api/admin/checkins/event/<int:event_id>/export/', admin_api.checkin_event_export, name='admin_checkin_event_export'),
+
+
+    # Payments & Payouts Management
+    path('api/admin/transactions/', admin_api.transactions_list_api, name='admin_transactions_list'),
+    path('api/admin/transactions/stats/', admin_api.transactions_stats, name='admin_transactions_stats'),
+    path('api/admin/transactions/export/', admin_api.transactions_export, name='admin_transactions_export'),
+    path('api/admin/transactions/<str:transaction_id>/', admin_api.transaction_detail_api, name='admin_transaction_detail'),
+    path('api/admin/transactions/refund/', admin_api.transaction_refund_api, name='admin_transaction_refund'),
+    path('api/admin/payouts/', admin_api.payouts_list_api, name='admin_payouts_list'),
+    path('api/admin/payouts/stats/', admin_api.payouts_stats, name='admin_payouts_stats'),
+    path('api/admin/payouts/process/', admin_api.payout_process, name='admin_payout_process'),
+    path('api/admin/payouts/process-all/', admin_api.payout_process_all, name='admin_payout_process_all'),
+
+    # Reports & Analytics
+    path('api/admin/reports/kpi/', admin_api.reports_kpi, name='admin_reports_kpi'),
+    path('api/admin/reports/revenue-chart/', admin_api.revenue_chart, name='admin_reports_revenue_chart'),
+    path('api/admin/reports/category-chart/', admin_api.categories_chart, name='admin_reports_category_chart'),
+    path('api/admin/reports/top-events/', admin_api.top_events, name='admin_reports_top_events'),
+    path('api/admin/reports/user-growth/', admin_api.user_growth_chart, name='admin_reports_user_growth'),
+    path('api/admin/reports/summary/', admin_api.reports_kpi, name='admin_reports_summary'),
+    path('api/admin/reports/sales/', admin_api.reports_sales, name='admin_reports_sales'),
+    path('api/admin/reports/events/', admin_api.reports_events_api, name='admin_reports_events'),
+    path('api/admin/reports/events/summary/', admin_api.reports_events_summary, name='admin_reports_events_summary'),
+
+    # Support Tickets
+    path('api/admin/support/tickets/', admin_api.support_tickets_list, name='admin_support_tickets_list'),
+    path('api/admin/support/stats/', admin_api.support_stats, name='admin_support_stats'),
+    path('api/admin/support/tickets/<int:ticket_id>/', admin_api.support_ticket_detail_api, name='admin_support_ticket_detail'),
+    path('api/admin/support/tickets/<int:ticket_id>/reply/', admin_api.support_ticket_reply, name='admin_support_ticket_reply'),
+
+    # Notifications
+    path('api/admin/notifications/', admin_api.notifications_api, name='admin_notifications'),
+    path('api/admin/notifications/recent/', admin_api.api_notifications_recent, name='admin_notifications_recent'),
+    path('api/admin/notifications/<int:notification_id>/read/', admin_api.api_notification_mark_read, name='admin_notification_mark_read'),
+    path('api/admin/notifications/mark-all-read/', admin_api.api_notifications_mark_all_read, name='admin_notifications_mark_all_read'),
+
+    # Settings & Profile
+    path('api/admin/user/profile/', admin_api.user_profile, name='admin_user_profile'),
+    path('api/admin/settings/', admin_api.settings_api, name='admin_settings_api'),
+    path('api/admin/broadcast/', admin_api.api_admin_broadcast, name='admin_settings_broadcast'),
+
     
     # Portal URLs
     path('', include('config.attendee_urls')),

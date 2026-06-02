@@ -1,0 +1,164 @@
+/* frontend/static/css/organizers/events.css */
+.event-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    cursor: pointer;
+    overflow: hidden;
+}
+.event-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+}
+.event-image {
+    height: 160px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--sidebar-bg);
+    position: relative;
+}
+.event-status {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
+}
+.tab-button {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    color: var(--gray-muted);
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+    transition: var(--transition);
+}
+.tab-button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.ticket-type-row {
+    background: var(--sidebar-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 8px;
+}
+.schedule-item {
+    border-left: 3px solid var(--primary);
+    background: var(--sidebar-bg);
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: var(--radius-sm);
+}
+.image-preview {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+/* ==========================================================================
+   HIGH-VISIBILITY MODAL & FORM FIELD STYLING (DARK GREY ON WHITE CONTRAST)
+   ========================================================================== */
+.modal-content {
+    background-color: #ffffff !important;
+    color: #1a202c !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
+.modal-title, .modal-header h5 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    font-family: 'Outfit', sans-serif !important;
+}
+
+.modal-footer {
+    border-top: 1px solid #e2e8f0 !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
+.modal-body {
+    padding: 1.5rem !important;
+}
+
+/* Highly visible dark grey for all labels */
+.modal-content label {
+    color: #334155 !important; /* Professional Slate Dark Grey */
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
+    font-size: 0.875rem !important;
+    display: inline-block !important;
+    letter-spacing: 0.01em !important;
+}
+
+/* Form fields: input, select, textarea */
+.modal-content .form-control,
+.modal-content .form-select {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #1e293b !important; /* Visible dark grey input text */
+    border-radius: var(--radius-sm) !important;
+    padding: 10px 14px !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.modal-content .form-control:focus,
+.modal-content .form-select:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 0, 0.15) !important;
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+}
+
+/* Style placeholder text inside inputs */
+.modal-content .form-control::placeholder {
+    color: #64748b !important; /* Visible medium-dark grey for placeholders */
+    opacity: 1 !important;
+}
+
+/* Correct display for native date-time inputs */
+.modal-content input[type="datetime-local"] {
+    color: #1e293b !important;
+}
+
+.modal-content input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0) !important; /* Dark calendar icon */
+    cursor: pointer !important;
+}
+
+/* Tab button text and hover states */
+.modal-content .tab-button {
+    color: #64748b !important;
+    border-bottom: 2px solid transparent !important;
+    background: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    transition: all 0.2s !important;
+}
+
+.modal-content .tab-button:hover {
+    color: #0f172a !important;
+}
+
+.modal-content .tab-button.active {
+    color: var(--primary) !important;
+    border-bottom-color: var(--primary) !important;
+}
+
+/* Dropdown list selections */
+.modal-content select option {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+}

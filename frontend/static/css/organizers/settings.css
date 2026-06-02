@@ -1,0 +1,7 @@
+/* frontend/static/css/organizers/settings.css */
+.settings-tab {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-top: 20px;
+}

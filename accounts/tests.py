@@ -114,3 +114,144 @@ class AccountAPITests(TestCase):
             HTTP_AUTHORIZATION=f'Bearer {new_access}',
         )
         self.assertEqual(status_after_logout.status_code, 401)
+
+
+from events.models import Event, Category
+from bookings.models import Ticket
+from django.utils import timezone
+
+class AdminCheckinAPITests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        # Create administrative user
+        self.admin_user = User.objects.create_user(
+            username='adminuser',
+            email='admin@example.com',
+            password='Password123!',
+            is_staff=True,
+            is_superuser=True
+        )
+        # Create non-staff user
+        self.regular_user = User.objects.create_user(
+            username='regularuser',
+            email='regular@example.com',
+            password='Password123!',
+            is_staff=False
+        )
+        # Create category and event
+        self.category = Category.objects.create(name='Music')
+        self.organizer = User.objects.create_user(
+            username='orguser',
+            email='org@example.com',
+            password='Password123!',
+            role='organizer'
+        )
+        self.event = Event.objects.create(
+            title='Rock Concert',
+            organizer=self.organizer,
+            category=self.category,
+            start_date=timezone.now() + timezone.timedelta(days=1),
+            end_date=timezone.now() + timezone.timedelta(days=1, hours=3),
+            venue='Arena 1',
+            price=50.0,
+            total_seats=100,
+            available_seats=100,
+            status='published'
+        )
+        # Create tickets
+        self.ticket1 = Ticket.objects.create(
+            ticket_number='TICKET1001',
+            attendee=self.regular_user,
+            event=self.event,
+            billing_name='Alice Smith',
+            billing_email='alice@example.com',
+            billing_phone='1234567890',
+            quantity=2,
+            price=50.0,
+            status='checked_in',
+            checked_in_at=timezone.now()
+        )
+        self.ticket2 = Ticket.objects.create(
+            ticket_number='TICKET1002',
+            attendee=self.regular_user,
+            event=self.event,
+            billing_name='Bob Jones',
+            billing_email='bob@example.com',
+            billing_phone='0987654321',
+            quantity=1,
+            price=50.0,
+            status='valid'
+        )
+
+
+    def test_checkin_endpoints_forbidden_for_non_staff(self):
+        self.client.force_login(self.regular_user)
+        response = self.client.get('/api/admin/checkins/stats/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_checkin_stats(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get('/api/admin/checkins/stats/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['stats']['total_events'], 1)
+        self.assertEqual(data['stats']['total_tickets'], 2)
+        self.assertEqual(data['stats']['checked_in'], 1)
+        self.assertEqual(data['stats']['avg_attendance'], 50.0)
+
+    def test_checkin_events(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get('/api/admin/checkins/events/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['events']), 1)
+        self.assertEqual(data['events'][0]['title'], 'Rock Concert')
+        self.assertEqual(data['events'][0]['total_tickets'], 2)
+        self.assertEqual(data['events'][0]['checked_in'], 1)
+
+    def test_checkin_recent(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get('/api/admin/checkins/recent/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(len(data['checkins']), 1)
+        self.assertEqual(data['checkins'][0]['ticket_number'], 'TICKET1001')
+        self.assertEqual(data['checkins'][0]['attendee_name'], 'Alice Smith')
+
+    def test_checkin_event_details(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(f'/api/admin/checkins/event/{self.event.id}/details/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['details']['total_tickets'], 2)
+        self.assertEqual(data['details']['checked_in'], 1)
+        self.assertEqual(data['details']['not_checked_in'], 1)
+        self.assertEqual(data['details']['attendance_rate'], 50.0)
+
+    def test_checkin_event_timeline(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(f'/api/admin/checkins/event/{self.event.id}/timeline/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertIn('labels', data)
+        self.assertIn('values', data)
+
+    def test_checkin_export(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get('/api/admin/checkins/export/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('TICKET1001', response.content.decode())
+
+    def test_checkin_event_export(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(f'/api/admin/checkins/event/{self.event.id}/export/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('TICKET1001', response.content.decode())
+

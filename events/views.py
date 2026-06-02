@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 
 def home(request):
@@ -55,41 +57,162 @@ def organizer_dashboard_stats(request):
         if bearer_user:
             user = bearer_user
         else:
-            return JsonResponse({'error': 'Unauthorized'}, status=403)
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
+            
+    if getattr(user, 'role', None) != 'organizer' and not user.is_superuser:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        events = Event.objects.filter(organizer=user)
+        events_count = events.count()
+        
+        from bookings.models import Ticket
+        tickets = Ticket.objects.filter(event__organizer=user, status='valid')
+        tickets_sold = sum(t.quantity for t in tickets)
+        revenue = sum(t.quantity * t.price for t in tickets)
+        
+        # Calculate top event by tickets sold/revenue
+        top_event_name = 'No events yet'
+        if events_count > 0:
+            event_revenues = []
+            for e in events:
+                e_revenue = sum(t.quantity * t.price for t in tickets.filter(event=e))
+                event_revenues.append((e_revenue, e.title))
+            if event_revenues:
+                top_event_name = sorted(event_revenues, reverse=True)[0][1]
+                
+        revenue_value = float(revenue)
+        attendees_count = tickets_sold
+
+        metrics = {
+            # Current keys used by organizer dashboard frontend
+            'total_events': events_count,
+            'total_tickets_sold': tickets_sold,
+            'total_revenue': revenue_value,
+            'total_attendees': attendees_count,
+            # Backward-compatible keys used in other modules
+            'events_count': events_count,
+            'tickets_sold': tickets_sold,
+            'revenue': revenue_value,
+            'attendees': attendees_count,
+            'top_event': top_event_name,
+            'conversion_rate': 74 if events_count > 0 else 0,
+            'new_followers': 32 if events_count > 0 else 0,
+            'pending_payout': revenue_value * 0.85 if revenue > 0 else 0.00,
+        }
+
+        return JsonResponse(metrics)
+    except Exception:
+        # If the DB is temporarily unavailable (e.g. DATABASE_URL/Supabase outage),
+        # return safe zeros so the dashboard remains usable.
+        return JsonResponse({
+            'total_events': 0,
+            'total_tickets_sold': 0,
+            'total_revenue': 0.0,
+            'total_attendees': 0,
+            'events_count': 0,
+            'tickets_sold': 0,
+            'revenue': 0.0,
+            'attendees': 0,
+            'top_event': 'Unavailable',
+            'conversion_rate': 0,
+            'new_followers': 0,
+            'pending_payout': 0.0,
+            'db_connected': False
+        }, status=200)
+
+
+def organizer_dashboard_revenue(request):
+    from accounts.auth import authenticate_bearer
+    from bookings.models import Ticket
+    from django.utils import timezone
+    from datetime import timedelta
+    import datetime
+    
+    user = request.user
+    if not user.is_authenticated:
+        bearer_user, error = authenticate_bearer(request)
+        if bearer_user:
+            user = bearer_user
+        else:
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
             
     if getattr(user, 'role', None) != 'organizer' and not user.is_superuser:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
         
-    events = Event.objects.filter(organizer=user)
-    events_count = events.count()
+    period = request.GET.get('period', '12months')
     
-    from bookings.models import Ticket
-    tickets = Ticket.objects.filter(event__organizer=user, status='valid')
-    tickets_sold = sum(t.quantity for t in tickets)
-    revenue = sum(t.quantity * t.price for t in tickets)
-    
-    # Calculate top event by tickets sold/revenue
-    top_event_name = 'No events yet'
-    if events_count > 0:
-        event_revenues = []
-        for e in events:
-            e_revenue = sum(t.quantity * t.price for t in tickets.filter(event=e))
-            event_revenues.append((e_revenue, e.title))
-        if event_revenues:
-            top_event_name = sorted(event_revenues, reverse=True)[0][1]
-            
-    metrics = {
-        'events_count': events_count,
-        'tickets_sold': tickets_sold,
-        'revenue': float(revenue),
-        'attendees': tickets_sold,
-        'top_event': top_event_name,
-        'conversion_rate': 74 if events_count > 0 else 0,
-        'new_followers': 32 if events_count > 0 else 0,
-        'pending_payout': float(revenue) * 0.85 if revenue > 0 else 0.00,
-    }
-
-    return JsonResponse(metrics)
+    try:
+        tickets = Ticket.objects.filter(event__organizer=user).exclude(status__in=['cancelled', 'refunded'])
+        now = timezone.now()
+        
+        labels = []
+        values = []
+        
+        if period == '7days':
+            # Last 7 days (including today)
+            for i in range(6, -1, -1):
+                day = now - timedelta(days=i)
+                day_tickets = tickets.filter(
+                    purchase_date__year=day.year,
+                    purchase_date__month=day.month,
+                    purchase_date__day=day.day
+                )
+                revenue = sum(t.quantity * t.price for t in day_tickets)
+                labels.append(day.strftime('%a'))
+                values.append(float(revenue))
+                
+        elif period == '4weeks':
+            # Last 4 weeks (ending today)
+            for i in range(3, -1, -1):
+                start_date = now - timedelta(days=(i+1)*7)
+                end_date = now - timedelta(days=i*7)
+                week_tickets = tickets.filter(purchase_date__gte=start_date, purchase_date__lt=end_date)
+                revenue = sum(t.quantity * t.price for t in week_tickets)
+                labels.append(f"Week {4-i}")
+                values.append(float(revenue))
+                
+        elif period == 'ytd':
+            # Year-to-Date monthly (from January of the current year to the current month)
+            current_year = now.year
+            current_month = now.month
+            for m in range(1, current_month + 1):
+                start_date = timezone.make_aware(datetime.datetime(current_year, m, 1))
+                if m == 12:
+                    end_date = timezone.make_aware(datetime.datetime(current_year + 1, 1, 1))
+                else:
+                    end_date = timezone.make_aware(datetime.datetime(current_year, m + 1, 1))
+                    
+                month_tickets = tickets.filter(purchase_date__gte=start_date, purchase_date__lt=end_date)
+                revenue = sum(t.quantity * t.price for t in month_tickets)
+                labels.append(datetime.date(current_year, m, 1).strftime('%b'))
+                values.append(float(revenue))
+                
+        else:  # 12months (default)
+            # Last 12 months rolling (ending in the current month)
+            for i in range(11, -1, -1):
+                target_month = now.month - i
+                target_year = now.year
+                while target_month <= 0:
+                    target_month += 12
+                    target_year -= 1
+                    
+                start_date = timezone.make_aware(datetime.datetime(target_year, target_month, 1))
+                if target_month == 12:
+                    end_date = timezone.make_aware(datetime.datetime(target_year + 1, 1, 1))
+                else:
+                    end_date = timezone.make_aware(datetime.datetime(target_year, target_month + 1, 1))
+                    
+                month_tickets = tickets.filter(purchase_date__gte=start_date, purchase_date__lt=end_date)
+                revenue = sum(t.quantity * t.price for t in month_tickets)
+                labels.append(datetime.date(target_year, target_month, 1).strftime('%b'))
+                values.append(float(revenue))
+                
+        return JsonResponse({
+            'labels': labels,
+            'values': values
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # ============ ATTENDEE EVENTS API ENDPOINTS ============
@@ -225,14 +348,43 @@ from django.utils import timezone
 
 def api_dashboard_stats(request):
     """API endpoint to get attendee dashboard stats"""
-    upcoming_count = Event.objects.filter(status='published', start_date__gte=timezone.now()).count()
-    if upcoming_count == 0:
-        upcoming_count = Event.objects.filter(status='published').count()
-        
+    from bookings.views import get_authenticated_attendee
+    from bookings.models import Ticket
+    from django.db.models import Sum
+
+    user = get_authenticated_attendee(request)
+    
+    # Calculate general upcoming published events (fallback)
+    general_upcoming_count = Event.objects.filter(status='published', start_date__gte=timezone.now()).count()
+    if general_upcoming_count == 0:
+        general_upcoming_count = Event.objects.filter(status='published').count()
+
+    if not user or not user.is_authenticated:
+        # Fallback to guest stats so it doesn't crash if session is unauthenticated
+        return JsonResponse({
+            'total_tickets': 0,
+            'total_spent': 0.0,
+            'upcoming_events': general_upcoming_count,
+            'reviews_written': 0,
+            'tickets_trend': {'percentage': 0, 'direction': 'flat'},
+            'spent_trend': {'percentage': 0, 'direction': 'flat'},
+            'upcoming_trend': {'percentage': 0, 'direction': 'flat'},
+            'reviews_trend': {'percentage': 0, 'direction': 'flat'}
+        })
+
+    # Query the logged-in user's active tickets
+    user_tickets = Ticket.objects.filter(attendee=user, status__in=['valid', 'checked_in'])
+    
+    total_tickets = sum(t.quantity for t in user_tickets)
+    total_spent = sum(t.quantity * t.price for t in user_tickets)
+    
+    # Count upcoming events that this specific user has tickets for
+    user_upcoming_count = user_tickets.filter(event__end_date__gte=timezone.now()).values('event').distinct().count()
+
     return JsonResponse({
-        'total_tickets': 0,
-        'total_spent': 0,
-        'upcoming_events': upcoming_count,
+        'total_tickets': total_tickets,
+        'total_spent': float(total_spent),
+        'upcoming_events': user_upcoming_count if user_upcoming_count > 0 else general_upcoming_count,
         'reviews_written': 0,
         'tickets_trend': {'percentage': 0, 'direction': 'flat'},
         'spent_trend': {'percentage': 0, 'direction': 'flat'},
@@ -260,7 +412,24 @@ def api_dashboard_recommendations(request):
 
 def api_dashboard_recent_activity(request):
     """API endpoint to get recent activity"""
-    return JsonResponse([], safe=False)
+    from bookings.views import get_authenticated_attendee
+    from bookings.models import Ticket
+    
+    user = get_authenticated_attendee(request)
+    if not user or not user.is_authenticated:
+        return JsonResponse([], safe=False)
+        
+    tickets = Ticket.objects.filter(attendee=user).order_by('-purchase_date')[:5]
+    results = []
+    for t in tickets:
+        results.append({
+            'id': t.id,
+            'type': 'booking',
+            'title': f"Booked ticket for {t.event.title}",
+            'created_at': t.purchase_date.isoformat(),
+            'action_url': f"/attendee/tickets/detail/?ticket={t.ticket_number}"
+        })
+    return JsonResponse(results, safe=False)
 
 def api_tickets_upcoming(request):
     """API endpoint to get upcoming tickets"""
@@ -292,6 +461,100 @@ def api_featured_events(request):
             'tickets_left': e.available_seats,
         })
     return JsonResponse({'success': True, 'events': results})
+
+
+import dateutil.parser
+from bookings.models import Ticket
+from bookings.email_service import send_attendee_review_request_email, send_organizer_performance_summary_email
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_events_check_expired(request):
+    """
+    Checks for completed events and dispatches automated post-event alerts.
+    Utilizes client-passed local time and date from the context frameworks.
+    """
+    try:
+        data = json.loads(request.body)
+        client_date = data.get('current_date')
+        client_time = data.get('current_time', '00:00')
+        
+        if not client_date:
+            return JsonResponse({'success': False, 'message': 'Date is required'}, status=400)
+            
+        # Parse client date and time context to obtain a datetime threshold
+        try:
+            client_dt = dateutil.parser.isoparse(f"{client_date}T{client_time}")
+            if timezone.is_naive(client_dt):
+                client_dt = timezone.make_aware(client_dt)
+        except ValueError:
+            client_dt = timezone.now()
+
+        # Query active published events that have passed this end datetime and need notification updates
+        events = Event.objects.filter(
+            status='published',
+            end_date__lte=client_dt
+        ).filter(
+            Q(attendee_reviews_sent=False) | Q(organizer_summary_sent=False)
+        )
+        
+        processed_attendees_emails = 0
+        processed_organizers_emails = 0
+        
+        for event in events:
+            # 1. Dispatch attendee review requests
+            if not event.attendee_reviews_sent:
+                # Find all tickets for this event
+                tickets = Ticket.objects.filter(event=event, status='valid')
+                
+                # Deduplicate attendee contacts
+                attendee_map = {}
+                for ticket in tickets:
+                    email = ticket.billing_email or (ticket.attendee.email if ticket.attendee else None)
+                    name = ticket.billing_name or (ticket.attendee.username if ticket.attendee else 'Attendee')
+                    if email:
+                        attendee_map[email] = name
+                        
+                for email, name in attendee_map.items():
+                    send_attendee_review_request_email(
+                        attendee_email=email,
+                        attendee_name=name,
+                        event_title=event.title,
+                        event_id=event.id
+                    )
+                    processed_attendees_emails += 1
+                    
+                event.attendee_reviews_sent = True
+                
+            # 2. Dispatch organizer performance summary reports
+            if not event.organizer_summary_sent:
+                tickets = Ticket.objects.filter(event=event, status='valid')
+                total_seats_sold = sum(t.quantity for t in tickets)
+                total_revenue = float(sum(t.quantity * t.price for t in tickets))
+                
+                send_organizer_performance_summary_email(
+                    organizer_email=event.organizer.email,
+                    organizer_name=event.organizer.organization_name or event.organizer.username,
+                    event_title=event.title,
+                    total_attendees=total_seats_sold,
+                    total_revenue=total_revenue
+                )
+                processed_organizers_emails += 1
+                event.organizer_summary_sent = True
+                
+            event.save()
+            
+        return JsonResponse({
+            'success': True,
+            'message': f"Post-event automations triggered successfully.",
+            'attendees_notified': processed_attendees_emails,
+            'organizers_notified': processed_organizers_emails
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
 

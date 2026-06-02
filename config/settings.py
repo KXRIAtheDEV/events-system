@@ -46,6 +46,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.GlobalExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -113,6 +114,47 @@ TEMPLATES = [
         },
     },
 ]
+
+# Only log to a file on writable filesystems (not Vercel/Render serverless)
+_IS_SERVERLESS = bool(os.environ.get('VERCEL') or os.environ.get('RENDER'))
+
+_log_handlers = {
+    'console': {
+        'class': 'logging.StreamHandler',
+    },
+}
+_root_handlers = ['console']
+
+if not _IS_SERVERLESS:
+    _log_handlers['file'] = {
+        'level': 'ERROR',
+        'class': 'logging.FileHandler',
+        'filename': os.path.join(BASE_DIR, 'events.log'),
+    }
+    _root_handlers.append('file')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': _log_handlers,
+    'root': {
+        'handlers': _root_handlers,
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': _root_handlers,
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'config.middleware': {
+            'handlers': _root_handlers,
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
+
 
 WSGI_APPLICATION = 'config.wsgi.application'
 

@@ -22,6 +22,93 @@ function setupEventListeners() {
             loadRevenueChart();
         });
     }
+
+    // Broadcast Modal controls
+    const openBtn = document.getElementById('openBroadcastModalBtn');
+    const closeBtn = document.getElementById('closeBroadcastModalBtn');
+    const cancelBtn = document.getElementById('cancelBroadcastModalBtn');
+    const modal = document.getElementById('broadcastModal');
+    const form = document.getElementById('broadcastForm');
+    
+    if (openBtn && modal) {
+        openBtn.addEventListener('click', function() {
+            modal.style.display = 'flex';
+        });
+    }
+    
+    const closeModal = () => {
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        if (form) {
+            form.reset();
+        }
+    };
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+    }
+    
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const audience = document.getElementById('broadcastAudience').value;
+            const subject = document.getElementById('broadcastSubject').value.trim();
+            const message = document.getElementById('broadcastMessage').value.trim();
+            
+            if (!audience || !subject || !message) {
+                showToast('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            Loader.show('Sending broadcast campaign...');
+            try {
+                const response = await fetch('/api/admin/broadcast/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ audience, subject, message })
+                });
+                
+                const resData = await response.json();
+                if (resData.success) {
+                    showToast(resData.message || 'Campaign broadcasted successfully!', 'success');
+                    closeModal();
+                } else {
+                    showToast(resData.message || 'Failed to send campaign.', 'error');
+                }
+            } catch (err) {
+                console.error('Error sending campaign:', err);
+                showToast('Something went wrong. Please try again.', 'error');
+            } finally {
+                Loader.hide();
+            }
+        });
+    }
+}
+
+// Helper to retrieve CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 async function loadDashboardData() {
