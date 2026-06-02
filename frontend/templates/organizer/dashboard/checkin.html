@@ -1,0 +1,19 @@
+{% extends "organizer/base.html" %}
+{% load static %}
+{% block title %}Check‑in | EventHub Organizer{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/organizers/checkin.css">
+{% endblock %}
+{% block content %}
+<div>
+    <div class="d-flex justify-content-between mb-4"><h1>Check‑in Management</h1><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerDeviceModal">Register Device</button></div>
+    <div class="row g-4">
+        <div class="col-lg-6"><div class="chart-card"><h5>Active Session</h5><div id="activeSession"></div><button id="createSessionBtn" class="btn btn-success mt-2">Start New Session</button><hr><h5>Real-time Stats</h5><canvas id="realtimeChart" height="200"></canvas></div></div>
+        <div class="col-lg-6"><div class="chart-card"><h5>Registered Devices</h5><div id="devicesList"></div></div><div class="chart-card mt-4"><h5>Recent Check-ins</h5><ul id="recentCheckins" class="list-group"></ul></div></div>
+    </div>
+</div>
+<div class="modal fade" id="registerDeviceModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Register Device</h5></div><div class="modal-body"><input type="text" id="deviceName" class="form-control" placeholder="Device name"></div><div class="modal-footer"><button class="btn btn-primary" id="registerDeviceBtn">Register</button></div></div></div></div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/js/organizer/checkin.js"></script>
+{% endblock %}

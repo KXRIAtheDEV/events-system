@@ -1,0 +1,18 @@
+/* frontend/static/css/organizers/tickets.css */
+.scan-section {
+    background: linear-gradient(135deg, var(--primary), #ec6408);
+    border-radius: var(--radius-md);
+}
+.qr-scanner {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+.status-badge.valid {
+    background: #d1fae5;
+    color: #065f46;
+}
+.status-badge.used {
+    background: #fee2e2;
+    color: #991b1b;
+}
