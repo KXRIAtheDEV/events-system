@@ -115,22 +115,31 @@ TEMPLATES = [
     },
 ]
 
-USE_FILE_LOGGING = not os.environ.get('VERCEL')
-DEFAULT_LOG_HANDLERS = ['console', 'file'] if USE_FILE_LOGGING else ['console']
+IS_SERVERLESS_RUNTIME = bool(
+    os.environ.get('VERCEL')
+    or os.environ.get('VERCEL_ENV')
+    or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
+)
+USE_FILE_LOGGING = not IS_SERVERLESS_RUNTIME
+LOG_HANDLERS = {
+    'console': {
+        'class': 'logging.StreamHandler',
+    },
+}
+DEFAULT_LOG_HANDLERS = ['console']
+
+if USE_FILE_LOGGING:
+    LOG_HANDLERS['file'] = {
+        'level': 'ERROR',
+        'class': 'logging.FileHandler',
+        'filename': os.path.join(BASE_DIR, 'events.log'),
+    }
+    DEFAULT_LOG_HANDLERS.append('file')
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'events.log'),
-        },
-    },
+    'handlers': LOG_HANDLERS,
     'root': {
         'handlers': DEFAULT_LOG_HANDLERS,
         'level': 'WARNING',
