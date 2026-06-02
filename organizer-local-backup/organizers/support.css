@@ -1,0 +1,11 @@
+/* frontend/static/css/organizers/support.css */
+.ticket-reply {
+    background: var(--sidebar-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+.faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+}

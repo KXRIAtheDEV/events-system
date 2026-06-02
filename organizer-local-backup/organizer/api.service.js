@@ -1,7 +1,6 @@
 // ============================================
 // ORGANIZER API SERVICE
 // Handles all API requests for organizer portal
-// Extended with robust local mock fallbacks for missing backend views
 // ============================================
 
 class OrganizerAPIService {
@@ -9,6 +8,7 @@ class OrganizerAPIService {
         this.config = config;
         this.pendingRequests = new Map();
         this.cache = new Map();
+<<<<<<< HEAD
         this.memoryStorage = {};
         
         this.accessToken = this.safeGetItem('organizer_access_token');
@@ -44,58 +44,55 @@ class OrganizerAPIService {
     }
     
     // Get CSRF Token from cookies
+=======
+        this.accessToken = localStorage.getItem('organizer_access_token');
+        this.refreshToken = localStorage.getItem('organizer_refresh_token');
+    }
+
+>>>>>>> aac1ef0 (feat: Add complete organizer dashboard with all modules)
     getCSRFToken() {
         const cookieValue = document.cookie.match('(^|; )csrftoken=([^;]*)');
         return cookieValue ? cookieValue[2] : null;
     }
-    
-    // Set tokens after login
+
     setTokens(access, refresh) {
         this.accessToken = access;
         this.refreshToken = refresh;
         this.safeSetItem('organizer_access_token', access);
         this.safeSetItem('organizer_refresh_token', refresh);
     }
-    
-    // Clear tokens on logout
+
     clearTokens() {
         this.accessToken = null;
         this.refreshToken = null;
         this.safeRemoveItem('organizer_access_token');
         this.safeRemoveItem('organizer_refresh_token');
     }
-    
-    // Build full URL
+
     buildUrl(endpoint, params = {}) {
         let url = `${this.config.API_BASE}${endpoint}`;
-        
         const queryParams = new URLSearchParams();
         Object.keys(params).forEach(key => {
             if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
                 queryParams.append(key, params[key]);
             }
         });
-        
         const queryString = queryParams.toString();
         if (queryString) url += `?${queryString}`;
-        
         return url;
     }
-    
-    // Generate request key
+
     getRequestKey(method, url, params, data) {
         return `${method}:${url}:${JSON.stringify(params)}:${JSON.stringify(data)}`;
     }
-    
-    // Cancel pending request
+
     cancelRequest(key) {
         if (this.pendingRequests.has(key)) {
             this.pendingRequests.get(key).abort();
             this.pendingRequests.delete(key);
         }
     }
-    
-    // Get from cache
+
     getFromCache(key, ttl = this.config.CACHE_TTL) {
         const cached = this.cache.get(key);
         if (cached && (Date.now() - cached.timestamp) < ttl) {
@@ -103,16 +100,14 @@ class OrganizerAPIService {
         }
         return null;
     }
-    
-    // Set cache
+
     setCache(key, data) {
         this.cache.set(key, {
             data: JSON.parse(JSON.stringify(data)),
             timestamp: Date.now()
         });
     }
-    
-    // Clear cache
+
     clearCache(pattern = null) {
         if (pattern) {
             for (const key of this.cache.keys()) {
@@ -122,21 +117,15 @@ class OrganizerAPIService {
             this.cache.clear();
         }
     }
-    
-    // Refresh access token
+
     async refreshAccessToken() {
         if (!this.refreshToken) return null;
-        
         try {
             const response = await fetch(`${this.config.API_BASE}${this.config.ENDPOINTS.AUTH.refreshToken}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ refresh: this.refreshToken }),
-                credentials: 'same-origin'
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh: this.refreshToken })
             });
-            
             if (response.ok) {
                 const data = await response.json();
                 this.setTokens(data.access, data.refresh);
@@ -145,22 +134,10 @@ class OrganizerAPIService {
         } catch (error) {
             console.error('Token refresh failed:', error);
         }
-        
         return null;
     }
-    
-    // ============================================
-    // MOCK DATABASE & FALLBACK LAYER
-    // Keeps app 100% interactive even if Django endpoints aren't written yet
-    // ============================================
-    
-    initMockDatabase() {
-        const storageKeys = {
-            events: 'eventhub_organizer_events_db',
-            stats: 'eventhub_organizer_stats_db',
-            initialized: 'eventhub_organizer_initialized_v2'
-        };
 
+<<<<<<< HEAD
         if (!this.safeGetItem(storageKeys.initialized)) {
             // Clear any old data from previous versions
             this.safeRemoveItem('eventhub_organizer_initialized_db');
@@ -387,153 +364,22 @@ class OrganizerAPIService {
         // 3. Create Event (POST)
         if (endpoint === '/events/create/' && method === 'POST') {
             const newId = events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1;
-            const status = ['published', 'active'].includes(data.status) ? 'published' : (data.status || 'draft');
             const newEvent = {
                 id: newId,
                 name: data.name,
-                title: data.name,
                 date: data.date,
-                start_date: data.date ? `${data.date}T${data.startTime || '00:00'}` : null,
-                end_date: data.date ? `${data.date}T${data.endTime || '00:00'}` : null,
                 location: data.location,
-                venue: data.location,
                 capacity: parseInt(data.capacity || 100),
                 price: parseFloat(data.price || 0),
                 sold: 0,
                 revenue: 0,
                 category: data.category || 'Technology',
-                status,
-                image_url: data.image || ''
+                status: data.status || 'active'
             };
             events.unshift(newEvent);
             this.safeSetItem('eventhub_organizer_events_db', JSON.stringify(events));
             this.recalculateMockStats(events);
             return newEvent;
-        }
-
-        // 3a. Event detail and update endpoints
-        const trimmedEndpoint = endpoint.replace(/^\/+|\/+$/g, '');
-        const parts = trimmedEndpoint.split('/');
-        if (parts[0] === 'events' && parts.length >= 2) {
-            const eventId = parseInt(parts[1], 10);
-            const event = events.find(e => e.id === eventId);
-            if (!event) {
-                return { success: false, message: 'Event not found' };
-            }
-
-            if (parts.length === 2 && method === 'GET') {
-                return event;
-            }
-
-            if (parts.length === 3 && parts[2] === 'update' && method === 'PUT') {
-                if (data.name) {
-                    event.name = data.name;
-                    event.title = data.name;
-                }
-                if (data.description) event.description = data.description;
-                if (data.category) event.category = data.category;
-                if (data.location) event.location = data.location;
-                if (data.venue) event.venue = data.venue;
-                if (data.capacity !== undefined) event.capacity = parseInt(data.capacity);
-                if (data.price !== undefined) event.price = parseFloat(data.price);
-                if (data.status) event.status = ['published', 'active'].includes(data.status) ? 'published' : data.status;
-                if (data.date) event.start_date = `${data.date}T${data.startTime || '00:00'}`;
-                if (data.end_date) event.end_date = data.end_date;
-                this.safeSetItem('eventhub_organizer_events_db', JSON.stringify(events));
-                return { success: true, message: 'Event updated successfully' };
-            }
-
-            if (parts.length === 3 && parts[2] === 'tickets' && method === 'GET') {
-                return JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_tickets_db`)) || [];
-            }
-            if (parts.length === 4 && parts[2] === 'tickets' && parts[3] === 'add' && method === 'POST') {
-                const ticketTypes = JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_tickets_db`)) || [];
-                const newId = ticketTypes.length > 0 ? Math.max(...ticketTypes.map(t => t.id)) + 1 : 1;
-                const newTicket = {
-                    id: newId,
-                    name: data.name,
-                    price: data.price,
-                    quantity: data.quantity,
-                    description: data.description || ''
-                };
-                ticketTypes.push(newTicket);
-                this.safeSetItem(`eventhub_organizer_event_${eventId}_tickets_db`, JSON.stringify(ticketTypes));
-                return newTicket;
-            }
-            if (parts.length === 5 && parts[2] === 'tickets' && parts[4] === 'update' && method === 'PUT') {
-                const ticketId = parseInt(parts[3], 10);
-                const ticketTypes = JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_tickets_db`)) || [];
-                const ticket = ticketTypes.find(t => t.id === ticketId);
-                if (!ticket) return { success: false, message: 'Ticket type not found' };
-                if (data.name) ticket.name = data.name;
-                if (data.price !== undefined) ticket.price = data.price;
-                if (data.quantity !== undefined) ticket.quantity = data.quantity;
-                if (data.description !== undefined) ticket.description = data.description;
-                this.safeSetItem(`eventhub_organizer_event_${eventId}_tickets_db`, JSON.stringify(ticketTypes));
-                return ticket;
-            }
-            if (parts.length === 5 && parts[2] === 'tickets' && parts[4] === 'delete' && method === 'DELETE') {
-                const ticketId = parseInt(parts[3], 10);
-                const ticketTypes = JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_tickets_db`)) || [];
-                const filtered = ticketTypes.filter(t => t.id !== ticketId);
-                this.safeSetItem(`eventhub_organizer_event_${eventId}_tickets_db`, JSON.stringify(filtered));
-                return { success: true };
-            }
-
-            if (parts.length === 3 && parts[2] === 'schedule' && method === 'GET') {
-                return JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_schedule_db`)) || [];
-            }
-            if (parts.length === 4 && parts[2] === 'schedule' && parts[3] === 'add' && method === 'POST') {
-                const items = JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_schedule_db`)) || [];
-                const newId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
-                const newItem = {
-                    id: newId,
-                    title: data.title,
-                    start_time: data.start_time,
-                    end_time: data.end_time,
-                    location: data.location,
-                    description: data.description || ''
-                };
-                items.push(newItem);
-                this.safeSetItem(`eventhub_organizer_event_${eventId}_schedule_db`, JSON.stringify(items));
-                return newItem;
-            }
-            if (parts.length === 5 && parts[2] === 'schedule' && parts[4] === 'update' && method === 'PUT') {
-                const itemId = parseInt(parts[3], 10);
-                const items = JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_schedule_db`)) || [];
-                const item = items.find(i => i.id === itemId);
-                if (!item) return { success: false, message: 'Schedule item not found' };
-                if (data.title !== undefined) item.title = data.title;
-                if (data.start_time !== undefined) item.start_time = data.start_time;
-                if (data.end_time !== undefined) item.end_time = data.end_time;
-                if (data.location !== undefined) item.location = data.location;
-                if (data.description !== undefined) item.description = data.description;
-                this.safeSetItem(`eventhub_organizer_event_${eventId}_schedule_db`, JSON.stringify(items));
-                return item;
-            }
-            if (parts.length === 5 && parts[2] === 'schedule' && parts[4] === 'delete' && method === 'DELETE') {
-                const itemId = parseInt(parts[3], 10);
-                const items = JSON.parse(this.safeGetItem(`eventhub_organizer_event_${eventId}_schedule_db`)) || [];
-                const filtered = items.filter(i => i.id !== itemId);
-                this.safeSetItem(`eventhub_organizer_event_${eventId}_schedule_db`, JSON.stringify(filtered));
-                return { success: true };
-            }
-
-            if (parts.length === 3 && parts[2] === 'upload-image' && method === 'POST') {
-                return { image_url: `https://via.placeholder.com/1200x400?event=${eventId}` };
-            }
-            if (parts.length === 3 && parts[2] === 'upload-gallery' && method === 'POST') {
-                return { success: true };
-            }
-            if (parts.length === 3 && parts[2] === 'analytics' && method === 'GET') {
-                return {
-                    total_tickets: event.capacity || 0,
-                    tickets_sold: event.sold || 0,
-                    revenue: event.revenue || 0,
-                    attendance: Math.min(event.sold || 0, event.capacity || 0),
-                    sales_data: [{ date: new Date().toISOString().split('T')[0], sold: event.sold || 0 }]
-                };
-            }
         }
 
         // 4. Delete Event (DELETE)
@@ -551,6 +397,8 @@ class OrganizerAPIService {
     }
 
     // Main request method
+=======
+>>>>>>> aac1ef0 (feat: Add complete organizer dashboard with all modules)
     async request(method, endpoint, data = null, options = {}) {
         const {
             params = {},
@@ -561,52 +409,32 @@ class OrganizerAPIService {
             timeout = this.config.TIMEOUT,
             requiresAuth = true
         } = options;
-        
+
         const url = this.buildUrl(endpoint, params);
         const requestKey = this.getRequestKey(method, url, params, data);
-        
-        // Check cache for GET requests
+
         if (method === 'GET' && useCache) {
             const cachedData = this.getFromCache(requestKey, cacheTTL);
             if (cachedData) return cachedData;
         }
 
-        // Fast-path for explicit mock activation
-        if (this.config.USE_MOCK) {
-            console.log(`[MOCK MODE] Serving local response for ${method} ${endpoint}`);
-            return this.getMockResponse(method, endpoint, data);
-        }
-        
-        // Cancel existing request
         this.cancelRequest(requestKey);
-        
-        // Create abort controller
         const controller = new AbortController();
         this.pendingRequests.set(requestKey, controller);
-        
-        // Setup timeout
+
         const timeoutId = setTimeout(() => {
             controller.abort();
             this.pendingRequests.delete(requestKey);
         }, timeout);
-        
-        // Prepare headers
-        const requestHeaders = {
-            ...this.config.HEADERS,
-            ...headers
-        };
-        
-        // Add CSRF token for non-GET requests
+
+        const requestHeaders = { ...this.config.HEADERS, ...headers };
         if (method !== 'GET') {
             requestHeaders['X-CSRFToken'] = this.getCSRFToken();
         }
-        
-        // Add Authorization header if authenticated
         if (requiresAuth && this.accessToken) {
             requestHeaders['Authorization'] = `Bearer ${this.accessToken}`;
         }
-        
-        // Prepare body
+
         let body = null;
         if (data) {
             if (data instanceof FormData) {
@@ -616,17 +444,15 @@ class OrganizerAPIService {
                 body = JSON.stringify(data);
             }
         }
-        
+
         try {
             let response = await fetch(url, {
                 method,
                 headers: requestHeaders,
                 body,
-                signal: controller.signal,
-                credentials: 'same-origin'
+                signal: controller.signal
             });
-            
-            // Handle token expiration
+
             if (response.status === 401 && requiresAuth) {
                 const newToken = await this.refreshAccessToken();
                 if (newToken) {
@@ -635,30 +461,22 @@ class OrganizerAPIService {
                         method,
                         headers: requestHeaders,
                         body,
-                        signal: controller.signal,
-                        credentials: 'same-origin'
+                        signal: controller.signal
                     });
                 } else {
                     window.location.href = '/organizer/login/';
                     throw new Error('Session expired');
                 }
             }
-            
+
             clearTimeout(timeoutId);
             this.pendingRequests.delete(requestKey);
-            
-            // Robust check: if backend endpoint returns 404 because view hasn't been set up yet,
-            // fallback gracefully to mock database!
-            if (response.status === 404) {
-                console.warn(`[API 404] Endpoint "${endpoint}" not found in Django views. Serving LocalStorage mock fallback.`);
-                return this.getMockResponse(method, endpoint, data);
-            }
-            
+
             if (!response.ok) {
                 const error = await this.handleErrorResponse(response);
                 throw error;
             }
-            
+
             let result;
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
@@ -668,19 +486,19 @@ class OrganizerAPIService {
             } else {
                 result = await response.text();
             }
-            
+
             if (method === 'GET' && useCache && result) {
                 this.setCache(requestKey, result);
             }
-            
+
             return result;
         } catch (error) {
             clearTimeout(timeoutId);
             this.pendingRequests.delete(requestKey);
-            
             if (error.name === 'AbortError') {
                 throw new Error('Request timeout');
             }
+<<<<<<< HEAD
             
             // If the error has a status property, it was explicitly returned by our backend,
             // so we should propagate it rather than falling back to local mock data.
@@ -691,50 +509,35 @@ class OrganizerAPIService {
             // Fallback on total server crash or offline mode
             console.warn(`[CONNECTION FAILED] Servicing "${endpoint}" via local storage:`, error);
             return this.getMockResponse(method, endpoint, data);
+=======
+            throw error;
+>>>>>>> aac1ef0 (feat: Add complete organizer dashboard with all modules)
         }
     }
-    
+
     async handleErrorResponse(response) {
         let errorMessage = 'An error occurred';
-        
         try {
             const errorData = await response.json();
             errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
         } catch (e) {
             errorMessage = response.statusText || errorMessage;
         }
-        
         const error = new Error(errorMessage);
         error.status = response.status;
         error.statusText = response.statusText;
-        
         switch (response.status) {
-            case 400:
-                error.message = errorMessage || 'Invalid request';
-                break;
-            case 401:
-                error.message = 'Please login to continue';
-                break;
-            case 403:
-                error.message = 'Your account is pending verification or has been suspended';
-                break;
-            case 404:
-                error.message = 'Resource not found';
-                break;
-            case 409:
-                error.message = 'Conflict with existing data';
-                break;
-            case 429:
-                error.message = 'Too many requests. Please try again later';
-                break;
-            case 500:
-                error.message = 'Server error. Please try again later';
-                break;
+            case 400: error.message = errorMessage || 'Invalid request'; break;
+            case 401: error.message = 'Please login to continue'; break;
+            case 403: error.message = 'Your account is pending verification or has been suspended'; break;
+            case 404: error.message = 'Resource not found'; break;
+            case 409: error.message = 'Conflict with existing data'; break;
+            case 429: error.message = 'Too many requests. Please try again later'; break;
+            case 500: error.message = 'Server error. Please try again later'; break;
         }
-        
         return error;
     }
-    
+
     get(endpoint, options = {}) { return this.request('GET', endpoint, null, options); }
     post(endpoint, data, options = {}) { return this.request('POST', endpoint, data, options); }
     put(endpoint, data, options = {}) { return this.request('PUT', endpoint, data, options); }

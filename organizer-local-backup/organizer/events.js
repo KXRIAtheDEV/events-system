@@ -10,44 +10,26 @@ async function loadEvents(page = 1) {
     try {
         const data = await OrganizerAPI.events.getAll(page, 12);
         const container = document.getElementById('eventsContainer');
-        const events = Array.isArray(data) ? data : (Array.isArray(data.results) ? data.results : []);
-
-        if (!events.length) {
+        if (!data.results || data.results.length === 0) {
             container.innerHTML = '<div class="text-center text-muted col-12">No events found</div>';
             return;
         }
-
-        container.innerHTML = events.map(event => {
-            const title = escapeHtml(event.name || event.title || 'Untitled Event');
-            const dateValue = event.date || event.start_date || '';
-            const dateText = dateValue ? new Date(dateValue).toLocaleDateString() : '--';
-            const ticketsSold = event.tickets_sold ?? event.sold ?? 0;
-            const capacity = event.capacity || 0;
-            const status = event.status || 'draft';
-            const badgeClass = status === 'published' || status === 'active' ? 'bg-success' : status === 'draft' ? 'bg-secondary' : 'bg-danger';
-            return `
+        container.innerHTML = data.results.map(event => `
             <div class="col-md-4 col-lg-3">
                 <div class="event-card" onclick="editEvent(${event.id})">
                     <div class="event-image" style="background-image: url('${event.image_url || '/static/images/placeholder.jpg'}')">
-                        <div class="event-status"><span class="badge ${badgeClass}">${status}</span></div>
+                        <div class="event-status"><span class="badge ${event.status === 'published' ? 'bg-success' : event.status === 'draft' ? 'bg-secondary' : 'bg-danger'}">${event.status}</span></div>
                     </div>
                     <div class="p-3">
-                        <h6 class="mb-1">${title}</h6>
-                        <small class="text-muted">${dateText}</small>
-                        <div class="mt-2"><i class="fas fa-ticket-alt"></i> ${ticketsSold}/${capacity}</div>
+                        <h6 class="mb-1">${escapeHtml(event.title)}</h6>
+                        <small class="text-muted">${new Date(event.start_date).toLocaleDateString()}</small>
+                        <div class="mt-2"><i class="fas fa-ticket-alt"></i> ${event.tickets_sold || 0}/${event.capacity || 0}</div>
                     </div>
                 </div>
             </div>
-        `;
-        }).join('');
-
-        if (typeof renderPagination === 'function' && data && data.total_pages) {
-            renderPagination(data, page, (newPage) => { currentPage = newPage; loadEvents(currentPage); }, 'eventsPagination');
-        }
-    } catch(e) {
-        console.error(e);
-        if(window.showToast) window.showToast('Failed to load events', 'error');
-    }
+        `).join('');
+        if (typeof renderPagination === 'function') renderPagination(data, page, (newPage) => { currentPage = newPage; loadEvents(currentPage); }, 'eventsPagination');
+    } catch(e) { console.error(e); if(window.showToast) window.showToast('Failed to load events', 'error'); }
 }
 
 // Edit or create event
@@ -60,24 +42,19 @@ async function editEvent(eventId = null) {
         try {
             const event = await OrganizerAPI.events.getDetail(eventId);
             document.getElementById('eventId').value = event.id;
-            document.getElementById('eventTitle').value = event.name || event.title || '';
+            document.getElementById('eventTitle').value = event.title || '';
             document.getElementById('eventCategory').value = event.category || 'Music';
             document.getElementById('eventDescription').value = event.description || '';
-            const startDate = event.start_date || event.date || '';
-            const endDate = event.end_date || '';
-            document.getElementById('eventStartDate').value = startDate ? startDate.slice(0,16) : '';
-            document.getElementById('eventEndDate').value = endDate ? endDate.slice(0,16) : '';
-            document.getElementById('eventVenue').value = event.location || event.venue || '';
+            document.getElementById('eventStartDate').value = event.start_date ? event.start_date.slice(0,16) : '';
+            document.getElementById('eventEndDate').value = event.end_date ? event.end_date.slice(0,16) : '';
+            document.getElementById('eventVenue').value = event.venue || '';
             document.getElementById('eventCapacity').value = event.capacity || '';
             document.getElementById('eventStatus').value = event.status || 'draft';
             await loadTicketTypes(eventId);
             await loadScheduleItems(eventId);
             await loadAnalytics(eventId);
             if (event.image_url) document.getElementById('bannerPreview').innerHTML = `<img src="${event.image_url}" class="image-preview">`;
-        } catch(e) {
-            console.error(e);
-            if(window.showToast) window.showToast('Error loading event', 'error');
-        }
+        } catch(e) { console.error(e); if(window.showToast) window.showToast('Error loading event', 'error'); }
     } else {
         document.getElementById('eventModalTitle').innerText = 'Create New Event';
         document.getElementById('saveEventBtn').innerText = 'Create Event';
@@ -88,19 +65,13 @@ async function editEvent(eventId = null) {
 }
 
 async function saveEvent() {
-    const startDateValue = document.getElementById('eventStartDate').value;
-    const endDateValue = document.getElementById('eventEndDate').value;
-    const [startDate, startTime] = startDateValue.split('T');
-    const [endDate, endTime] = endDateValue.split('T');
     const data = {
-        name: document.getElementById('eventTitle').value,
+        title: document.getElementById('eventTitle').value,
         category: document.getElementById('eventCategory').value,
         description: document.getElementById('eventDescription').value,
-        date: startDate || '',
-        startTime: startTime || '00:00',
-        endTime: endTime || '00:00',
+        start_date: document.getElementById('eventStartDate').value,
+        end_date: document.getElementById('eventEndDate').value,
         venue: document.getElementById('eventVenue').value,
-        location: document.getElementById('eventVenue').value,
         capacity: parseInt(document.getElementById('eventCapacity').value) || 0,
         status: document.getElementById('eventStatus').value
     };
@@ -115,46 +86,28 @@ async function saveEvent() {
         }
         bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
         loadEvents(currentPage);
-    } catch(e) {
-        if(window.showToast) window.showToast(e.message, 'error');
-    }
+    } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
 }
 
 // Ticket types
-function ensureSavedEvent(action) {
-    const eventId = document.getElementById('eventId').value || currentEventId;
-    if (!eventId) {
-        if (window.showToast) window.showToast(`Please save the event before ${action}.`, 'info');
-        return null;
-    }
-    return eventId;
-}
-
 async function loadTicketTypes(eventId) {
-    if (!eventId) return;
     try {
         const types = await OrganizerAPI.events.getTicketTypes(eventId);
-        ticketTypes = Array.isArray(types) ? types : [];
-        const html = ticketTypes.map(t => `
+        ticketTypes = types;
+        const html = types.map(t => `
             <div class="ticket-type-row d-flex justify-content-between align-items-center">
                 <div><strong>${escapeHtml(t.name)}</strong><br><small>$${t.price} | ${t.quantity} available</small></div>
                 <div>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="showTicketTypeModal(${t.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editTicketType(${t.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteTicketType(${t.id})"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `).join('');
         document.getElementById('ticketTypesList').innerHTML = html || '<p class="text-muted">No ticket types</p>';
-    } catch(e) {
-        console.error(e);
-        document.getElementById('ticketTypesList').innerHTML = '<p class="text-muted">Unable to load ticket types</p>';
-    }
+    } catch(e) { console.error(e); }
 }
 
 function showTicketTypeModal(ticketId = null) {
-    const eventId = ensureSavedEvent('adding ticket types');
-    if (!eventId && !ticketId) return;
-
     document.getElementById('ticketTypeId').value = ticketId || '';
     if (ticketId) {
         const ticket = ticketTypes.find(t => t.id == ticketId);
@@ -174,10 +127,8 @@ function showTicketTypeModal(ticketId = null) {
 }
 
 async function saveTicketType() {
-    const eventId = ensureSavedEvent('saving ticket types');
-    if (!eventId) return;
-
     const ticketId = document.getElementById('ticketTypeId').value;
+    const eventId = document.getElementById('eventId').value;
     const data = {
         name: document.getElementById('ticketTypeName').value,
         price: parseFloat(document.getElementById('ticketTypePrice').value),
@@ -197,9 +148,8 @@ async function saveTicketType() {
 }
 
 async function deleteTicketType(ticketId) {
-    const eventId = ensureSavedEvent('deleting ticket types');
-    if (!eventId) return;
     if (!confirm('Delete this ticket type?')) return;
+    const eventId = document.getElementById('eventId').value;
     try {
         await OrganizerAPI.events.deleteTicketType(eventId, ticketId);
         if(window.showToast) window.showToast('Deleted', 'success');
@@ -209,30 +159,23 @@ async function deleteTicketType(ticketId) {
 
 // Schedule items
 async function loadScheduleItems(eventId) {
-    if (!eventId) return;
     try {
         const items = await OrganizerAPI.events.getSchedule(eventId);
-        scheduleItems = Array.isArray(items) ? items : [];
-        const html = scheduleItems.map(s => `
+        scheduleItems = items;
+        const html = items.map(s => `
             <div class="schedule-item d-flex justify-content-between align-items-center">
                 <div><strong>${escapeHtml(s.title)}</strong><br><small>${new Date(s.start_time).toLocaleString()} - ${new Date(s.end_time).toLocaleString()}</small><br><span class="text-muted">${escapeHtml(s.location)}</span></div>
                 <div>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="showScheduleItemModal(${s.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editScheduleItem(${s.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteScheduleItem(${s.id})"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `).join('');
         document.getElementById('scheduleList').innerHTML = html || '<p class="text-muted">No schedule items</p>';
-    } catch(e) {
-        console.error(e);
-        document.getElementById('scheduleList').innerHTML = '<p class="text-muted">Unable to load schedule items</p>';
-    }
+    } catch(e) { console.error(e); }
 }
 
 function showScheduleItemModal(itemId = null) {
-    const eventId = ensureSavedEvent('adding schedule items');
-    if (!eventId && !itemId) return;
-
     document.getElementById('scheduleItemId').value = itemId || '';
     if (itemId) {
         const item = scheduleItems.find(s => s.id == itemId);
@@ -254,10 +197,8 @@ function showScheduleItemModal(itemId = null) {
 }
 
 async function saveScheduleItem() {
-    const eventId = ensureSavedEvent('saving schedule items');
-    if (!eventId) return;
-
     const itemId = document.getElementById('scheduleItemId').value;
+    const eventId = document.getElementById('eventId').value;
     const data = {
         title: document.getElementById('scheduleTitle').value,
         start_time: document.getElementById('scheduleStart').value,
@@ -278,9 +219,8 @@ async function saveScheduleItem() {
 }
 
 async function deleteScheduleItem(itemId) {
-    const eventId = ensureSavedEvent('deleting schedule items');
-    if (!eventId) return;
     if (!confirm('Delete this schedule item?')) return;
+    const eventId = document.getElementById('eventId').value;
     try {
         await OrganizerAPI.events.deleteScheduleItem(eventId, itemId);
         if(window.showToast) window.showToast('Deleted', 'success');
@@ -290,22 +230,20 @@ async function deleteScheduleItem(itemId) {
 
 // Media uploads
 async function uploadBanner() {
-    const eventId = ensureSavedEvent('uploading banner');
-    if (!eventId) return;
     const file = document.getElementById('bannerImage').files[0];
     if (!file) return;
+    const eventId = document.getElementById('eventId').value;
     try {
         const result = await OrganizerAPI.events.uploadImage(eventId, file);
         if(window.showToast) window.showToast('Banner uploaded', 'success');
-        document.getElementById('bannerPreview').innerHTML = `<img src="${result.image_url || result.image || ''}" class="image-preview">`;
+        document.getElementById('bannerPreview').innerHTML = `<img src="${result.image_url}" class="image-preview">`;
     } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
 }
 
 async function uploadGallery() {
-    const eventId = ensureSavedEvent('uploading gallery images');
-    if (!eventId) return;
     const files = document.getElementById('galleryImages').files;
     if (!files.length) return;
+    const eventId = document.getElementById('eventId').value;
     try {
         await OrganizerAPI.events.uploadGallery(eventId, Array.from(files));
         if(window.showToast) window.showToast('Gallery uploaded', 'success');
@@ -315,59 +253,30 @@ async function uploadGallery() {
 
 // Analytics
 async function loadAnalytics(eventId) {
-    if (!eventId) {
-        document.getElementById('analyticsTotalTickets').innerText = '--';
-        document.getElementById('analyticsSold').innerText = '--';
-        document.getElementById('analyticsRevenue').innerText = '$--';
-        document.getElementById('analyticsAttendance').innerText = '--';
-        return;
-    }
     try {
         const data = await OrganizerAPI.events.getAnalytics(eventId);
-        const stats = data && typeof data === 'object' ? data : {};
-        document.getElementById('analyticsTotalTickets').innerText = stats.total_tickets || 0;
-        document.getElementById('analyticsSold').innerText = stats.tickets_sold || 0;
-        document.getElementById('analyticsRevenue').innerText = '$' + (stats.revenue || 0).toLocaleString();
-        document.getElementById('analyticsAttendance').innerText = stats.attendance || 0;
+        document.getElementById('analyticsTotalTickets').innerText = data.total_tickets || 0;
+        document.getElementById('analyticsSold').innerText = data.tickets_sold || 0;
+        document.getElementById('analyticsRevenue').innerText = '$' + (data.revenue || 0).toLocaleString();
+        document.getElementById('analyticsAttendance').innerText = data.attendance || 0;
         if (analyticsChart) analyticsChart.destroy();
         const ctx = document.getElementById('analyticsChart').getContext('2d');
         analyticsChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: Array.isArray(stats.sales_data) ? stats.sales_data.map(d => d.date) : [],
-                datasets: [{ label: 'Tickets Sold', data: Array.isArray(stats.sales_data) ? stats.sales_data.map(d => d.sold) : [], borderColor: '#ff6b00' }]
+                labels: data.sales_data?.map(d => d.date) || [],
+                datasets: [{ label: 'Tickets Sold', data: data.sales_data?.map(d => d.sold) || [], borderColor: '#ff6b00' }]
             }
         });
-    } catch(e) {
-        console.error(e);
-        document.getElementById('analyticsTotalTickets').innerText = '--';
-        document.getElementById('analyticsSold').innerText = '--';
-        document.getElementById('analyticsRevenue').innerText = '$--';
-        document.getElementById('analyticsAttendance').innerText = '--';
-    }
+    } catch(e) { console.error(e); }
 }
 
 function resetEventForm() {
-    currentEventId = null;
-    ticketTypes = [];
-    scheduleItems = [];
     document.getElementById('eventForm').reset();
     document.getElementById('eventId').value = '';
-    document.getElementById('eventModalTitle').innerText = 'Create New Event';
-    document.getElementById('saveEventBtn').innerText = 'Create Event';
-    document.getElementById('eventStatus').value = 'draft';
     document.getElementById('bannerPreview').innerHTML = '';
     document.getElementById('galleryPreview').innerHTML = '';
-    document.getElementById('ticketTypesList').innerHTML = '<p class="text-muted">No ticket types</p>';
-    document.getElementById('scheduleList').innerHTML = '<p class="text-muted">No schedule items</p>';
-    document.getElementById('analyticsTotalTickets').innerText = '--';
-    document.getElementById('analyticsSold').innerText = '--';
-    document.getElementById('analyticsRevenue').innerText = '$--';
-    document.getElementById('analyticsAttendance').innerText = '--';
-    if (analyticsChart) {
-        analyticsChart.destroy();
-        analyticsChart = null;
-    }
+    if (analyticsChart) analyticsChart.destroy();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
