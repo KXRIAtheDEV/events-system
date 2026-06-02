@@ -226,3 +226,196 @@ def api_organizer_events_delete(request, event_id):
         return JsonResponse({'success': False, 'message': 'Event not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ============ ORGANIZER SETTINGS VIEWS ============
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_settings_general(request):
+    """Retrieve General settings for the logged-in organizer."""
+    user = request.user
+    return JsonResponse({
+        'organization_name': user.organization_name,
+        'email': user.email,
+        'phone': user.phone,
+        'website': user.website,
+        'bio': user.bio
+    })
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["PUT"])
+def api_organizer_settings_general_update(request):
+    """Update General settings for the logged-in organizer."""
+    try:
+        user = request.user
+        data = json.loads(request.body)
+        
+        if 'organization_name' in data:
+            user.organization_name = data['organization_name'].strip()
+        if 'email' in data:
+            user.email = data['email'].strip()
+        if 'phone' in data:
+            user.phone = data['phone'].strip()
+        if 'website' in data:
+            user.website = data['website'].strip()
+        if 'bio' in data:
+            user.bio = data['bio'].strip()
+            
+        user.save()
+        return JsonResponse({'success': True, 'message': 'General settings saved successfully!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_payouts_settings(request):
+    """Retrieve payouts settlement credentials for the organizer."""
+    user = request.user
+    return JsonResponse({
+        'account_number': user.account_number,
+        'bank_name': user.bank_name,
+        'account_holder': user.account_holder,
+        'routing_number': user.routing_number
+    })
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["PUT"])
+def api_organizer_payouts_settings_update(request):
+    """Update payouts settlement credentials for the organizer."""
+    try:
+        user = request.user
+        data = json.loads(request.body)
+        
+        if 'account_number' in data:
+            user.account_number = data['account_number'].strip()
+        if 'bank_name' in data:
+            user.bank_name = data['bank_name'].strip()
+        if 'account_holder' in data:
+            user.account_holder = data['account_holder'].strip()
+        if 'routing_number' in data:
+            user.routing_number = data['routing_number'].strip()
+            
+        user.save()
+        return JsonResponse({'success': True, 'message': 'Payment Settlement settings updated!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_settings_team(request):
+    """List team members for the organizer."""
+    return JsonResponse(request.user.team_members or [], safe=False)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_settings_team_add(request):
+    """Invite/add a new team member."""
+    try:
+        user = request.user
+        data = json.loads(request.body)
+        email = data.get('email', '').strip()
+        role = data.get('role', 'viewer').strip()
+        
+        if not email:
+            return JsonResponse({'success': False, 'message': 'Email is required'}, status=400)
+            
+        team = user.team_members or []
+        
+        if any(m.get('email') == email for m in team):
+            return JsonResponse({'success': False, 'message': 'Member already in team'}, status=400)
+            
+        import uuid
+        member = {
+            'id': uuid.uuid4().hex[:8],
+            'email': email,
+            'role': role
+        }
+        team.append(member)
+        user.team_members = team
+        user.save()
+        
+        return JsonResponse({'success': True, 'message': 'Team member invited!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["DELETE"])
+def api_organizer_settings_team_remove(request, member_id):
+    """Remove a team member."""
+    try:
+        user = request.user
+        team = user.team_members or []
+        filtered_team = [m for m in team if m.get('id') != member_id]
+        
+        if len(team) == len(filtered_team):
+            return JsonResponse({'success': False, 'message': 'Member not found'}, status=404)
+            
+        user.team_members = filtered_team
+        user.save()
+        return JsonResponse({'success': True, 'message': 'Team member removed'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_settings_apikeys(request):
+    """List developer API keys."""
+    return JsonResponse(request.user.api_keys or [], safe=False)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_settings_apikeys_create(request):
+    """Generate a new developer API key."""
+    try:
+        user = request.user
+        data = json.loads(request.body)
+        name = data.get('name', 'Developer Key').strip()
+        
+        import uuid
+        key_id = uuid.uuid4().hex[:8]
+        secret_key = f"eh_live_{uuid.uuid4().hex}"
+        
+        keys = user.api_keys or []
+        new_key = {
+            'id': key_id,
+            'name': name,
+            'key': secret_key,
+            'created_at': timezone.now().isoformat()
+        }
+        keys.append(new_key)
+        user.api_keys = keys
+        user.save()
+        
+        return JsonResponse(new_key)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["DELETE"])
+def api_organizer_settings_apikeys_revoke(request, key_id):
+    """Revoke a developer API key."""
+    try:
+        user = request.user
+        keys = user.api_keys or []
+        filtered_keys = [k for k in keys if k.get('id') != key_id]
+        
+        if len(keys) == len(filtered_keys):
+            return JsonResponse({'success': False, 'message': 'API Key not found'}, status=404)
+            
+        user.api_keys = filtered_keys
+        user.save()
+        return JsonResponse({'success': True, 'message': 'API Key revoked'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+

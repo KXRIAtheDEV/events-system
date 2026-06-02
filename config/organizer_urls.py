@@ -25,10 +25,10 @@ urlpatterns = [
     path('tickets/scanner/', TemplateView.as_view(template_name='organizer/tickets/scanner.html'), name='organizer_ticket_scanner'),
     
     # Bookings
-    path('bookings/', TemplateView.as_view(template_name='organizer/bookings/bookings.html'), name='organizer_bookings'),
+    path('bookings/', TemplateView.as_view(template_name='organizer/reports/reports.html'), name='organizer_bookings'),
     
     # Attendees
-    path('attendees/', TemplateView.as_view(template_name='organizer/attendees/attendees.html'), name='organizer_attendees'),
+    path('attendees/', TemplateView.as_view(template_name='organizer/reports/reports.html'), name='organizer_attendees'),
     
     # Payouts & Earnings
     path('payouts/', TemplateView.as_view(template_name='organizer/payouts/payouts.html'), name='organizer_payouts'),

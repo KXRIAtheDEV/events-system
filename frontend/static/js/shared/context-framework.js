@@ -171,6 +171,22 @@
             return `${hours}:${minutes}`;
         }
 
+        async getNetworkDate() {
+            try {
+                // Fetch current date/time from a secure, public time API
+                const response = await fetch('https://worldtimeapi.org/api/ip');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.datetime) {
+                        return new Date(data.datetime);
+                    }
+                }
+            } catch (err) {
+                console.warn('Network clock sync failed, falling back to local client clock:', err);
+            }
+            return new Date();
+        }
+
         formatTime(timeString) {
             if (!timeString) return 'TBD';
             let date;

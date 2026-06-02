@@ -33,7 +33,17 @@ from events.api_organizer_views import (
     api_organizer_events_list,
     api_organizer_events_create,
     api_organizer_events_update,
-    api_organizer_events_delete
+    api_organizer_events_delete,
+    api_organizer_settings_general,
+    api_organizer_settings_general_update,
+    api_organizer_payouts_settings,
+    api_organizer_payouts_settings_update,
+    api_organizer_settings_team,
+    api_organizer_settings_team_add,
+    api_organizer_settings_team_remove,
+    api_organizer_settings_apikeys,
+    api_organizer_settings_apikeys_create,
+    api_organizer_settings_apikeys_revoke
 )
 import json
 
@@ -302,6 +312,18 @@ urlpatterns = [
     path('api/organizer/tickets/<str:ticket_number>/verify/', api_organizer_ticket_verify, name='api_organizer_ticket_verify'),
     path('api/organizer/tickets/<str:ticket_number>/checkin/', api_organizer_ticket_checkin, name='api_organizer_ticket_checkin'),
     path('api/organizer/attendees/', api_organizer_attendees_list, name='api_organizer_attendees_list'),
+    
+    # Organizer Settings Endpoints
+    path('api/organizer/settings/general/', api_organizer_settings_general, name='api_organizer_settings_general'),
+    path('api/organizer/settings/general/update/', api_organizer_settings_general_update, name='api_organizer_settings_general_update'),
+    path('api/organizer/payouts/settings/', api_organizer_payouts_settings, name='api_organizer_payouts_settings'),
+    path('api/organizer/payouts/settings/update/', api_organizer_payouts_settings_update, name='api_organizer_payouts_settings_update'),
+    path('api/organizer/settings/team/', api_organizer_settings_team, name='api_organizer_settings_team'),
+    path('api/organizer/settings/team/add/', api_organizer_settings_team_add, name='api_organizer_settings_team_add'),
+    path('api/organizer/settings/team/<str:member_id>/remove/', api_organizer_settings_team_remove, name='api_organizer_settings_team_remove'),
+    path('api/organizer/settings/api-keys/', api_organizer_settings_apikeys, name='api_organizer_settings_apikeys'),
+    path('api/organizer/settings/api-keys/create/', api_organizer_settings_apikeys_create, name='api_organizer_settings_apikeys_create'),
+    path('api/organizer/settings/api-keys/<str:key_id>/revoke/', api_organizer_settings_apikeys_revoke, name='api_organizer_settings_apikeys_revoke'),
     
     path('api/bookings/checkout/', ticket_checkout_api, name='ticket_checkout_api'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
