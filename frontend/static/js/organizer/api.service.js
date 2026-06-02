@@ -526,12 +526,27 @@ class OrganizerAPIService {
                 return { success: true };
             }
             if (parts.length === 3 && parts[2] === 'analytics' && method === 'GET') {
+                const sold = event.sold || 0;
+                const capacity = event.capacity || 0;
+                const available = Math.max(0, capacity - sold);
+                const sales_data = Array.from({ length: 7 }, (_, i) => {
+                    const point = new Date();
+                    point.setDate(point.getDate() - (6 - i));
+                    return {
+                        date: point.toISOString().split('T')[0],
+                        sold: Math.round(sold * ((i + 1) / 7))
+                    };
+                });
                 return {
-                    total_tickets: event.capacity || 0,
-                    tickets_sold: event.sold || 0,
+                    total_tickets: capacity,
+                    tickets_sold: sold,
                     revenue: event.revenue || 0,
-                    attendance: Math.min(event.sold || 0, event.capacity || 0),
-                    sales_data: [{ date: new Date().toISOString().split('T')[0], sold: event.sold || 0 }]
+                    attendance: Math.min(sold, capacity),
+                    sales_data,
+                    ticket_distribution: {
+                        Sold: sold,
+                        Available: available
+                    }
                 };
             }
         }
