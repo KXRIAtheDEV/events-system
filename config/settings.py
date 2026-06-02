@@ -115,6 +115,9 @@ TEMPLATES = [
     },
 ]
 
+USE_FILE_LOGGING = not os.environ.get('VERCEL')
+DEFAULT_LOG_HANDLERS = ['console', 'file'] if USE_FILE_LOGGING else ['console']
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -129,17 +132,17 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': DEFAULT_LOG_HANDLERS,
         'level': 'WARNING',
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': DEFAULT_LOG_HANDLERS,
             'level': 'INFO',
             'propagate': False,
         },
         'config.middleware': {
-            'handlers': ['console', 'file'],
+            'handlers': DEFAULT_LOG_HANDLERS,
             'level': 'ERROR',
             'propagate': False,
         },
