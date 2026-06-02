@@ -36,7 +36,7 @@ urlpatterns = [
 
     # Attendees
     path('attendees/',
-         TemplateView.as_view(template_name='organizer/dashboard/attendees.html'),
+         TemplateView.as_view(template_name='organizer/attendees/attendees.html'),
          name='organizer_attendees'),
     path('attendees/<int:attendee_id>/',
          TemplateView.as_view(template_name='organizer/dashboard/attendee_detail.html'),
@@ -44,7 +44,7 @@ urlpatterns = [
 
     # Bookings
     path('bookings/',
-         TemplateView.as_view(template_name='organizer/dashboard/bookings.html'),
+         TemplateView.as_view(template_name='organizer/bookings/bookings.html'),
          name='organizer_bookings'),
     path('bookings/<int:booking_id>/',
          TemplateView.as_view(template_name='organizer/dashboard/booking_detail.html'),
@@ -114,6 +114,11 @@ urlpatterns = [
     path('settings/api-keys/',
          TemplateView.as_view(template_name='organizer/dashboard/settings.html'),
          name='organizer_settings_api'),
+
+    # Profile (pointing to settings)
+    path('profile/',
+         TemplateView.as_view(template_name='organizer/settings/settings.html'),
+         name='organizer_profile'),
 
     # Support
     path('support/',
