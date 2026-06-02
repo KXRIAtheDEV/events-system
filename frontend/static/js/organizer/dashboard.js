@@ -87,10 +87,16 @@ window.loadDashboardStats = async function() {
         if (stats.attendees_change) document.getElementById('attendeesChange').innerHTML = (stats.attendees_change > 0 ? '+' : '') + stats.attendees_change + '%';
     } catch(e) {
         console.error(e);
-        // Only surface noisy toast on the actual dashboard route.
-        if (window.location.pathname.startsWith('/organizer/dashboard')) {
-            window.showToast('Failed to load stats', 'error');
+        // If auth expired, send user to login instead of repeating toasts.
+        if (e && (e.status === 401 || e.status === 403)) {
+            window.location.href = '/login/';
+            return;
         }
+        // Keep dashboard usable even when stats endpoint has transient issues.
+        totalEventsEl.innerText = '0';
+        totalTicketsEl.innerText = '0';
+        totalRevenueEl.innerText = '$0';
+        totalAttendeesEl.innerText = '0';
     }
 };
 
