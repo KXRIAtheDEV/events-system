@@ -105,15 +105,136 @@ window.loadRevenueChart = async function(period) {
         const data = await OrganizerAPI.dashboard.getRevenue(period);
         const labels = data.labels || ['Jan','Feb','Mar','Apr','May','Jun'];
         const values = data.values || [0,0,0,0,0,0];
-        if (revenueChart) revenueChart.destroy();
-        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        if (revenueChart) {
+            revenueChart.destroy();
+        }
+        
+        const canvas = document.getElementById('revenueChart');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Helper to format currency values cleanly for tooltips
+        const formatFullCurrency = (val) => {
+            return 'Kes ' + Number(val).toLocaleString('en-KE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        };
+
+        // Helper to format currency numbers compactly for Y-axis labels
+        const formatCompactCurrency = (val) => {
+            if (val === 0) return 'Kes 0';
+            if (val >= 1000000) {
+                return 'Kes ' + (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
+            }
+            if (val >= 1000) {
+                return 'Kes ' + (val / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+            }
+            return 'Kes ' + val;
+        };
+
+        // Build premium Stripe-style linear fading gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(255, 107, 0, 0.35)');
+        gradient.addColorStop(1, 'rgba(255, 107, 0, 0.00)');
+
         revenueChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{ label: 'Revenue', data: values, borderColor: '#ff6b00', backgroundColor: 'rgba(255,107,0,0.1)', fill: true, tension: 0.4 }]
+                datasets: [{
+                    label: 'Gross Revenue',
+                    data: values,
+                    borderColor: '#ff6b00',
+                    borderWidth: 3,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.38,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#ff6b00',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 2,
+                    pointHitRadius: 16
+                }]
             },
-            options: { responsive: true, maintainAspectRatio: true }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: false // Stripe charts are clean and don't need generic legends
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#121214',
+                        titleColor: '#ffffff',
+                        titleFont: {
+                            family: "'Inter', sans-serif",
+                            size: 13,
+                            weight: '600'
+                        },
+                        bodyColor: '#94a3b8',
+                        bodyFont: {
+                            family: "'Inter', sans-serif",
+                            size: 12
+                        },
+                        borderColor: 'rgba(255, 107, 0, 0.25)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                return 'Gross Revenue: ' + formatFullCurrency(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 11
+                            },
+                            padding: 8
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 11
+                            },
+                            padding: 12,
+                            callback: function(value) {
+                                return formatCompactCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
         });
     } catch(e) {
         console.error(e);

@@ -96,9 +96,10 @@
             <div class="chart-header">
                 <h3>Revenue Overview</h3>
                 <select id="revenuePeriod" class="filter-select">
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly" selected>Monthly</option>
-                    <option value="yearly">Yearly</option>
+                    <option value="7days">Last 7 Days</option>
+                    <option value="4weeks">Last 4 Weeks</option>
+                    <option value="12months" selected>12 Months</option>
+                    <option value="ytd">Year-to-Date</option>
                 </select>
             </div>
             <div class="chart-body"><canvas id="revenueChart"></canvas></div>
@@ -149,7 +150,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof OrganizerAPI !== 'undefined') {
             loadDashboardStats();
-            loadRevenueChart('monthly');
+            loadRevenueChart('12months');
             loadUpcomingEvents();
             loadRecentBookings();
             loadPerformance();

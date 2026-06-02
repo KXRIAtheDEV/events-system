@@ -197,13 +197,77 @@ class OrganizerAPIService {
         this.safeSetItem('eventhub_organizer_stats_db', JSON.stringify(stats));
     }
 
-    getMockResponse(method, endpoint, data) {
+    getMockResponse(method, endpoint, data, options = {}) {
         const events = JSON.parse(this.safeGetItem('eventhub_organizer_events_db')) || [];
         const stats = JSON.parse(this.safeGetItem('eventhub_organizer_stats_db')) || {};
 
         // 1. Dashboard Stats
         if (endpoint.includes('/dashboard/stats/')) {
             return stats;
+        }
+
+        // 1a. Dashboard Revenue Chart Data
+        if (endpoint.includes('/dashboard/revenue/')) {
+            const period = options?.params?.period || '12months';
+            
+            // Calculate actual event revenue dynamically to shift the baseline
+            const actualRevenue = events.reduce((sum, e) => sum + (e.revenue || 0), 0);
+            const dynamicShift = Math.floor(actualRevenue * 0.05); // Add a fraction of actual revenue to each data point for dynamic variance
+            
+            if (period === '7days') {
+                return {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    values: [
+                        12450 + dynamicShift,
+                        15200 + dynamicShift * 1.2,
+                        9800 + dynamicShift * 0.8,
+                        18500 + dynamicShift * 1.5,
+                        22400 + dynamicShift * 1.8,
+                        31000 + dynamicShift * 2.2,
+                        28600 + dynamicShift * 2.0
+                    ].map(v => Math.max(0, Math.floor(v)))
+                };
+            } else if (period === '4weeks') {
+                return {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    values: [
+                        84500 + dynamicShift * 3.5,
+                        92100 + dynamicShift * 4.2,
+                        78400 + dynamicShift * 3.0,
+                        115200 + dynamicShift * 5.0
+                    ].map(v => Math.max(0, Math.floor(v)))
+                };
+            } else if (period === 'ytd') {
+                return {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    values: [
+                        124500 + dynamicShift * 5,
+                        142000 + dynamicShift * 6,
+                        118000 + dynamicShift * 4,
+                        155000 + dynamicShift * 7,
+                        172000 + dynamicShift * 8,
+                        190000 + dynamicShift * 9
+                    ].map(v => Math.max(0, Math.floor(v)))
+                };
+            } else { // 12months (default/monthly)
+                return {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    values: [
+                        124500 + dynamicShift * 5,
+                        142000 + dynamicShift * 6,
+                        118000 + dynamicShift * 4,
+                        155000 + dynamicShift * 7,
+                        172000 + dynamicShift * 8,
+                        190000 + dynamicShift * 9,
+                        210000 + dynamicShift * 10,
+                        185000 + dynamicShift * 8,
+                        224000 + dynamicShift * 11,
+                        245000 + dynamicShift * 12,
+                        280000 + dynamicShift * 14,
+                        315000 + dynamicShift * 16
+                    ].map(v => Math.max(0, Math.floor(v)))
+                };
+            }
         }
 
         // --- PAYOUTS MOCK FALLBACKS ---
@@ -574,7 +638,7 @@ class OrganizerAPIService {
         // Fast-path for explicit mock activation
         if (this.config.USE_MOCK) {
             console.log(`[MOCK MODE] Serving local response for ${method} ${endpoint}`);
-            return this.getMockResponse(method, endpoint, data);
+            return this.getMockResponse(method, endpoint, data, options);
         }
         
         // Cancel existing request
@@ -651,7 +715,7 @@ class OrganizerAPIService {
             // fallback gracefully to mock database!
             if (response.status === 404) {
                 console.warn(`[API 404] Endpoint "${endpoint}" not found in Django views. Serving LocalStorage mock fallback.`);
-                return this.getMockResponse(method, endpoint, data);
+                return this.getMockResponse(method, endpoint, data, options);
             }
             
             if (!response.ok) {
@@ -690,7 +754,7 @@ class OrganizerAPIService {
             
             // Fallback on total server crash or offline mode
             console.warn(`[CONNECTION FAILED] Servicing "${endpoint}" via local storage:`, error);
-            return this.getMockResponse(method, endpoint, data);
+            return this.getMockResponse(method, endpoint, data, options);
         }
     }
     
