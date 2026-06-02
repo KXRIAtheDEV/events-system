@@ -205,15 +205,28 @@
 {% block extra_js %}
 <script>
     let eventsData = [];
+    const eventsContainer = document.getElementById('eventsContainer');
+
+    function notify(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+        if (type === 'error') {
+            console.error(message);
+        } else {
+            console.log(message);
+        }
+    }
 
     async function loadEvents() {
         try {
             const res = await OrganizerAPI.events.getAll();
-            eventsData = Array.isArray(res) ? res : (res.results || []);
+            eventsData = Array.isArray(res) ? res : (res?.results || []);
             renderEvents();
         } catch (err) {
-            window.showToast('Failed to load events', 'error');
-            document.getElementById('eventsContainer').innerHTML = `
+            notify('Failed to load events', 'error');
+            eventsContainer.innerHTML = `
                 <div class="text-center py-5 text-muted">
                     <i class="fa-solid fa-triangle-exclamation fa-3x mb-3 text-danger"></i>
                     <h5>Failed to load events</h5>
@@ -237,9 +250,8 @@
             return matchQuery && matchStatus && matchCat;
         });
 
-        const container = document.getElementById('eventsContainer');
         if (filtered.length === 0) {
-            container.innerHTML = `
+            eventsContainer.innerHTML = `
                 <div class="text-center py-5 text-muted">
                     <i class="fa-solid fa-calendar-xmark fa-3x mb-3 text-secondary"></i>
                     <h5>No events found</h5>
@@ -249,7 +261,7 @@
             return;
         }
 
-        container.innerHTML = filtered.map(e => {
+        eventsContainer.innerHTML = filtered.map(e => {
             const isPub = e.status === 'active';
             const badgeClass = isPub ? 'badge-published' : (e.status === 'cancelled' ? 'badge-cancelled' : 'badge-draft');
             const percent = e.capacity > 0 ? Math.min(100, ((e.sold || 0) / e.capacity) * 100) : 0;
@@ -308,10 +320,10 @@
                 if (confirm("Are you sure you want to permanently delete this event? This action cannot be undone.")) {
                     try {
                         await OrganizerAPI.events.delete(id);
-                        window.showToast("Event deleted successfully", "success");
+                        notify("Event deleted successfully", "success");
                         loadEvents();
                     } catch (err) {
-                        window.showToast("Failed to delete event", "error");
+                        notify("Failed to delete event", "error");
                     }
                 }
             };
@@ -341,12 +353,12 @@
 
         try {
             await OrganizerAPI.events.create(data);
-            window.showToast("Event created successfully!", "success");
+            notify("Event created successfully!", "success");
             bootstrap.Modal.getInstance(document.getElementById('createEventModal')).hide();
             document.getElementById('createEventForm').reset();
             loadEvents();
         } catch (err) {
-            window.showToast(err.message || "Failed to create event", "error");
+            notify(err.message || "Failed to create event", "error");
         }
     };
 
