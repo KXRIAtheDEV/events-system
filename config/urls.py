@@ -33,6 +33,7 @@ from bookings.email_service import send_newsletter_confirmation
 from events.api_organizer_views import (
     api_organizer_events_list,
     api_organizer_events_create,
+    api_organizer_events_detail,
     api_organizer_events_update,
     api_organizer_events_delete,
     api_organizer_settings_general,
@@ -188,6 +189,7 @@ urlpatterns = [
     path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
     path('api/organizer/events/', api_organizer_events_list, name='api_organizer_events_list'),
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
+    path('api/organizer/events/<int:event_id>/', api_organizer_events_detail, name='api_organizer_events_detail'),
     path('api/organizer/events/<int:event_id>/update/', api_organizer_events_update, name='api_organizer_events_update'),
     path('api/organizer/events/<int:event_id>/delete/', api_organizer_events_delete, name='api_organizer_events_delete'),
     path('api/organizer/bookings/', api_organizer_bookings_list, name='api_organizer_bookings_list'),

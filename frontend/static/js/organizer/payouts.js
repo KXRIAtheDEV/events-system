@@ -4,10 +4,10 @@ let payoutPage = 1;
 async function loadPayoutSummary() {
     try {
         const summary = await OrganizerAPI.payouts.getSummary();
-        document.getElementById('totalEarned').innerText = '$' + (summary.total_earned || 0).toLocaleString();
-        document.getElementById('availableBalance').innerText = '$' + (summary.available_balance || 0).toLocaleString();
-        document.getElementById('pendingPayouts').innerText = '$' + (summary.pending_payouts || 0).toLocaleString();
-        document.getElementById('nextPayout').innerText = '$' + (summary.next_payout || 0).toLocaleString();
+        document.getElementById('totalEarned').innerText = 'KSh ' + (summary.total_earned || 0).toLocaleString();
+        document.getElementById('availableBalance').innerText = 'KSh ' + (summary.available_balance || 0).toLocaleString();
+        document.getElementById('pendingPayouts').innerText = 'KSh ' + (summary.pending_payouts || 0).toLocaleString();
+        document.getElementById('nextPayout').innerText = 'KSh ' + (summary.next_payout || 0).toLocaleString();
     } catch(e) { console.error(e); }
 }
 
@@ -19,7 +19,7 @@ async function loadPayoutHistory() {
         tbody.innerHTML = data.results.map(p => `
             <tr>
                 <td>${new Date(p.date).toLocaleDateString()}</td>
-                <td>$${p.amount}</td>
+                <td>KSh ${p.amount}</td>
                 <td><span class="badge ${p.status === 'completed' ? 'bg-success' : 'bg-warning'}">${p.status}</span></td>
             </tr>
         `).join('');
@@ -30,7 +30,7 @@ async function loadPayoutHistory() {
 async function loadUpcomingPayout() {
     try {
         const upcoming = await OrganizerAPI.payouts.getUpcoming();
-        document.getElementById('upcomingInfo').innerHTML = upcoming ? `Next payout: $${upcoming.amount} on ${new Date(upcoming.date).toLocaleDateString()}` : 'No upcoming payouts';
+        document.getElementById('upcomingInfo').innerHTML = upcoming ? `Next payout: KSh ${upcoming.amount} on ${new Date(upcoming.date).toLocaleDateString()}` : 'No upcoming payouts';
     } catch(e) {}
 }
 
@@ -46,7 +46,7 @@ async function loadBankSettings() {
 
 async function requestPayout() {
     const amount = parseFloat(document.getElementById('requestAmount').value);
-    if (isNaN(amount) || amount < 10) { alert('Minimum amount $10'); return; }
+    if (isNaN(amount) || amount < 10) { alert('Minimum amount KSh 10'); return; }
     try {
         await OrganizerAPI.payouts.requestPayout(amount);
         if(window.showToast) window.showToast('Request sent', 'success');

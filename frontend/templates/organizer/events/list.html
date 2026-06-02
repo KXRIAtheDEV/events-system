@@ -93,8 +93,9 @@
             <div class="col-md-3">
                 <select id="statusFilter" class="form-select border-secondary">
                     <option value="">All Statuses</option>
-                    <option value="active">Published</option>
+                    <option value="published">Published</option>
                     <option value="draft">Drafts</option>
+                    <option value="cancelled">Cancelled</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -261,19 +262,19 @@
             return;
         }
 
-        eventsContainer.innerHTML = filtered.map(e => {
-            const isPub = e.status === 'active';
+        container.innerHTML = filtered.map(e => {
+            const isPub = e.status === 'published';
             const badgeClass = isPub ? 'badge-published' : (e.status === 'cancelled' ? 'badge-cancelled' : 'badge-draft');
             const percent = e.capacity > 0 ? Math.min(100, ((e.sold || 0) / e.capacity) * 100) : 0;
             const defaultImage = "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80";
-            const imageUrl = e.image || defaultImage;
+            const imageUrl = e.image_url || e.image || defaultImage;
             const eventName = e.name || e.title || "Untitled Event";
 
             return `
                 <div class="col-md-6 col-lg-4">
                     <div class="event-card">
                         <div class="event-banner" style="background-image: url('${imageUrl}')">
-                            <span class="event-badge ${badgeClass}">${e.status === 'active' ? 'Published' : (e.status || 'DRAFT').toUpperCase()}</span>
+                            <span class="event-badge ${badgeClass}">${isPub ? 'Published' : (e.status || 'DRAFT').toUpperCase()}</span>
                         </div>
                         <div class="p-4">
                             <span class="text-warning font-weight-bold" style="font-size: 0.8rem; text-transform: uppercase;">${e.category || 'General'}</span>
