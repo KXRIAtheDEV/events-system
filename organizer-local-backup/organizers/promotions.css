@@ -1,7 +1,0 @@
-/* frontend/static/css/organizers/promotions.css */
-.promo-code {
-    font-family: monospace;
-    background: var(--sidebar-bg);
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-}
