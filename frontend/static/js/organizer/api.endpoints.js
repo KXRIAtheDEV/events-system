@@ -333,8 +333,8 @@ const OrganizerAuthAPI = {
     checkStatus: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.AUTH.checkStatus)
 };
 
-// Export everything to global window object
-window.OrganizerAPI = {
+// Extend the existing OrganizerAPI service instance instead of overwriting the window property
+Object.assign(OrganizerAPI, {
     config: ORGANIZER_API_CONFIG,
     service: OrganizerAPI,
     auth: OrganizerAuthAPI,
@@ -357,7 +357,7 @@ window.OrganizerAPI = {
         try {
             return !!localStorage.getItem('organizer_access_token');
         } catch (e) {
-            return !!window.OrganizerAPI?.service?.accessToken;
+            return !!OrganizerAPI.accessToken;
         }
     },
     logout: async () => {
@@ -370,6 +370,9 @@ window.OrganizerAPI = {
             window.location.href = '/organizer/login/';
         }
     }
-};
+});
+
+// Also make it globally available as a window property
+window.OrganizerAPI = OrganizerAPI;
 
 console.log('✅ Organizer API Endpoints ready! Available modules:', Object.keys(window.OrganizerAPI).filter(k => k !== 'service' && k !== 'config'));
