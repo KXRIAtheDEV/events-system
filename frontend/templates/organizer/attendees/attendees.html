@@ -64,6 +64,7 @@
     }
     
     .table thead th {
+        background-color: #000000 !important;
         color: #ffffff !important; /* Bold white */
         font-weight: 700 !important;
         font-size: 0.85rem !important;
@@ -306,7 +307,6 @@
 
         tbody.innerHTML = paginated.map(a => {
             const attName = a.name || "Anonymous Attendee";
-            const initials = attName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || "?";
             const attEmail = a.email || "No Email";
             const attPhone = a.phone || "--";
             const eventsCount = a.events_count || 0;
@@ -318,7 +318,6 @@
                 <tr>
                     <td>
                         <div class="d-flex align-items-center">
-                            <div class="attendee-avatar">${initials}</div>
                             <span class="text-white fw-bold">${attName}</span>
                         </div>
                     </td>
