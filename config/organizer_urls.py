@@ -7,6 +7,10 @@ urlpatterns = [
          TemplateView.as_view(template_name='organizer/dashboard/dashboard.html'),
          name='organizer_dashboard'),
 
+    path('date-picker/',
+         TemplateView.as_view(template_name='organizer/dashboard/date_picker.html'),
+         name='organizer_date_picker'),
+
     # Events (list, create, edit, detail)
     path('events/',
          TemplateView.as_view(template_name='organizer/dashboard/events.html'),
