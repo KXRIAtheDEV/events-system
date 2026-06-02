@@ -30,6 +30,9 @@ body {
     font-family: 'Inter', system-ui, sans-serif;
     line-height: 1.5;
 }
+.text-muted {
+    color: var(--gray-muted) !important;
+}
 .dashboard-wrapper { display: flex; min-height: 100vh; }
 .sidebar {
     width: var(--sidebar-width);
@@ -194,6 +197,7 @@ body {
 .metric-card:hover { transform: translateY(-4px); border-color: var(--primary); }
 .metric-header { display: flex; justify-content: space-between; margin-bottom: 16px; }
 .metric-title { font-size: 0.9rem; font-weight: 600; color: var(--gray-muted); }
+/* Legacy icon class kept for backward compat on other pages */
 .metric-icon {
     width: 42px;
     height: 42px;
@@ -203,6 +207,57 @@ body {
     justify-content: center;
     font-size: 1.25rem;
 }
+
+/* ── Glassmorphism metric icon containers ─────────────────────── */
+.metric-icon-glass {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-icon-glass--orange {
+    background: rgba(255, 107, 0, 0.12);
+    border: 1px solid rgba(255, 107, 0, 0.25);
+    box-shadow: 0 0 14px rgba(255, 107, 0, 0.15);
+}
+
+.metric-icon-glass--green {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.12);
+}
+
+.metric-icon-glass--blue {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.12);
+}
+
+.metric-card:hover .metric-icon-glass {
+    transform: scale(1.08) rotate(-3deg);
+}
+
+/* ── Sidebar SVG icons ───────────────────────────────────────── */
+.menu-svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: currentColor;
+    transition: var(--transition);
+}
+
+.menu-item:hover .menu-svg,
+.menu-item.active .menu-svg {
+    filter: drop-shadow(0 0 4px rgba(255, 107, 0, 0.5));
+}
+
 .bg-primary-soft { background: var(--primary-soft); }
 .bg-success-soft { background: var(--success-soft); }
 .bg-warning-soft { background: var(--warning-soft); }
@@ -365,11 +420,10 @@ body {
         border-radius: var(--radius-sm) !important;
     }
     
-    .menu-item i {
-        font-size: 1.2rem !important;
-        width: auto !important;
+    .menu-item .menu-svg {
+        width: 22px !important;
+        height: 22px !important;
         margin: 0 !important;
-        text-align: center !important;
     }
     
     .sidebar-footer {

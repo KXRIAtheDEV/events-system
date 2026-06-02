@@ -10,10 +10,19 @@
 <div>
     <!-- Metric Cards -->
     <div class="metrics-grid">
+        <!-- Total Events -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Events</span>
-                <div class="metric-icon bg-primary-soft"><i class="fas fa-calendar-alt text-primary"></i></div>
+                <div class="metric-icon-glass metric-icon-glass--orange">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="18" rx="3" stroke="#FF6B00" stroke-width="1.8" fill="rgba(255,107,0,0.15)"/>
+                        <path d="M3 9h18" stroke="#FF6B00" stroke-width="1.8"/>
+                        <path d="M8 2v4M16 2v4" stroke="#FF6B00" stroke-width="1.8" stroke-linecap="round"/>
+                        <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#FF6B00" opacity="0.9"/>
+                        <rect x="14" y="13" width="3" height="3" rx="0.5" fill="#FF6B00" opacity="0.5"/>
+                    </svg>
+                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalEvents">--</span>
@@ -21,10 +30,18 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-primary" style="width:0%"></div></div>
         </div>
+
+        <!-- Tickets Sold -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Tickets Sold</span>
-                <div class="metric-icon bg-success-soft"><i class="fas fa-ticket-alt text-success"></i></div>
+                <div class="metric-icon-glass metric-icon-glass--green">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
+                        <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.5a1.5 1.5 0 0 0 0 3V15a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1.5a1.5 1.5 0 0 0 0-3V9z" stroke="#10b981" stroke-width="1.8" fill="rgba(16,185,129,0.12)"/>
+                        <path d="M9 7v10" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 3"/>
+                        <path d="M12 10h4M12 14h4" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalTicketsSold">--</span>
@@ -32,10 +49,18 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-success" style="width:0%"></div></div>
         </div>
+
+        <!-- Total Revenue -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Revenue</span>
-                <div class="metric-icon bg-warning-soft"><span class="text-warning fw-bold" style="font-size:0.85rem;letter-spacing:0.5px;">KES</span></div>
+                <div class="metric-icon-glass metric-icon-glass--orange">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" stroke="#FF6B00" stroke-width="1.8" fill="rgba(255,107,0,0.12)"/>
+                        <path d="M12 7v1.5M12 15.5V17" stroke="#FF6B00" stroke-width="1.8" stroke-linecap="round"/>
+                        <path d="M9.5 10.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2c0 1.2-2.5 1.8-2.5 3s1.1 2 2.5 2" stroke="#FF6B00" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalRevenue">Kes --</span>
@@ -43,10 +68,19 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-warning" style="width:0%"></div></div>
         </div>
+
+        <!-- Attendees -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Attendees</span>
-                <div class="metric-icon bg-info-soft"><i class="fas fa-users text-info"></i></div>
+                <div class="metric-icon-glass metric-icon-glass--blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
+                        <circle cx="9" cy="7" r="3" stroke="#3b82f6" stroke-width="1.8" fill="rgba(59,130,246,0.12)"/>
+                        <circle cx="17" cy="9" r="2.2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.07)" opacity="0.8"/>
+                        <path d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round"/>
+                        <path d="M17 14c1.7.6 3 2.2 3 4" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+                    </svg>
+                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalAttendees">--</span>

@@ -6,16 +6,167 @@
 
 {% block extra_css %}
 <style>
-    .directory-card {
-        background: rgba(17, 24, 39, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 1.5rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    /* Clean, premium dark background */
+    body {
+        background-color: #000000 !important;
     }
+    
+    .directory-card {
+        background: #080808 !important; /* Softer solid black for cards */
+        border: 1px solid #141414 !important; /* Subtle divider-like borders */
+        border-radius: 16px;
+        padding: 2rem !important; /* Generous breathing space */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+    }
+    
+    /* Search & Filter inputs in minimal dark theme */
+    .search-group, .select-dark {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        border-radius: 10px !important;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .search-group:focus-within, .select-dark:focus {
+        border-color: #ff6a00 !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 106, 0, 0.15) !important;
+    }
+    
+    .search-group input {
+        color: #ffffff !important;
+    }
+    
+    .search-group input::placeholder {
+        color: #64748b !important;
+    }
+    
+    .select-dark {
+        color: #ffffff !important;
+        padding: 10px 14px !important;
+        cursor: pointer;
+    }
+    
+    .select-dark option {
+        background-color: #080808;
+        color: #ffffff;
+    }
+    
     .table-container {
         overflow-x: auto;
+    }
+    
+    /* Minimal table styling */
+    .table {
+        background-color: transparent !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+    
+    .table thead th {
+        color: #ffffff !important; /* Bold white */
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        border-bottom: 2px solid #1a1a1a !important;
+        padding: 18px 16px !important;
+        text-align: left;
+    }
+    
+    .table tbody tr {
+        border-bottom: 1px solid #111111 !important; /* Subtle dividers */
+        background: transparent !important;
+        transition: background-color 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(255, 106, 0, 0.02) !important;
+    }
+    
+    .table tbody td {
+        padding: 16px 16px !important; /* Cell padding 12-16px */
+        color: #ffffff !important; /* Regular white text */
+        background: transparent !important;
+        border: none !important;
+        vertical-align: middle;
+        text-align: left;
+    }
+    
+    /* Sleek initials avatar */
+    .attendee-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #ff6a00; /* Orange outline */
+        background-color: rgba(255, 106, 0, 0.06); /* Subtle orange highlight background */
+        color: #ff6a00 !important; /* Orange text initials */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-right: 14px;
+        flex-shrink: 0;
+        box-shadow: 0 0 10px rgba(255, 106, 0, 0.1);
+    }
+    
+    /* Typography customization */
+    .email-text, .phone-text {
+        color: #aaaaaa !important; /* Light grey for secondary text */
+        font-family: inherit !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .date-text {
+        color: #888888 !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .highlight-val {
+        color: #ff6a00 !important; /* Orange highlight */
+        font-weight: 700 !important;
+    }
+    
+    /* Custom pagination pill buttons */
+    .pagination {
+        gap: 6px;
+    }
+    
+    .pagination-pill {
+        border-radius: 30px !important; /* Pill shape */
+        padding: 6px 16px !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        transition: all 0.2s ease !important;
+        background: transparent !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    }
+    
+    .pagination-pill.active-pill {
+        background: #ff6a00 !important; /* Orange pill */
+        border-color: #ff6a00 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255, 106, 0, 0.35) !important;
+    }
+    
+    .pagination-pill.inactive-pill:hover {
+        border-color: #ff6a00 !important;
+        color: #ff6a00 !important;
+        box-shadow: 0 0 8px rgba(255, 106, 0, 0.15) !important;
+    }
+    
+    .page-item.active {
+        z-index: 3;
+    }
+    
+    .page-link:focus {
+        box-shadow: none !important;
+    }
+    
+    .text-light-grey {
+        color: #aaaaaa !important;
     }
 </style>
 {% endblock %}
@@ -23,18 +174,18 @@
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Filter bar -->
-    <div class="directory-card mb-4">
+    <div class="directory-card mb-4" role="search" aria-label="Attendee Filters">
         <div class="row g-3">
             <div class="col-md-8">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-secondary text-muted">
+                <div class="input-group search-group">
+                    <span class="input-group-text bg-transparent border-0 text-muted">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" id="attendeeSearch" class="form-control border-secondary" placeholder="Search attendees by name, email, or phone number...">
+                    <input type="text" id="attendeeSearch" class="form-control border-0 bg-transparent text-white" placeholder="Search attendees by name, email, or phone number..." aria-label="Search attendees by name, email, or phone number">
                 </div>
             </div>
             <div class="col-md-4">
-                <select id="eventFilter" class="form-select border-secondary">
+                <select id="eventFilter" class="form-select border-0 select-dark" aria-label="Filter by Event Purchased">
                     <option value="">Filter by Event Purchased</option>
                 </select>
             </div>
@@ -47,13 +198,13 @@
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th>Attendee Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Events Booked</th>
-                        <th>Total Tickets Bought</th>
-                        <th>Total Value Contributed</th>
-                        <th>Last Activity</th>
+                        <th scope="col">Attendee Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Events Booked</th>
+                        <th scope="col">Total Tickets Bought</th>
+                        <th scope="col">Total Value Contributed</th>
+                        <th scope="col">Last Activity</th>
                     </tr>
                 </thead>
                 <tbody id="attendeesList">
@@ -69,8 +220,8 @@
         </div>
 
         <!-- Pagination -->
-        <nav class="d-flex justify-content-between align-items-center mt-4">
-            <div class="text-muted small" id="paginationMeta">Showing 0 of 0 entries</div>
+        <nav class="d-flex justify-content-between align-items-center mt-4" aria-label="Table Navigation">
+            <div class="text-light-grey small" id="paginationMeta">Showing 0 of 0 entries</div>
             <ul class="pagination pagination-warning mb-0" id="attendeePagination">
                 <!-- Dynamically populated -->
             </ul>
@@ -165,20 +316,18 @@
 
             return `
                 <tr>
-                    <td class="text-white fw-bold">
+                    <td>
                         <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px; font-size: 0.85rem;">
-                                ${initials}
-                            </div>
-                            <span>${attName}</span>
+                            <div class="attendee-avatar">${initials}</div>
+                            <span class="text-white fw-bold">${attName}</span>
                         </div>
                     </td>
-                    <td class="font-monospace text-muted small">${attEmail}</td>
-                    <td class="text-muted small">${attPhone}</td>
-                    <td class="text-white">${eventsCount}</td>
-                    <td class="text-white fw-bold">${ticketsCount}</td>
-                    <td class="text-success fw-bold">KSh ${totalSpent}</td>
-                    <td class="text-muted small">${lastPurchaseDate}</td>
+                    <td><span class="email-text">${attEmail}</span></td>
+                    <td><span class="phone-text">${attPhone}</span></td>
+                    <td><span class="highlight-val">${eventsCount}</span></td>
+                    <td><span class="highlight-val">${ticketsCount}</span></td>
+                    <td><span class="highlight-val">KSh ${totalSpent}</span></td>
+                    <td><span class="date-text">${lastPurchaseDate}</span></td>
                 </tr>
             `;
         }).join('');
@@ -187,9 +336,10 @@
         
         let paginationHtml = '';
         for (let i = 1; i <= totalPages; i++) {
+            const isAct = i === currentPage;
             paginationHtml += `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <button class="page-link" onclick="goToPage(${i})">${i}</button>
+                <li class="page-item ${isAct ? 'active' : ''}">
+                    <button class="page-link pagination-pill ${isAct ? 'active-pill' : 'inactive-pill'}" onclick="goToPage(${i})" aria-label="Go to page ${i}" ${isAct ? 'aria-current="page"' : ''}>${i}</button>
                 </li>
             `;
         }
