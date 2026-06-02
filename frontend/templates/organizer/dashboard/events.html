@@ -34,13 +34,13 @@
                         <form id="eventForm">
                             <input type="hidden" id="eventId">
                             <div class="row">
-                                <div class="col-md-6 mb-3"><label>Event Title *</label><input type="text" id="eventTitle" class="form-control" required></div>
+                                <div class="col-md-6 mb-3"><label>Event Title *</label><input type="text" id="eventTitle" class="form-control" placeholder="e.g. Afrobeat Jam Session" required></div>
                                 <div class="col-md-6 mb-3"><label>Category</label><select id="eventCategory" class="form-select"><option>Music</option><option>Technology</option><option>Business</option><option>Sports</option><option>Arts</option><option>Food</option></select></div>
-                                <div class="col-12 mb-3"><label>Description</label><textarea id="eventDescription" rows="3" class="form-control"></textarea></div>
+                                <div class="col-12 mb-3"><label>Description</label><textarea id="eventDescription" rows="3" class="form-control" placeholder="Describe the key highlights and details of this event..."></textarea></div>
                                 <div class="col-md-6 mb-3"><label>Start Date & Time</label><input type="datetime-local" id="eventStartDate" class="form-control"></div>
                                 <div class="col-md-6 mb-3"><label>End Date & Time</label><input type="datetime-local" id="eventEndDate" class="form-control"></div>
-                                <div class="col-md-6 mb-3"><label>Venue</label><input type="text" id="eventVenue" class="form-control"></div>
-                                <div class="col-md-6 mb-3"><label>Capacity</label><input type="number" id="eventCapacity" class="form-control"></div>
+                                <div class="col-md-6 mb-3"><label>Venue</label><input type="text" id="eventVenue" class="form-control" placeholder="e.g. Alchemist Bar, Westlands"></div>
+                                <div class="col-md-6 mb-3"><label>Capacity</label><input type="number" id="eventCapacity" class="form-control" placeholder="e.g. 500"></div>
                                 <div class="col-md-6 mb-3"><label>Status</label><select id="eventStatus" class="form-select"><option value="draft">Draft</option><option value="published">Published</option><option value="cancelled">Cancelled</option></select></div>
                             </div>
                         </form>
