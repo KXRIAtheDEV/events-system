@@ -205,6 +205,179 @@ class OrganizerAPIService {
             return stats;
         }
 
+        // --- PAYOUTS MOCK FALLBACKS ---
+        if (endpoint.includes('/payouts/summary/')) {
+            return {
+                total_earned: stats.revenue || 0,
+                available_balance: Math.floor((stats.revenue || 0) * 0.85),
+                pending_payouts: Math.floor((stats.revenue || 0) * 0.15),
+                next_payout: Math.floor((stats.revenue || 0) * 0.15)
+            };
+        }
+        if (endpoint.includes('/payouts/history/')) {
+            return {
+                count: 2,
+                results: [
+                    { date: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), amount: Math.floor((stats.revenue || 0) * 0.4), status: 'completed' },
+                    { date: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(), amount: Math.floor((stats.revenue || 0) * 0.3), status: 'completed' }
+                ]
+            };
+        }
+        if (endpoint.includes('/payouts/upcoming/')) {
+            return {
+                amount: Math.floor((stats.revenue || 0) * 0.15),
+                date: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString()
+            };
+        }
+        if (endpoint.includes('/payouts/request/') && method === 'POST') {
+            return { success: true, message: 'Payout requested successfully!' };
+        }
+
+        // --- PROMOTIONS MOCK FALLBACKS ---
+        if (endpoint.includes('/promotions/') && method === 'GET') {
+            let promos = JSON.parse(this.safeGetItem('eventhub_organizer_promos_db'));
+            if (!promos) {
+                promos = [
+                    { id: 1, code: 'EARLYBIRD20', discount_type: 'percentage', discount_value: 20, event_title: 'All', valid_until: new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString(), used_count: 5, usage_limit: 50, is_active: true },
+                    { id: 2, code: 'WELCOME500', discount_type: 'fixed', discount_value: 500, event_title: 'All', valid_until: new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString(), used_count: 12, usage_limit: 100, is_active: false }
+                ];
+                this.safeSetItem('eventhub_organizer_promos_db', JSON.stringify(promos));
+            }
+            return {
+                count: promos.length,
+                results: promos
+            };
+        }
+        if (endpoint.includes('/promotions/create/') && method === 'POST') {
+            let promos = JSON.parse(this.safeGetItem('eventhub_organizer_promos_db')) || [];
+            const newId = promos.length > 0 ? Math.max(...promos.map(p => p.id)) + 1 : 1;
+            const newPromo = {
+                id: newId,
+                code: data.code,
+                discount_type: data.discount_type,
+                discount_value: data.discount_value,
+                event_id: data.event_id,
+                event_title: data.event_id ? (events.find(e => String(e.id) === String(data.event_id))?.name || 'Specific Event') : 'All',
+                valid_until: data.valid_until,
+                usage_limit: data.usage_limit || null,
+                used_count: 0,
+                is_active: true,
+                description: data.description || ''
+            };
+            promos.unshift(newPromo);
+            this.safeSetItem('eventhub_organizer_promos_db', JSON.stringify(promos));
+            return newPromo;
+        }
+        if (endpoint.includes('/promotions/') && method === 'PUT') {
+            const parts = endpoint.split('/');
+            const id = parseInt(parts[2]);
+            let promos = JSON.parse(this.safeGetItem('eventhub_organizer_promos_db')) || [];
+            const promo = promos.find(p => p.id === id);
+            if (promo) {
+                Object.assign(promo, data);
+                this.safeSetItem('eventhub_organizer_promos_db', JSON.stringify(promos));
+            }
+            return { success: true };
+        }
+        if (endpoint.includes('/promotions/') && method === 'DELETE') {
+            const parts = endpoint.split('/');
+            const id = parseInt(parts[2]);
+            let promos = JSON.parse(this.safeGetItem('eventhub_organizer_promos_db')) || [];
+            const filtered = promos.filter(p => p.id !== id);
+            this.safeSetItem('eventhub_organizer_promos_db', JSON.stringify(filtered));
+            return { success: true };
+        }
+        if (endpoint.includes('/promotions/') && endpoint.includes('/activate/') && method === 'POST') {
+            const parts = endpoint.split('/');
+            const id = parseInt(parts[2]);
+            let promos = JSON.parse(this.safeGetItem('eventhub_organizer_promos_db')) || [];
+            const promo = promos.find(p => p.id === id);
+            if (promo) {
+                promo.is_active = true;
+                this.safeSetItem('eventhub_organizer_promos_db', JSON.stringify(promos));
+            }
+            return { success: true };
+        }
+        if (endpoint.includes('/promotions/') && endpoint.includes('/deactivate/') && method === 'POST') {
+            const parts = endpoint.split('/');
+            const id = parseInt(parts[2]);
+            let promos = JSON.parse(this.safeGetItem('eventhub_organizer_promos_db')) || [];
+            const promo = promos.find(p => p.id === id);
+            if (promo) {
+                promo.is_active = false;
+                this.safeSetItem('eventhub_organizer_promos_db', JSON.stringify(promos));
+            }
+            return { success: true };
+        }
+
+        // --- SUPPORT MOCK FALLBACKS ---
+        if (endpoint.includes('/support/tickets/') && method === 'GET') {
+            let tickets = JSON.parse(this.safeGetItem('eventhub_organizer_tickets_db'));
+            if (!tickets) {
+                tickets = [
+                    { id: 1042, subject: 'Payout Delay Question', status: 'open', message: 'Hello, my payout requested on Monday has not been settled in my account.', updated_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), replies: [{ is_staff: false, message: 'Initial ticket submission.', created_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString() }] },
+                    { id: 1021, subject: 'Scanner Camera Permissions', status: 'closed', message: 'I cannot open the QR scanner camera on my Safari browser.', updated_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(), replies: [{ is_staff: true, message: 'Please ensure you grant microphone/camera permissions in Safari settings.', created_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString() }] }
+                ];
+                this.safeSetItem('eventhub_organizer_tickets_db', JSON.stringify(tickets));
+            }
+            return {
+                count: tickets.length,
+                results: tickets
+            };
+        }
+        if (endpoint.includes('/support/tickets/') && method === 'POST' && endpoint.includes('/create/')) {
+            let tickets = JSON.parse(this.safeGetItem('eventhub_organizer_tickets_db')) || [];
+            const newId = tickets.length > 0 ? Math.max(...tickets.map(t => t.id)) + 1 : 1001;
+            const newTicket = {
+                id: newId,
+                subject: data.subject,
+                status: 'open',
+                message: data.message,
+                updated_at: new Date().toISOString(),
+                replies: [{ is_staff: false, message: data.message, created_at: new Date().toISOString() }]
+            };
+            tickets.unshift(newTicket);
+            this.safeSetItem('eventhub_organizer_tickets_db', JSON.stringify(tickets));
+            return newTicket;
+        }
+        if (endpoint.includes('/support/tickets/') && method === 'GET') {
+            const parts = endpoint.split('/');
+            const id = parseInt(parts[parts.length - 2]); // extracts ticket ID correctly
+            let tickets = JSON.parse(this.safeGetItem('eventhub_organizer_tickets_db')) || [];
+            const ticket = tickets.find(t => t.id === id);
+            return ticket || { id, subject: 'Ticket', status: 'closed', message: '', replies: [] };
+        }
+        if (endpoint.includes('/support/tickets/') && endpoint.includes('/reply/') && method === 'POST') {
+            const parts = endpoint.split('/');
+            const id = parseInt(parts[parts.length - 3]); // extracts ticket ID correctly
+            let tickets = JSON.parse(this.safeGetItem('eventhub_organizer_tickets_db')) || [];
+            const ticket = tickets.find(t => t.id === id);
+            if (ticket) {
+                ticket.replies.push({
+                    is_staff: false,
+                    message: data.message,
+                    created_at: new Date().toISOString()
+                });
+                ticket.updated_at = new Date().toISOString();
+                this.safeSetItem('eventhub_organizer_tickets_db', JSON.stringify(tickets));
+            }
+            return { success: true };
+        }
+        if (endpoint.includes('/support/faq/')) {
+            return [
+                { question: 'When do I receive my payouts?', answer: 'Payouts are cleared within 3-5 business days after your event is successfully concluded.' },
+                { question: 'How do I scan attendee tickets?', answer: 'Navigate to the tickets page or check-in scanners menu and grant camera permission to use the browser-based QR scanner.' },
+                { question: 'Can I add promo codes for specific events?', answer: 'Yes! Under the promotions dashboard you can create and limit discounts to single events or apply them site-wide.' }
+            ];
+        }
+        if (endpoint.includes('/support/guides/')) {
+            return [
+                { title: 'Ultimate Organizer Setup Guide', url: '#' },
+                { title: 'Designing High-Conversion Event Pages', url: '#' },
+                { title: 'Troubleshooting Live Check-in Scanners', url: '#' }
+            ];
+        }
+
         // 2. Events List (GET)
         if (endpoint === '/events/' && method === 'GET') {
             return events;

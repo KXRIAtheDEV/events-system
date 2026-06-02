@@ -337,7 +337,7 @@ function getActivityIcon(type) {
 }
 
 function viewTicket(ticketId) {
-    window.location.href = `/attendee/tickets/detail/?id=${ticketId}`;
+    window.location.href = `/attendee/tickets/detail/?ticket=${ticketId}`;
 }
 
 function viewEvent(eventId) {

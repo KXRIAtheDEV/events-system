@@ -227,14 +227,43 @@ from django.utils import timezone
 
 def api_dashboard_stats(request):
     """API endpoint to get attendee dashboard stats"""
-    upcoming_count = Event.objects.filter(status='published', start_date__gte=timezone.now()).count()
-    if upcoming_count == 0:
-        upcoming_count = Event.objects.filter(status='published').count()
-        
+    from bookings.views import get_authenticated_attendee
+    from bookings.models import Ticket
+    from django.db.models import Sum
+
+    user = get_authenticated_attendee(request)
+    
+    # Calculate general upcoming published events (fallback)
+    general_upcoming_count = Event.objects.filter(status='published', start_date__gte=timezone.now()).count()
+    if general_upcoming_count == 0:
+        general_upcoming_count = Event.objects.filter(status='published').count()
+
+    if not user or not user.is_authenticated:
+        # Fallback to guest stats so it doesn't crash if session is unauthenticated
+        return JsonResponse({
+            'total_tickets': 0,
+            'total_spent': 0.0,
+            'upcoming_events': general_upcoming_count,
+            'reviews_written': 0,
+            'tickets_trend': {'percentage': 0, 'direction': 'flat'},
+            'spent_trend': {'percentage': 0, 'direction': 'flat'},
+            'upcoming_trend': {'percentage': 0, 'direction': 'flat'},
+            'reviews_trend': {'percentage': 0, 'direction': 'flat'}
+        })
+
+    # Query the logged-in user's active tickets
+    user_tickets = Ticket.objects.filter(attendee=user, status__in=['valid', 'checked_in'])
+    
+    total_tickets = sum(t.quantity for t in user_tickets)
+    total_spent = sum(t.quantity * t.price for t in user_tickets)
+    
+    # Count upcoming events that this specific user has tickets for
+    user_upcoming_count = user_tickets.filter(event__end_date__gte=timezone.now()).values('event').distinct().count()
+
     return JsonResponse({
-        'total_tickets': 0,
-        'total_spent': 0,
-        'upcoming_events': upcoming_count,
+        'total_tickets': total_tickets,
+        'total_spent': float(total_spent),
+        'upcoming_events': user_upcoming_count if user_upcoming_count > 0 else general_upcoming_count,
         'reviews_written': 0,
         'tickets_trend': {'percentage': 0, 'direction': 'flat'},
         'spent_trend': {'percentage': 0, 'direction': 'flat'},
@@ -262,7 +291,24 @@ def api_dashboard_recommendations(request):
 
 def api_dashboard_recent_activity(request):
     """API endpoint to get recent activity"""
-    return JsonResponse([], safe=False)
+    from bookings.views import get_authenticated_attendee
+    from bookings.models import Ticket
+    
+    user = get_authenticated_attendee(request)
+    if not user or not user.is_authenticated:
+        return JsonResponse([], safe=False)
+        
+    tickets = Ticket.objects.filter(attendee=user).order_by('-purchase_date')[:5]
+    results = []
+    for t in tickets:
+        results.append({
+            'id': t.id,
+            'type': 'booking',
+            'title': f"Booked ticket for {t.event.title}",
+            'created_at': t.purchase_date.isoformat(),
+            'action_url': f"/attendee/tickets/detail/?ticket={t.ticket_number}"
+        })
+    return JsonResponse(results, safe=False)
 
 def api_tickets_upcoming(request):
     """API endpoint to get upcoming tickets"""

@@ -37,6 +37,7 @@ def user_payload(user):
         'location': getattr(user, 'location', ''),
         'is_staff': user.is_staff,
         'is_superuser': user.is_superuser,
+        'date_joined': user.date_joined.isoformat() if getattr(user, 'date_joined', None) else None,
     }
 
 
@@ -263,3 +264,23 @@ def change_password(request):
     user.save(update_fields=['password'])
     revoke_user_tokens(user)
     return JsonResponse({'message': 'Password changed. Please log in again.'})
+
+
+@require_http_methods(['GET'])
+def profile_stats(request):
+    user, error = authenticate_bearer(request)
+    if error:
+        return error
+
+    from bookings.models import Ticket
+    user_tickets = Ticket.objects.filter(attendee=user, status__in=['valid', 'checked_in'])
+    total_tickets = sum(t.quantity for t in user_tickets)
+    total_spent = sum(t.quantity * t.price for t in user_tickets)
+    total_events = user_tickets.values('event').distinct().count()
+    
+    return JsonResponse({
+        'total_tickets': total_tickets,
+        'total_spent': float(total_spent),
+        'total_events': total_events,
+        'total_reviews': 0
+    })
