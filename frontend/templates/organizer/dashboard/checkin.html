@@ -3,6 +3,122 @@
 {% block title %}Check‑in | EventHub Organizer{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/organizers/checkin.css">
+<style>
+    /* Clean, premium dark background */
+    body {
+        background-color: #000000 !important;
+    }
+
+    .chart-card {
+        background: #080808 !important; /* Softer solid black for cards */
+        border: 1px solid #141414 !important; /* Subtle divider-like borders */
+        border-radius: 16px !important;
+        padding: 2rem !important; /* Generous breathing space */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+        color: #ffffff !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    .chart-card h5 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        margin-bottom: 1.2rem !important;
+        border-bottom: 1px solid #1a1a1a !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    /* Style checkin alerts */
+    .alert {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        padding: 1.25rem !important;
+    }
+    
+    .alert-success {
+        border-color: #ff6a00 !important; /* Orange outline for active session alert */
+        box-shadow: 0 0 10px rgba(255, 106, 0, 0.1) !important;
+    }
+
+    /* Device items in minimal dark theme */
+    .device-item {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        border-radius: 10px !important;
+        padding: 14px !important;
+        color: #ffffff !important;
+        margin-bottom: 8px !important;
+    }
+
+    .device-item strong {
+        color: #ffffff !important;
+    }
+
+    .device-item small {
+        color: #888888 !important;
+    }
+
+    /* List group checkins */
+    .list-group-item {
+        background-color: #000000 !important;
+        border: 1px solid #111111 !important;
+        color: #ffffff !important;
+        padding: 12px 16px !important;
+    }
+
+    /* Form controls in minimal dark theme */
+    .form-control {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+        padding: 10px 14px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: #ff6a00 !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 106, 0, 0.15) !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+
+    .form-control::placeholder {
+        color: #64748b !important;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        background-color: #080808 !important;
+        border: 1px solid #1a1a1a !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+        color: #ffffff !important;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #1a1a1a !important;
+    }
+
+    .modal-header h5 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #1a1a1a !important;
+    }
+
+    .btn-close {
+        filter: invert(1) !important;
+    }
+
+    hr {
+        border-color: #1a1a1a !important;
+        opacity: 1 !important;
+    }
+</style>
 {% endblock %}
 {% block content %}
 <div>
