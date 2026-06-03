@@ -1,5 +1,5 @@
 /* ============================================
-   STATS SECTION - Glowing Cards with Modern Effects
+   STATS SECTION - Modern Cards with Glow Effects
    ============================================ */
 
 .stats-section {
@@ -41,7 +41,7 @@
     50% { transform: translate(30px, 20px); }
 }
 
-.container {
+.stats-section .container {
     max-width: 1280px;
     margin: 0 auto;
     padding: 0 2rem;
@@ -50,12 +50,12 @@
 }
 
 /* Section Header */
-.section-header {
+.stats-section .section-header {
     text-align: center;
     margin-bottom: 3rem;
 }
 
-.section-header h2 {
+.stats-section .section-header h2 {
     font-family: 'Kaushan Script', cursive;
     font-size: 2.5rem;
     font-weight: 400;
@@ -63,7 +63,7 @@
     color: #1e293b;
 }
 
-.section-header p {
+.stats-section .section-header p {
     font-size: 1rem;
     color: #64748b;
 }
@@ -75,7 +75,7 @@
     gap: 1.5rem;
 }
 
-/* Analytics Card - Enhanced Border Effects */
+/* Analytics Card */
 .analytics-card {
     background: #ffffff;
     border-radius: 1.5rem;
@@ -85,8 +85,6 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
-    
-    /* Border styling */
     border: 2px solid #e2e8f0;
 }
 
@@ -94,15 +92,12 @@
 .analytics-card:nth-child(1) {
     border-top: 4px solid #f59e0b;
 }
-
 .analytics-card:nth-child(2) {
     border-top: 4px solid #ec6408;
 }
-
 .analytics-card:nth-child(3) {
     border-top: 4px solid #f97316;
 }
-
 .analytics-card:nth-child(4) {
     border-top: 4px solid #fbbf24;
 }
@@ -132,14 +127,13 @@
     opacity: 1;
 }
 
-/* Card shadow on hover */
 .analytics-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 20px 30px -10px rgba(245, 158, 11, 0.2);
     border-color: #f59e0b;
 }
 
-/* Top accent line animation */
+/* Card accent line */
 .analytics-card .card-accent {
     position: absolute;
     top: 0;
@@ -155,13 +149,13 @@
     transform: scaleX(1);
 }
 
-/* Icon Wrapper with Glow */
+/* Icon Wrapper - Modern with Gradient */
 .analytics-icon-wrapper {
-    width: 70px;
-    height: 70px;
+    width: 75px;
+    height: 75px;
     margin: 0 auto 1.25rem;
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 100, 8, 0.05));
-    border-radius: 20px;
+    border-radius: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -176,7 +170,7 @@
     position: absolute;
     inset: -3px;
     background: linear-gradient(135deg, #f59e0b, #ec6408);
-    border-radius: 20px;
+    border-radius: 24px;
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: -1;
@@ -193,7 +187,7 @@
 }
 
 .analytics-icon-wrapper i {
-    font-size: 2rem;
+    font-size: 2.2rem;
     color: #f59e0b;
     transition: all 0.3s ease;
 }
@@ -203,46 +197,46 @@
     transform: scale(1.1);
 }
 
-/* Analytics Number */
+/* Analytics Number - Using Kaushan Script like hero stats */
 .analytics-number {
-    font-size: 2.8rem;
-    font-weight: 800;
-    color: #1e293b;
+    font-size: 3rem;
+    font-weight: 400;
+    color: #ea580c;
     margin-bottom: 0.5rem;
     line-height: 1.2;
-    font-family: 'Manrope', 'Inter', sans-serif;
+    font-family: 'Kaushan Script', cursive;
     display: inline-flex;
     align-items: baseline;
     gap: 0.25rem;
+    letter-spacing: 1px;
 }
 
 .analytics-number .suffix {
-    font-size: 1.5rem;
-    color: #f59e0b;
-    font-weight: 600;
+    font-size: 1.8rem;
+    color: #ea580c;
+    font-weight: 400;
+    font-family: 'Kaushan Script', cursive;
 }
 
 /* Analytics Label */
 .analytics-card p {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: #64748b;
-    font-weight: 500;
+    font-weight: 600;
     margin: 0;
+    letter-spacing: 0.5px;
 }
 
 /* Different icon colors on hover for variety */
 .analytics-card:nth-child(1):hover .analytics-icon-wrapper {
     background: linear-gradient(135deg, #f59e0b, #ec6408);
 }
-
 .analytics-card:nth-child(2):hover .analytics-icon-wrapper {
     background: linear-gradient(135deg, #ec6408, #f97316);
 }
-
 .analytics-card:nth-child(3):hover .analytics-icon-wrapper {
     background: linear-gradient(135deg, #f97316, #fbbf24);
 }
-
 .analytics-card:nth-child(4):hover .analytics-icon-wrapper {
     background: linear-gradient(135deg, #fbbf24, #f59e0b);
 }
@@ -252,26 +246,21 @@
     .analytics-grid {
         gap: 1rem;
     }
-    
     .analytics-card {
         padding: 1.5rem 1rem;
     }
-    
     .analytics-number {
-        font-size: 2.2rem;
+        font-size: 2.5rem;
     }
-    
     .analytics-number .suffix {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
     }
-    
     .analytics-icon-wrapper {
-        width: 60px;
-        height: 60px;
+        width: 65px;
+        height: 65px;
     }
-    
     .analytics-icon-wrapper i {
-        font-size: 1.6rem;
+        font-size: 1.8rem;
     }
 }
 
@@ -279,36 +268,36 @@
     .stats-section {
         padding: 3rem 0;
     }
-    
-    .container {
+    .stats-section .container {
         padding: 0 1rem;
     }
-    
+    .stats-section .section-header h2 {
+        font-size: 1.8rem;
+    }
     .analytics-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
-    
     .analytics-card {
         padding: 1.25rem;
     }
-    
     .analytics-number {
-        font-size: 1.8rem;
+        font-size: 2rem;
     }
-    
     .analytics-number .suffix {
-        font-size: 1rem;
+        font-size: 1.2rem;
     }
-    
     .analytics-icon-wrapper {
-        width: 50px;
-        height: 50px;
-        margin-bottom: 1rem;
+        width: 55px;
+        height: 55px;
+        border-radius: 18px;
+        margin-bottom: 0.8rem;
     }
-    
     .analytics-icon-wrapper i {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
+    }
+    .analytics-card p {
+        font-size: 0.8rem;
     }
 }
 
@@ -317,23 +306,41 @@
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
     .analytics-card {
         padding: 1rem;
+        display: flex;
+        align-items: center;
+        text-align: left;
+        gap: 1rem;
     }
-    
+    .analytics-icon-wrapper {
+        width: 60px;
+        height: 60px;
+        margin: 0;
+        flex-shrink: 0;
+    }
+    .analytics-card-content {
+        flex: 1;
+    }
     .analytics-number {
         font-size: 2rem;
+        margin-bottom: 0.25rem;
     }
-    
-    .analytics-card {
-        border-width: 1px;
+    .analytics-number .suffix {
+        font-size: 1.2rem;
     }
-    
+    .analytics-card p {
+        font-size: 0.8rem;
+        margin: 0;
+    }
+    .analytics-card .card-accent {
+        display: none;
+    }
     .analytics-card:nth-child(1),
     .analytics-card:nth-child(2),
     .analytics-card:nth-child(3),
     .analytics-card:nth-child(4) {
         border-top: 3px solid #f59e0b;
+        border-left: 3px solid #f59e0b;
     }
 }

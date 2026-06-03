@@ -1,4 +1,3 @@
-
 {% load static %}
 <section class="hero-section">
     <!-- Background Image Slideshow -->
@@ -9,6 +8,9 @@
             <div class="slide" style="background-image: url('{% static 'images/hero/hero3.jpg' %}');"></div>
             <div class="slide" style="background-image: url('{% static 'images/hero/hero4.jpg' %}');"></div>
             <div class="slide" style="background-image: url('{% static 'images/hero/hero5.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero6.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero7.jpg' %}');"></div>
+            <div class="slide" style="background-image: url('{% static 'images/hero/hero8.jpg' %}');"></div>
         </div>
         <div class="hero-gradient-overlay"></div>
         <div class="hero-overlay"></div>
@@ -54,7 +56,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ========== BACKGROUND SLIDESHOW (5 images) ==========
+    // ========== BACKGROUND SLIDESHOW (8 images) ==========
     const slides = document.querySelectorAll('.hero-slideshow .slide');
     let currentSlide = 0;
     const slideInterval = 5000; // 5 seconds
@@ -115,52 +117,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     }
     
-    // ========== COUNTER ANIMATION ==========
+    // ========== COUNTER ANIMATION - Resets every time section is scrolled into view ==========
     const counters = document.querySelectorAll('.counter');
-    let hasAnimated = false;
+    let observer = null;
     
-    const animateCounter = (counter) => {
-        const target = parseInt(counter.getAttribute('data-target'));
+    function animateCounter(counter, target) {
         let current = 0;
         const duration = 2000;
         const stepTime = 20;
         const steps = duration / stepTime;
         const increment = target / steps;
         
-        const updateCount = () => {
-            current += increment;
-            if (current < target) {
-                counter.textContent = Math.floor(current);
-                setTimeout(updateCount, stepTime);
-            } else {
-                counter.textContent = target;
-            }
-        };
+        if (counter.interval) {
+            clearInterval(counter.interval);
+            delete counter.interval;
+        }
         
-        updateCount();
-    };
+        counter.interval = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                counter.textContent = target;
+                clearInterval(counter.interval);
+                delete counter.interval;
+            } else {
+                counter.textContent = Math.floor(current);
+            }
+        }, stepTime);
+    }
+    
+    function resetAndAnimateCounters() {
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            // Reset to 0
+            counter.textContent = '0';
+            // Animate to target
+            animateCounter(counter, target);
+        });
+    }
     
     const statsContainer = document.querySelector('.hero-stats');
     
     if (statsContainer) {
-        const observer = new IntersectionObserver((entries) => {
+        // Disconnect existing observer if any
+        if (observer) {
+            observer.disconnect();
+        }
+        
+        // Create new observer that triggers EVERY time section is scrolled into view
+        observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting && !hasAnimated) {
-                    hasAnimated = true;
-                    counters.forEach((counter, index) => {
-                        setTimeout(() => {
-                            animateCounter(counter);
-                        }, index * 200);
-                    });
-                    observer.unobserve(entry.target);
+                if (entry.isIntersecting) {
+                    // Reset and animate counters
+                    resetAndAnimateCounters();
                 }
             });
         }, { threshold: 0.3 });
         
         observer.observe(statsContainer);
     } else {
+        // Fallback: animate immediately
         counters.forEach(counter => {
-            animateCounter(counter);
+            const target = parseInt(counter.getAttribute('data-target'));
+            animateCounter(counter, target);
         });
     }
 });

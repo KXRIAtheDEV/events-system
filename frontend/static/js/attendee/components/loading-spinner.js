@@ -1,6 +1,6 @@
 // ============================================
 // ENHANCED PAGE LOADER MODULE
-// Bold White Text with Sequential Rotating Dots
+// Circulating Dots with Sequential Text Animation
 // ============================================
 
 (function() {
@@ -10,14 +10,13 @@
     let isHidden = false;
     let navigationTimeout = null;
     let activeRequests = 0;
-    let dotAnimationInterval = null;
     let minDisplayTimer = null;
     let loaderStartTime = null;
     
     // Configuration
     const CONFIG = {
-        minDisplayTime: 800,
-        maxDisplayTime: 5000,
+        minDisplayTime: 500,
+        maxDisplayTime: 10000,
         fadeOutDelay: 300,
         navigationDelay: 150
     };
@@ -30,11 +29,15 @@
             <div id="pageLoader" class="page-loader">
                 <div class="loader-overlay"></div>
                 <div class="loader-container">
-                    <div class="loader-spinner-ring">
-                        <div class="spinner-ring arrow-1"></div>
-                        <div class="spinner-ring arrow-2"></div>
-                        <div class="spinner-ring arrow-3"></div>
-                        <div class="spinner-ring arrow-4"></div>
+                    <div class="circulating-dots">
+                        <div class="dot dot-1"></div>
+                        <div class="dot dot-2"></div>
+                        <div class="dot dot-3"></div>
+                        <div class="dot dot-4"></div>
+                        <div class="dot dot-5"></div>
+                        <div class="dot dot-6"></div>
+                        <div class="dot dot-7"></div>
+                        <div class="dot dot-8"></div>
                         <div class="loader-center-logo">
                             <i class="fas fa-calendar-alt"></i>
                         </div>
@@ -54,44 +57,6 @@
         `;
         document.body.insertAdjacentHTML('afterbegin', loaderHTML);
         loader = document.getElementById('pageLoader');
-    }
-    
-    // Start sequential rotating dots animation
-    function startDotAnimation() {
-        const dots = document.querySelectorAll('.dots-container span');
-        if (dots.length === 0) return;
-        
-        let currentIndex = 0;
-        
-        // Initial state - first dot active
-        dots.forEach((dot, idx) => {
-            dot.classList.remove('active');
-            if (idx === currentIndex) {
-                dot.classList.add('active');
-            }
-        });
-        
-        // Rotate through dots sequentially
-        dotAnimationInterval = setInterval(() => {
-            // Remove active class from all dots
-            dots.forEach(dot => {
-                dot.classList.remove('active');
-            });
-            
-            // Add active class to current dot
-            dots[currentIndex].classList.add('active');
-            
-            // Move to next dot
-            currentIndex = (currentIndex + 1) % dots.length;
-        }, 500); // Change dot every 500ms
-    }
-    
-    // Stop dot animation
-    function stopDotAnimation() {
-        if (dotAnimationInterval) {
-            clearInterval(dotAnimationInterval);
-            dotAnimationInterval = null;
-        }
     }
     
     // Check if minimum time has passed
@@ -119,8 +84,6 @@
                 isHidden = false;
                 document.body.style.overflow = 'hidden';
                 loaderStartTime = Date.now();
-                
-                startDotAnimation();
                 
                 if (navigationTimeout) clearTimeout(navigationTimeout);
                 navigationTimeout = setTimeout(() => {
@@ -163,8 +126,6 @@
             loader.classList.add('fade-out');
             document.body.style.overflow = '';
             
-            stopDotAnimation();
-            
             if (navigationTimeout) clearTimeout(navigationTimeout);
             if (minDisplayTimer) clearTimeout(minDisplayTimer);
             
@@ -185,7 +146,6 @@
             loader.classList.remove('active', 'fade-out');
             isHidden = true;
             document.body.style.overflow = '';
-            stopDotAnimation();
         }
         
         if (navigationTimeout) clearTimeout(navigationTimeout);

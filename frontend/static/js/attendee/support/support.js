@@ -17,7 +17,6 @@ const faqSearch = document.getElementById('faqSearch');
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadTickets();
-    loadFAQ();
     setupEventListeners();
 });
 
@@ -35,12 +34,6 @@ function setupEventListeners() {
             loadTickets();
         });
     }
-    
-    if (faqSearch) {
-        faqSearch.addEventListener('input', debounce(() => {
-            filterFAQ();
-        }, 300));
-    }
 }
 
 function switchTab(tab) {
@@ -56,9 +49,8 @@ function switchTab(tab) {
         document.querySelector('.tab-btn[data-tab="tickets"]').classList.add('active');
         loadTickets();
     } else {
-        ticketsTab.classList.remove('active');
-        faqTab.classList.add('active');
-        document.querySelector('.tab-btn[data-tab="faq"]').classList.add('active');
+        // Redirect to FAQ page
+        window.location.href = '/faq/';
     }
 }
 
@@ -307,76 +299,6 @@ function closeTicketDetailModal() {
     currentTicketId = null;
 }
 
-async function loadFAQ() {
-    const faqList = document.getElementById('faqList');
-    if (!faqList) return;
-    
-    faqList.innerHTML = '<div class="loading-state">Loading FAQs...</div>';
-    
-    try {
-        const faqs = await window.AttendeeAPIEndpoints.support.getFAQ();
-        displayFAQ(faqs);
-    } catch (error) {
-        console.error('Error loading FAQ:', error);
-        faqList.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h3>Failed to Load FAQs</h3>
-                <p>Please try again later.</p>
-            </div>
-        `;
-    }
-}
-
-function displayFAQ(faqs) {
-    const faqList = document.getElementById('faqList');
-    if (!faqList) return;
-    
-    if (!faqs || faqs.length === 0) {
-        faqList.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-question-circle"></i>
-                <h3>No FAQs Found</h3>
-                <p>Check back later for updated information.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    faqList.innerHTML = faqs.map(faq => `
-        <div class="faq-item" data-question="${escapeHtml(faq.question).toLowerCase()}" data-answer="${escapeHtml(faq.answer).toLowerCase()}">
-            <div class="faq-question" onclick="toggleFAQ(this)">
-                <span>${escapeHtml(faq.question)}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="faq-answer">
-                <p>${escapeHtml(faq.answer)}</p>
-            </div>
-        </div>
-    `).join('');
-}
-
-function toggleFAQ(element) {
-    const faqItem = element.closest('.faq-item');
-    faqItem.classList.toggle('open');
-}
-
-function filterFAQ() {
-    const searchTerm = faqSearch?.value.toLowerCase() || '';
-    const faqItems = document.querySelectorAll('.faq-item');
-    
-    faqItems.forEach(item => {
-        const question = item.dataset.question || '';
-        const answer = item.dataset.answer || '';
-        
-        if (question.includes(searchTerm) || answer.includes(searchTerm)) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-}
-
 function renderPagination(current, total) {
     if (!paginationDiv || total <= 1) {
         if (paginationDiv) paginationDiv.innerHTML = '';
@@ -472,5 +394,4 @@ window.viewTicketDetail = viewTicketDetail;
 window.sendReply = sendReply;
 window.resolveTicket = resolveTicket;
 window.closeTicketDetailModal = closeTicketDetailModal;
-window.toggleFAQ = toggleFAQ;
 window.changePage = changePage;
