@@ -21,7 +21,15 @@ const AuthGuard = {
     // Check if current path is protected
     isProtectedPath: function(path) {
         // Remove query parameters
-        const cleanPath = path.split('?')[0];
+        let cleanPath = path.split('?')[0];
+        
+        // Normalize /attendee prefix
+        if (cleanPath.startsWith('/attendee')) {
+            cleanPath = cleanPath.substring(9);
+            if (!cleanPath.startsWith('/')) {
+                cleanPath = '/' + cleanPath;
+            }
+        }
         
         // Check exact match or starts with protected path
         return this.protectedPaths.some(protectedPath => 

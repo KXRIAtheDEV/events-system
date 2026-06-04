@@ -1,9 +1,7 @@
 // ============================================
-// DASHBOARD MODULE - Preserves user data
+// DASHBOARD MODULE - Dynamically fetches database data
 // ============================================
 
-let allTickets = [];
-let allBookings = [];
 let refreshInterval = null;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -32,142 +30,162 @@ function displayUserName() {
 }
 
 function loadDashboardData() {
-    loadTicketsAndBookings();
-    loadRecentActivity();
     loadStats();
+    loadUpcomingTickets();
+    loadRecentActivity();
+    loadRecommendations();
+    loadStatsOverview();
 }
 
-function loadTicketsAndBookings() {
+async function loadStats() {
     try {
-        const savedTickets = localStorage.getItem('eventhub_tickets');
-        const savedBookings = localStorage.getItem('eventhub_bookings');
-        
-        if (savedTickets && JSON.parse(savedTickets).length > 0) {
-            allTickets = JSON.parse(savedTickets);
-            console.log('Loaded tickets:', allTickets.length);
+        let stats;
+        if (window.AttendeeAPIEndpoints?.dashboard?.getStats) {
+            stats = await window.AttendeeAPIEndpoints.dashboard.getStats();
         }
         
-        if (savedBookings) {
-            allBookings = JSON.parse(savedBookings);
-            console.log('Loaded bookings:', allBookings.length);
+        if (stats) {
+            const totalTicketsEl = document.getElementById('totalTickets');
+            const totalSpentEl = document.getElementById('totalSpent');
+            const upcomingEventsEl = document.getElementById('upcomingEvents');
+            const reviewsWrittenEl = document.getElementById('reviewsWritten');
             
-            if (!allTickets || allTickets.length === 0) {
-                allBookings.forEach(booking => {
-                    booking.items.forEach(item => {
-                        for (let i = 0; i < item.quantity; i++) {
-                            allTickets.push({
-                                id: `${item.id}_${i}`,
-                                title: item.title,
-                                date: item.date,
-                                location: item.location,
-                                price: item.price,
-                                image: item.image,
-                                booking_id: booking.id,
-                                category: item.category
-                            });
-                        }
-                    });
-                });
-            }
+            if (totalTicketsEl) totalTicketsEl.textContent = formatNumber(stats.total_tickets || 0);
+            if (totalSpentEl) totalSpentEl.textContent = formatCurrency(stats.total_spent || 0);
+            if (upcomingEventsEl) upcomingEventsEl.textContent = formatNumber(stats.upcoming_events || 0);
+            if (reviewsWrittenEl) reviewsWrittenEl.textContent = formatNumber(stats.reviews_written || 0);
         }
-        
-        displayUpcomingTickets();
     } catch (error) {
-        console.error('Error loading tickets:', error);
+        console.error('Error loading stats:', error);
     }
 }
 
-function displayUpcomingTickets() {
+async function loadUpcomingTickets() {
     const container = document.getElementById('upcomingTicketsList');
     if (!container) return;
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const upcomingTickets = allTickets
-        .filter(ticket => new Date(ticket.date) >= today)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .slice(0, 3);
-    
-    if (upcomingTickets.length === 0) {
-        container.innerHTML = '<div class="empty-state">No upcoming tickets. <a href="/events/">Browse Events</a></div>';
-        return;
-    }
-    
-    container.innerHTML = upcomingTickets.map(ticket => `
-        <div class="ticket-item" onclick="viewTicket('${ticket.id}')">
-            <div class="ticket-item-image" style="background-image: url('${ticket.image || '/static/images/placeholder.jpg'}')"></div>
-            <div class="ticket-item-info">
-                <div class="ticket-item-title">${escapeHtml(ticket.title)}</div>
-                <div class="ticket-item-date">${formatDate(ticket.date)}</div>
+    try {
+        let tickets = [];
+        if (window.AttendeeAPIEndpoints?.tickets?.getUpcoming) {
+            const result = await window.AttendeeAPIEndpoints.tickets.getUpcoming();
+            tickets = result.results || result;
+        }
+        
+        if (!tickets || tickets.length === 0) {
+            container.innerHTML = '<div class="empty-state">No upcoming tickets. <a href="/events/">Browse Events</a></div>';
+            return;
+        }
+        
+        container.innerHTML = tickets.slice(0, 3).map(ticket => `
+            <div class="ticket-item" onclick="viewTicket('${ticket.ticket_number || ticket.id}')">
+                <div class="ticket-item-image" style="background-image: url('${ticket.event?.banner_image || ticket.image || '/static/images/placeholder.jpg'}')"></div>
+                <div class="ticket-item-info">
+                    <div class="ticket-item-title">${escapeHtml(ticket.event?.title || ticket.title || 'Event')}</div>
+                    <div class="ticket-item-date">${formatDate(ticket.event?.start_date || ticket.date)}</div>
+                </div>
+                <div class="ticket-item-price">${formatCurrency(ticket.price)}</div>
             </div>
-            <div class="ticket-item-price">${formatCurrency(ticket.price)}</div>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (error) {
+        console.error('Error loading upcoming tickets:', error);
+        container.innerHTML = '<div class="empty-state">Error loading tickets.</div>';
+    }
 }
 
-function loadRecentActivity() {
+async function loadRecentActivity() {
     const container = document.getElementById('recentActivityList');
     if (!container) return;
     
-    const activities = [];
-    
-    allBookings.forEach(booking => {
-        activities.push({
-            type: 'booking',
-            title: `Booking Confirmed`,
-            description: `Booking #${booking.id.substring(0, 8)} - Total: ${formatCurrency(booking.total_amount)}`,
-            time: booking.booking_date,
-            icon: getActivityIcon('booking')
-        });
-    });
-    
-    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
-    const recentActivities = activities.slice(0, 5);
-    
-    if (recentActivities.length === 0) {
-        container.innerHTML = '<div class="empty-state">No recent activity. Start booking events!</div>';
-        return;
-    }
-    
-    container.innerHTML = recentActivities.map(activity => `
-        <div class="activity-item activity-${activity.type}">
-            <div class="activity-icon">
-                <i class="fas ${activity.icon}"></i>
-            </div>
-            <div class="activity-content">
-                <div class="activity-title">${escapeHtml(activity.title)}</div>
-                <div class="activity-description">${escapeHtml(activity.description)}</div>
-                <div class="activity-time">
-                    <i class="fas fa-clock"></i>
-                    ${formatRelativeTime(activity.time)}
+    try {
+        let activities = [];
+        if (window.AttendeeAPIEndpoints?.dashboard?.getRecentActivity) {
+            activities = await window.AttendeeAPIEndpoints.dashboard.getRecentActivity();
+        }
+        
+        if (!activities || activities.length === 0) {
+            container.innerHTML = '<div class="empty-state">No recent activity. Start booking events!</div>';
+            return;
+        }
+        
+        container.innerHTML = activities.slice(0, 5).map(activity => `
+            <div class="activity-item activity-${activity.type || 'booking'}" onclick="window.location.href='${activity.action_url || '#'}'" style="cursor: pointer;">
+                <div class="activity-icon">
+                    <i class="fas ${getActivityIcon(activity.type)}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">${escapeHtml(activity.title)}</div>
+                    <div class="activity-description">${escapeHtml(activity.description || '')}</div>
+                    <div class="activity-time">
+                        <i class="fas fa-clock"></i>
+                        ${formatRelativeTime(activity.created_at || activity.time)}
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (error) {
+        console.error('Error loading recent activity:', error);
+        container.innerHTML = '<div class="empty-state">Error loading activity.</div>';
+    }
 }
 
-function loadStats() {
-    const totalTickets = allTickets.length;
-    const totalSpent = allBookings.reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
+async function loadRecommendations() {
+    const container = document.getElementById('recommendationsList');
+    if (!container) return;
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const upcomingEvents = allTickets.filter(ticket => new Date(ticket.date) >= today).length;
-    
-    const totalTicketsEl = document.getElementById('totalTickets');
-    const totalSpentEl = document.getElementById('totalSpent');
-    const upcomingEventsEl = document.getElementById('upcomingEvents');
-    const reviewsWrittenEl = document.getElementById('reviewsWritten');
-    
-    if (totalTicketsEl) totalTicketsEl.textContent = totalTickets;
-    if (totalSpentEl) totalSpentEl.textContent = formatCurrency(totalSpent);
-    if (upcomingEventsEl) upcomingEventsEl.textContent = upcomingEvents;
-    if (reviewsWrittenEl) reviewsWrittenEl.textContent = '0';
-    
-    const pastEvents = allTickets.filter(ticket => new Date(ticket.date) < today).length;
-    const eventsAttendedEl = document.getElementById('eventsAttended');
-    if (eventsAttendedEl) eventsAttendedEl.textContent = pastEvents;
+    try {
+        let recommendations = [];
+        if (window.AttendeeAPIEndpoints?.dashboard?.getRecommendations) {
+            recommendations = await window.AttendeeAPIEndpoints.dashboard.getRecommendations();
+        }
+        
+        if (!recommendations || recommendations.length === 0) {
+            container.innerHTML = '<div class="empty-state">No recommended events. <a href="/events/">Browse Events</a></div>';
+            return;
+        }
+        
+        container.innerHTML = recommendations.slice(0, 3).map(event => `
+            <div class="recommendation-item" onclick="viewEvent(${event.id})">
+                <div class="recommendation-image" style="background-image: url('${event.image || event.banner_image || '/static/images/placeholder.jpg'}')"></div>
+                <div class="recommendation-info">
+                    <div class="recommendation-category">${escapeHtml(event.category_name || event.category || 'General')}</div>
+                    <div class="recommendation-title">${escapeHtml(event.title)}</div>
+                    <div class="recommendation-meta">
+                        <span><i class="fas fa-calendar"></i> ${formatDate(event.date || event.start_date)}</span>
+                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location || event.venue || 'TBD')}</span>
+                    </div>
+                    <div class="recommendation-price">${formatCurrency(event.price)}</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading recommendations:', error);
+        container.innerHTML = '<div class="empty-state">Error loading recommendations.</div>';
+    }
+}
+
+async function loadStatsOverview() {
+    try {
+        const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
+        
+        const memberSince = document.getElementById('memberSince');
+        const favoriteCategory = document.getElementById('favoriteCategory');
+        const eventsAttended = document.getElementById('eventsAttended');
+        
+        if (memberSince) {
+            memberSince.textContent = user.date_joined ? formatDate(user.date_joined) : '2026';
+        }
+        
+        // Fetch stats from backend profile stats endpoint
+        if (window.AttendeeAPIEndpoints?.profile?.getStats) {
+            const stats = await window.AttendeeAPIEndpoints.profile.getStats();
+            if (stats) {
+                if (favoriteCategory) favoriteCategory.textContent = stats.favorite_category || 'General';
+                if (eventsAttended) eventsAttended.textContent = formatNumber(stats.total_events || 0);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading stats overview:', error);
+    }
 }
 
 function refreshActivity() {
@@ -198,7 +216,7 @@ function getActivityIcon(type) {
 }
 
 function viewTicket(ticketId) {
-    window.location.href = `/tickets/detail/?id=${ticketId}`;
+    window.location.href = `/tickets/detail/?ticket=${ticketId}`;
 }
 
 function viewEvent(eventId) {
@@ -257,6 +275,7 @@ function showToast(message, type) {
     if (existingToast) existingToast.remove();
     
     const toast = document.createElement('div');
+    toast.className = 'custom-toast';
     toast.style.cssText = `
         position: fixed; bottom: 20px; right: 20px; z-index: 10000;
         padding: 12px 20px; border-radius: 12px; color: white;

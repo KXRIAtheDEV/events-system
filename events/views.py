@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-
+from django.utils import timezone
 
 from events.models import Event
 from accounts.models import User
@@ -252,7 +252,7 @@ def api_event_list(request):
     if not query:
         query = request.GET.get('q', '').strip()
         
-    events = Event.objects.filter(status='published')
+    events = Event.objects.filter(status='published', end_date__gte=timezone.now())
     
     if query:
         events = events.filter(
@@ -322,7 +322,7 @@ def api_category_list(request):
     categories = Category.objects.all()
     results = []
     for c in categories:
-        event_count = Event.objects.filter(category=c, status='published').count()
+        event_count = Event.objects.filter(category=c, status='published', end_date__gte=timezone.now()).count()
         results.append({
             'id': c.id,
             'name': c.name,
@@ -416,9 +416,9 @@ def api_dashboard_stats(request):
 
 def api_dashboard_recommendations(request):
     """API endpoint to get recommended events (featured events)"""
-    events = Event.objects.filter(status='published', is_featured=True)[:3]
+    events = Event.objects.filter(status='published', end_date__gte=timezone.now(), is_featured=True).order_by('start_date')[:3]
     if not events.exists():
-        events = Event.objects.filter(status='published')[:3]
+        events = Event.objects.filter(status='published', end_date__gte=timezone.now()).order_by('start_date')[:3]
         
     results = []
     for e in events:
@@ -459,9 +459,9 @@ def api_tickets_upcoming(request):
 
 def api_featured_events(request):
     """API endpoint to get featured events for the attendee homepage"""
-    events = Event.objects.filter(status='published', is_featured=True)[:6]
+    events = Event.objects.filter(status='published', end_date__gte=timezone.now(), is_featured=True).order_by('start_date')[:6]
     if not events.exists():
-        events = Event.objects.filter(status='published')[:6]
+        events = Event.objects.filter(status='published', end_date__gte=timezone.now()).order_by('start_date')[:6]
         
     results = []
     for e in events:

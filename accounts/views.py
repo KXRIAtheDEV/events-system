@@ -22,6 +22,13 @@ PUBLIC_REGISTRATION_ROLES = {'attendee', 'organizer'}
 PROFILE_FIELDS = ('first_name', 'last_name', 'email', 'phone', 'organization_name', 'location')
 
 
+def resolve_authenticated_user(request):
+    user = request.user
+    if user.is_authenticated:
+        return user, None
+    return authenticate_bearer(request)
+
+
 def user_payload(user):
     return {
         'id': user.id,
@@ -132,7 +139,7 @@ def login(request):
 @csrf_exempt
 @require_http_methods(['POST'])
 def logout(request):
-    user, error = authenticate_bearer(request)
+    user, error = resolve_authenticated_user(request)
     if error:
         return error
 
@@ -169,7 +176,7 @@ def refresh_token(request):
 
 @require_http_methods(['GET'])
 def check_status(request):
-    user, error = authenticate_bearer(request)
+    user, error = resolve_authenticated_user(request)
     if error:
         return error
 
@@ -182,7 +189,7 @@ def check_status(request):
 
 @require_http_methods(['GET'])
 def profile_detail(request):
-    user, error = authenticate_bearer(request)
+    user, error = resolve_authenticated_user(request)
     if error:
         return error
 
@@ -192,7 +199,7 @@ def profile_detail(request):
 @csrf_exempt
 @require_http_methods(['PUT', 'PATCH'])
 def profile_update(request):
-    user, error = authenticate_bearer(request)
+    user, error = resolve_authenticated_user(request)
     if error:
         return error
 
@@ -241,7 +248,7 @@ def profile_update(request):
 @csrf_exempt
 @require_http_methods(['POST'])
 def change_password(request):
-    user, error = authenticate_bearer(request)
+    user, error = resolve_authenticated_user(request)
     if error:
         return error
 
@@ -268,19 +275,27 @@ def change_password(request):
 
 @require_http_methods(['GET'])
 def profile_stats(request):
-    user, error = authenticate_bearer(request)
+    user, error = resolve_authenticated_user(request)
     if error:
         return error
 
     from bookings.models import Ticket
+    from django.db.models import Count
     user_tickets = Ticket.objects.filter(attendee=user, status__in=['valid', 'checked_in'])
     total_tickets = sum(t.quantity for t in user_tickets)
     total_spent = sum(t.quantity * t.price for t in user_tickets)
     total_events = user_tickets.values('event').distinct().count()
     
+    # Calculate favorite category
+    favorite_category = 'General'
+    fav = user_tickets.filter(event__category__isnull=False).values('event__category__name').annotate(count=Count('event__category')).order_by('-count').first()
+    if fav:
+        favorite_category = fav['event__category__name']
+        
     return JsonResponse({
         'total_tickets': total_tickets,
         'total_spent': float(total_spent),
         'total_events': total_events,
-        'total_reviews': 0
+        'total_reviews': 0,
+        'favorite_category': favorite_category
     })

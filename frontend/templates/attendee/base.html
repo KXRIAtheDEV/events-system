@@ -6,6 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}EventHub - Attendee Portal{% endblock %}</title>
     
+    <!-- Meta Tags for Search Engine Optimization (SEO) -->
+    <meta name="description" content="{% block meta_description %}Discover and book tickets for the best events in Kenya. From music concerts to technology conferences, find your next experience on EventHub.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}events, tickets, booking, concerts, conferences, sports, events in Kenya, EventHub{% endblock %}">
+    <meta name="author" content="EventHub Team">
+    
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}EventHub - Discover Amazing Events{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'images/favicon.png' %}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}EventHub - Discover Amazing Events{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'images/favicon.png' %}{% endblock %}">
+    
     <!-- Favicon - Multiple formats for all browsers -->
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon/favicon.svg' %}">
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon/favicon-16x16.png' %}">
