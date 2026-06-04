@@ -28,25 +28,25 @@
             <p class="hero-description">Find and book tickets for the best concerts, conferences, workshops, and entertainment events in Kenya.</p>
             <div class="hero-buttons">
                 <a href="/events/" class="hero-btn hero-btn-primary">
-                    <i class="fas fa-calendar-alt"></i>
+                    <img src="{% static 'icons/style1_calendar.svg' %}" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" alt="Calendar">
                     Browse Events
                 </a>
                 <a href="/register/" class="hero-btn hero-btn-secondary">
-                    <i class="fas fa-user-plus"></i>
+                    <img src="{% static 'icons/style1_attendees.svg' %}" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;" alt="Get Started">
                     Get Started
                 </a>
             </div>
             <div class="hero-stats">
                 <div class="stat">
-                    <span class="stat-number counter" data-target="500">0</span><span class="plus-sign">+</span>
+                    <span class="stat-number counter" data-target="{{ events_count|default:500 }}">0</span><span class="plus-sign">+</span>
                     <span class="stat-label">Events</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-number counter" data-target="50000">0</span><span class="plus-sign">+</span>
+                    <span class="stat-number counter" data-target="{{ attendees_count|default:50000 }}">0</span><span class="plus-sign">+</span>
                     <span class="stat-label">Happy Attendees</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-number counter" data-target="200">0</span><span class="plus-sign">+</span>
+                    <span class="stat-number counter" data-target="{{ organizers_count|default:200 }}">0</span><span class="plus-sign">+</span>
                     <span class="stat-label">Organizers</span>
                 </div>
             </div>

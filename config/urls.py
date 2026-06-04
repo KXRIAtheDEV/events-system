@@ -18,7 +18,7 @@ from django.contrib import messages
 from events.views import (
     organizer_dashboard_stats, organizer_dashboard_revenue, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_featured_events, api_events_check_expired
+    api_featured_events, api_events_check_expired, homepage_view
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
@@ -166,7 +166,7 @@ urlpatterns = [
     path('logout/', user_logout_view, name='logout'),
     
     # Static Pages (Homepage)
-    path('', TemplateView.as_view(template_name='attendee/pages/homepage/homepage.html'), name='home'),
+    path('', homepage_view, name='home'),
     
     # API Endpoints
     path('api/', include('accounts.urls')),

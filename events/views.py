@@ -5,8 +5,30 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 
+from events.models import Event
+from accounts.models import User
+from bookings.models import Ticket
+from django.db.models import Sum
+
 def home(request):
     return render(request, 'index.html')
+
+def homepage_view(request):
+    events_count = Event.objects.filter(status='published').count()
+    attendees_count = User.objects.filter(role='attendee').count()
+    organizers_count = User.objects.filter(role='organizer').count()
+    tickets_count = Ticket.objects.filter(status='valid').aggregate(Sum('quantity'))['quantity__sum'] or 0
+    satisfaction_rate = 98
+    
+    context = {
+        'events_count': events_count,
+        'attendees_count': attendees_count,
+        'organizers_count': organizers_count,
+        'tickets_count': tickets_count,
+        'satisfaction_rate': satisfaction_rate,
+    }
+    return render(request, 'attendee/pages/homepage/homepage.html', context)
+
 
 
 def event_list(request):

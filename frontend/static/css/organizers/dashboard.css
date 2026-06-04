@@ -222,6 +222,12 @@ body {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.metric-icon-glass img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
 .metric-icon-glass--orange {
     background: rgba(255, 107, 0, 0.12);
     border: 1px solid rgba(255, 107, 0, 0.25);

@@ -1,29 +1,7 @@
 {% extends "organizer/base.html" %}
 {% load static %}
-<<<<<<< HEAD
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EventHub | Organizer Dashboard</title>
-    
-    <!-- Google Fonts & Icon Libraries -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js for Gorgeous Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Custom Premium Stylesheet -->
-    <link rel="stylesheet" href="{% static 'css/organizer.css' %}">
-</head>
-<body>
-=======
+
 {% block title %}Dashboard | EventHub Organizer{% endblock %}
->>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/organizers/dashboard.css">
@@ -38,13 +16,7 @@
             <div class="metric-header">
                 <span class="metric-title">Total Events</span>
                 <div class="metric-icon-glass metric-icon-glass--orange">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="18" rx="3" stroke="#FF6B00" stroke-width="1.8" fill="rgba(255,107,0,0.15)"/>
-                        <path d="M3 9h18" stroke="#FF6B00" stroke-width="1.8"/>
-                        <path d="M8 2v4M16 2v4" stroke="#FF6B00" stroke-width="1.8" stroke-linecap="round"/>
-                        <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#FF6B00" opacity="0.9"/>
-                        <rect x="14" y="13" width="3" height="3" rx="0.5" fill="#FF6B00" opacity="0.5"/>
-                    </svg>
+                    <img src="/static/icons/calendar.svg" alt="Events">
                 </div>
             </div>
             <div class="metric-value-wrapper">
@@ -53,51 +25,13 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-primary" style="width:0%"></div></div>
         </div>
-<<<<<<< HEAD
-        <nav class="sidebar-menu">
-            <a href="#" class="menu-item active">
-                <i class="fa-solid fa-chart-pie"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#" class="menu-item">
-                <i class="fa-solid fa-calendar-days"></i>
-                <span>My Events</span>
-            </a>
-            <a href="#" class="menu-item">
-                <i class="fa-solid fa-ticket"></i>
-                <span>Bookings</span>
-            </a>
-            <a href="#" class="menu-item">
-                <i class="fa-solid fa-users"></i>
-                <span>Attendees</span>
-            </a>
-            <a href="#" class="menu-item">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="#" class="menu-item">
-                <i class="fa-solid fa-gears"></i>
-                <span>Settings</span>
-            </a>
-        </nav>
-        
-        <div class="sidebar-footer">
-            <a href="/" class="menu-item back-home">
-                <i class="fa-solid fa-arrow-left"></i>
-                <span>Back to Site</span>
-            </a>
-=======
 
         <!-- Tickets Sold -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Tickets Sold</span>
-                <div class="metric-icon-glass metric-icon-glass--green">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
-                        <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.5a1.5 1.5 0 0 0 0 3V15a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1.5a1.5 1.5 0 0 0 0-3V9z" stroke="#10b981" stroke-width="1.8" fill="rgba(16,185,129,0.12)"/>
-                        <path d="M9 7v10" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 3"/>
-                        <path d="M12 10h4M12 14h4" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
+                <div class="metric-icon-glass metric-icon-glass--orange">
+                    <img src="/static/icons/ticket.svg" alt="Tickets">
                 </div>
             </div>
             <div class="metric-value-wrapper">
@@ -105,243 +39,14 @@
                 <span class="metric-change positive" id="ticketsChange">+0%</span>
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-success" style="width:0%"></div></div>
->>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
         </div>
 
-<<<<<<< HEAD
-    <!-- MAIN BODY CONTENT -->
-    <main class="main-content">
-        <!-- TOPBAR NAVBAR -->
-        <header class="topbar">
-            <div class="topbar-welcome">
-                <h1>Organizer Dashboard</h1>
-                <p>Welcome back! Here's how your events are performing today.</p>
-            </div>
-            
-            <div class="topbar-actions">
-                <button class="btn btn-primary" id="openModalBtn">
-                    <i class="fa-solid fa-plus"></i> Create Event
-                </button>
-                <div class="notification-badge">
-                    <i class="fa-regular fa-bell"></i>
-                    <span class="dot"></span>
-                </div>
-                <div class="user-profile">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Organizer Profile">
-                    <div class="profile-meta">
-                        <span class="profile-name">Yvonne Dev</span>
-                        <span class="profile-role">Event Organizer</span>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- DASHBOARD METRIC CARDS -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Total Events</span>
-                    <div class="metric-icon bg-primary-soft">
-                        <i class="fa-solid fa-calendar-days text-primary"></i>
-                    </div>
-                </div>
-                <div class="metric-value-wrapper">
-                    <h2 class="metric-value" id="eventsCount">0</h2>
-                    <span class="metric-change positive">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +12% this month
-                    </span>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar bg-primary" style="width: 75%;"></div>
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Tickets Sold</span>
-                    <div class="metric-icon bg-success-soft">
-                        <i class="fa-solid fa-ticket text-success"></i>
-                    </div>
-                </div>
-                <div class="metric-value-wrapper">
-                    <h2 class="metric-value" id="ticketsCount">0</h2>
-                    <span class="metric-change positive">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +28% this week
-                    </span>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar bg-success" style="width: 85%;"></div>
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Total Revenue</span>
-                    <div class="metric-icon bg-warning-soft">
-                        <i class="fa-solid fa-wallet text-warning"></i>
-                    </div>
-                </div>
-                <div class="metric-value-wrapper">
-                    <h2 class="metric-value" id="revenueCount">KSh 0</h2>
-                    <span class="metric-change positive">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +18% this month
-                    </span>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar bg-warning" style="width: 65%;"></div>
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Total Attendees</span>
-                    <div class="metric-icon bg-info-soft">
-                        <i class="fa-solid fa-users text-info"></i>
-                    </div>
-                </div>
-                <div class="metric-value-wrapper">
-                    <h2 class="metric-value" id="attendeesCount">0</h2>
-                    <span class="metric-change positive">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +14% this month
-                    </span>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar bg-info" style="width: 70%;"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ANALYTICS CHARTS SECTION -->
-        <section class="analytics-section">
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h3>Ticket Sales Trend</h3>
-                    <div class="chart-actions">
-                        <button class="btn btn-sm btn-outline active">Weekly</button>
-                        <button class="btn btn-sm btn-outline">Monthly</button>
-                    </div>
-                </div>
-                <div class="chart-body">
-                    <canvas id="salesTrendChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h3>Revenue by Category</h3>
-                </div>
-                <div class="chart-body donut-chart-body">
-                    <canvas id="categoryDistributionChart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- EVENTS TABLE SECTION -->
-        <section class="table-section">
-            <div class="table-header">
-                <h2>Upcoming Managed Events</h2>
-                <div class="table-actions">
-                    <div class="search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="eventSearch" placeholder="Search events...">
-                    </div>
-                    <select id="statusFilter" class="filter-select">
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="pending">Pending</option>
-                        <option value="draft">Draft</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Event Name</th>
-                            <th>Date & Time</th>
-                            <th>Location</th>
-                            <th>Tickets Sold</th>
-                            <th>Revenue</th>
-                            <th>Status</th>
-                            <th style="text-align: right;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="eventsTableBody">
-                        <!-- Loaded dynamically via JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </main>
-</div>
-
-<!-- CREATE EVENT MODAL OVERLAY -->
-<div id="createEventModal" class="modal-overlay">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h3><i class="fa-solid fa-calendar-plus text-primary"></i> Create New Event</h3>
-            <button class="close-modal-btn" id="closeModalBtn">&times;</button>
-        </div>
-        <form id="createEventForm">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="eventName">Event Name *</label>
-                    <input type="text" id="eventName" placeholder="e.g., Tech Innovations Conference 2026" required>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="eventDate">Date & Time *</label>
-                        <input type="datetime-local" id="eventDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="eventLocation">Location *</label>
-                        <input type="text" id="eventLocation" placeholder="e.g., Nairobi / Virtual" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="ticketCapacity">Ticket Capacity *</label>
-                        <input type="number" id="ticketCapacity" placeholder="e.g., 200" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="ticketPrice">Ticket Price (KSh) *</label>
-                        <input type="number" id="ticketPrice" placeholder="e.g., 1500" min="0" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="eventCategory">Category *</label>
-                        <select id="eventCategory" required>
-                            <option value="Technology">Technology</option>
-                            <option value="Music">Music & Entertainment</option>
-                            <option value="Business">Business & Finance</option>
-                            <option value="Health">Health & Wellness</option>
-                            <option value="Education">Education & Seminars</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="eventStatus">Status</label>
-                        <select id="eventStatus">
-                            <option value="active">Active (Published)</option>
-                            <option value="pending">Pending Review</option>
-                            <option value="draft">Draft</option>
-                            </select>
-                    </div>
-=======
         <!-- Total Revenue -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Revenue</span>
                 <div class="metric-icon-glass metric-icon-glass--orange">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" stroke="#FF6B00" stroke-width="1.8" fill="rgba(255,107,0,0.12)"/>
-                        <path d="M12 7v1.5M12 15.5V17" stroke="#FF6B00" stroke-width="1.8" stroke-linecap="round"/>
-                        <path d="M9.5 10.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2c0 1.2-2.5 1.8-2.5 3s1.1 2 2.5 2" stroke="#FF6B00" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-                    </svg>
+                    <img src="/static/icons/revenue-1k.svg" alt="Revenue">
                 </div>
             </div>
             <div class="metric-value-wrapper">
@@ -355,14 +60,8 @@
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Attendees</span>
-                <div class="metric-icon-glass metric-icon-glass--blue">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
-                        <circle cx="9" cy="7" r="3" stroke="#3b82f6" stroke-width="1.8" fill="rgba(59,130,246,0.12)"/>
-                        <circle cx="17" cy="9" r="2.2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.07)" opacity="0.8"/>
-                        <path d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round"/>
-                        <path d="M17 14c1.7.6 3 2.2 3 4" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
-                    </svg>
->>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
+                <div class="metric-icon-glass metric-icon-glass--orange">
+                    <img src="/static/icons/location.svg" alt="Attendees">
                 </div>
             </div>
             <div class="metric-value-wrapper">
@@ -427,19 +126,6 @@
 </div>
 {% endblock %}
 
-<<<<<<< HEAD
-<!-- TOAST SYSTEM NOTIFICATION -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- API & MODULAR JAVASCRIPT FILES -->
-<script src="{% static 'js/organizer/api.config.js' %}"></script>
-<script src="{% static 'js/organizer/api.service.js' %}"></script>
-<script src="{% static 'js/organizer/api.endpoints.js' %}"></script>
-<script src="{% static 'js/organizer/organizer.dashboard.js' %}"></script>
-
-</body>
-</html>
-=======
 {% block extra_js %}
 <script src="/static/js/organizer/dashboard.js"></script>
 <script>
@@ -457,4 +143,3 @@
     });
 </script>
 {% endblock %}
->>>>>>> 8aa022fd1f108f01dddbdeba8e30e4c6f1534b9b
