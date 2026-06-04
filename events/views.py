@@ -514,6 +514,35 @@ def api_featured_events(request):
     return JsonResponse({'success': True, 'events': results})
 
 
+@require_http_methods(["GET"])
+def api_platform_stats(request):
+    """
+    Public API endpoint — no authentication required.
+    Returns platform-wide headline stats for the Why EventHub / About page.
+    """
+    from django.db.models import Sum as _Sum
+
+    # Total events ever hosted (all non-draft statuses)
+    events_hosted = Event.objects.exclude(status='draft').count()
+
+    # Happy attendees: total ticket quantity sold (non-cancelled)
+    ticket_agg = Ticket.objects.exclude(status='cancelled').aggregate(total=_Sum('quantity'))
+    happy_attendees = ticket_agg['total'] or 0
+
+    # Event organizers: distinct users who have created at least one event
+    event_organizers = Event.objects.values('organizer').distinct().count()
+
+    satisfaction_rate = 98  # fixed business metric
+
+    return JsonResponse({
+        'success': True,
+        'events_hosted': events_hosted,
+        'happy_attendees': happy_attendees,
+        'event_organizers': event_organizers,
+        'satisfaction_rate': satisfaction_rate,
+    })
+
+
 import dateutil.parser
 from bookings.models import Ticket
 from bookings.email_service import send_attendee_review_request_email, send_organizer_performance_summary_email
