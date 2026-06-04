@@ -31,14 +31,16 @@
 
     <!-- Dashboard Center Search Section -->
     <div class="dashboard-search-section">
+        <h2 class="search-title">Just type in your city</h2>
         <form class="dashboard-search-form" action="/events/search/" method="GET" id="dashboardSearchForm">
             <div class="search-input-wrapper">
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" name="q" id="dashboardSearchInput" placeholder="Search for events in your city, e.g. Nairobi..." autocomplete="off">
+                <div class="detected-location-badge" id="detectedLocationBadge">
+                    <i class="fas fa-location-arrow"></i>
+                    <span id="detectedLocationText">Detecting location...</span>
+                </div>
             </div>
-            <button type="submit" class="dashboard-search-btn" id="dashboardSearchBtn">
-                <i class="fas fa-search"></i> Search Events
-            </button>
         </form>
     </div>
 

@@ -52,6 +52,8 @@
         if (closeBtn) {
             closeBtn.addEventListener('click', closeResults);
         }
+        
+        updateDetectedLocationBadge();
     });
 
     // -------------------------------------------------------------------------
@@ -403,6 +405,18 @@
         div.textContent = String(text);
         return div.innerHTML;
     }
+
+    function updateDetectedLocationBadge() {
+        const textSpan = document.getElementById('detectedLocationText');
+        if (!textSpan) return;
+        
+        const city = window.AppLocation ? window.AppLocation.getCity() : 'Nairobi';
+        const country = window.AppLocation ? window.AppLocation.getCountry() : 'Kenya';
+        textSpan.textContent = `${city}, ${country}`;
+    }
+
+    // Listen for GeoIP resolutions to update dynamically
+    window.addEventListener('app-location-resolved', updateDetectedLocationBadge);
 
     // ---- Public API (used by inline onclick handlers) ----
     window.closeDiscoveryResults = closeResults;
