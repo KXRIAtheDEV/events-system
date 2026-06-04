@@ -1281,6 +1281,16 @@ body.dashboard-page .notification-message {
         animation: fadeIn 0.2s ease;
     }
     
+    /* Support hover in mobile view */
+    .nav-item-dropdown:hover .dropdown-submenu {
+        display: block;
+    }
+    
+    .nav-item-dropdown:hover .dropdown-arrow {
+        transform: rotate(180deg);
+        color: #f59e0b;
+    }
+    
     .submenu-item {
         display: flex;
         align-items: center;
