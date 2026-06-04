@@ -19,35 +19,70 @@
                 </button>
             </div>
 
-            <a href="/events/" class="nav-link">
-                <span>Events</span>
-            </a>
-            <a href="/contact/" class="nav-link">
-                <span>Contact Us</span>
-            </a>
-            <a href="/why-eventhub/" class="nav-link">
-                <span>Why EventHub</span>
-            </a>
-            <a href="/customer-stories/" class="nav-link">
-                <span>Customer Stories</span>
-            </a>
-            
-            <div class="mobile-search">
-                <form action="/events/search/" method="GET" id="mobileSearchForm">
-                    <i class="fas fa-search"></i>
-                    <input type="text" name="q" id="mobileSearchInput" placeholder="Search events..." autocomplete="off">
-                    <button type="submit" id="mobileSearchBtn">Search</button>
-                </form>
+            <!-- Events Dropdown -->
+            <div class="nav-item-dropdown">
+                <a href="/events/" class="nav-link dropdown-trigger">
+                    <span>Events</span>
+                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                </a>
+                <div class="dropdown-submenu">
+                    <a href="/cart/" class="submenu-item" id="mobileCartLink">
+                        <span>My Cart</span>
+                        <span class="mobile-cart-badge" id="mobileCartBadge" style="display: none;">0</span>
+                    </a>
+                    <a href="/wishlist/" class="submenu-item" id="mobileWishlistLink">
+                        <span>Wishlist</span>
+                        <span class="mobile-wishlist-badge" id="mobileWishlistBadge" style="display: none;">0</span>
+                    </a>
+                </div>
             </div>
 
-            <div class="mobile-profile-section">
-                <button class="mobile-profile-toggle" id="mobileProfileToggle">
-                    <i class="fas fa-user-circle"></i>
-                    <span id="mobileProfileBtnText">Account</span>
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="mobile-profile-dropdown" id="mobileProfileDropdown"></div>
+            <!-- Dashboard Link (Auth only, Mobile only) -->
+            <a href="/dashboard/" class="nav-link auth-only mobile-only-link" style="display: none;">
+                <span>Dashboard</span>
+            </a>
+
+            <!-- Settings Dropdown (Auth only, Mobile only) -->
+            <div class="nav-item-dropdown auth-only mobile-only-link" style="display: none;">
+                <a href="/settings/" class="nav-link dropdown-trigger">
+                    <span>Settings</span>
+                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                </a>
+                <div class="dropdown-submenu">
+                    <a href="/settings/" class="submenu-item">
+                        <span>Account</span>
+                    </a>
+                </div>
             </div>
+
+            <!-- About Dropdown -->
+            <div class="nav-item-dropdown">
+                <a href="#" class="nav-link dropdown-trigger" onclick="return false;">
+                    <span>About</span>
+                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                </a>
+                <div class="dropdown-submenu">
+                    <a href="/contact/" class="submenu-item">
+                        <span>Contact Us</span>
+                    </a>
+                    <a href="/why-eventhub/" class="submenu-item">
+                        <span>Why EventHub</span>
+                    </a>
+                    <a href="/customer-stories/" class="submenu-item">
+                        <span>Customer Stories</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Logout Link (Auth only, Mobile only) -->
+            <a href="#" onclick="logout(); return false;" class="nav-link auth-only mobile-only-link logout-link" style="display: none;">
+                <span>Logout</span>
+            </a>
+
+            <!-- Login Link (Guest only, Mobile only) -->
+            <a href="/login/" class="nav-link guest-only mobile-only-link" style="display: none;">
+                <span>Login</span>
+            </a>
         </div>
 
         <div class="nav-actions">
@@ -136,56 +171,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const desktopName = document.getElementById('desktopUserName');
     const desktopInitial = document.getElementById('desktopUserInitial');
     const profileUserName = document.getElementById('profileUserName');
-    const mobileProfileBtnText = document.getElementById('mobileProfileBtnText');
-    const mobileProfileDropdown = document.getElementById('mobileProfileDropdown');
+    const navLinks = document.getElementById('navLinks');
     
     const isLoggedIn = accessToken && user && Object.keys(user).length > 0;
     
-    function updateMobileProfileContent() {
-        if (!mobileProfileDropdown) return;
-        
+    function updateMobileNav() {
+        if (!navLinks) return;
         if (isLoggedIn) {
-            const nameVal = user.first_name || user.username || user.name || 'User';
-            const initialVal = nameVal.charAt(0).toUpperCase();
-            const cartCount = getCartCount();
-            const wishlistCount = getWishlistCount();
-            
-            mobileProfileDropdown.innerHTML = `
-                <div class="mobile-user-info">
-                    <div class="mobile-user-avatar">${initialVal}</div>
-                    <div>
-                        <div class="mobile-user-name">${escapeHtml(nameVal)}</div>
-                        <div class="mobile-user-role">Attendee</div>
-                    </div>
-                </div>
-                <div class="mobile-divider"></div>
-                <a href="/dashboard/" class="mobile-dropdown-item">
-                    <span>Dashboard</span>
-                </a>
-                <a href="/cart/" class="mobile-dropdown-item" id="mobileCartLink">
-                    <span>My Cart</span>
-                    <span class="mobile-cart-badge" id="mobileCartBadge">${cartCount}</span>
-                </a>
-                <a href="/wishlist/" class="mobile-dropdown-item" id="mobileWishlistLink">
-                    <span>Wishlist</span>
-                    <span class="mobile-wishlist-badge" id="mobileWishlistBadge">${wishlistCount}</span>
-                </a>
-                <a href="/settings/" class="mobile-dropdown-item">
-                    <span>Settings</span>
-                </a>
-                <div class="mobile-divider"></div>
-                <a href="#" onclick="logout()" class="mobile-dropdown-item logout-link">
-                    <span>Logout</span>
-                </a>
-            `;
-            if (mobileProfileBtnText) mobileProfileBtnText.textContent = nameVal.split(' ')[0];
+            navLinks.classList.add('logged-in');
+            navLinks.classList.remove('logged-out');
         } else {
-            mobileProfileDropdown.innerHTML = `
-                <a href="/login/" class="mobile-dropdown-item">
-                    <span>Login</span>
-                </a>
-            `;
-            if (mobileProfileBtnText) mobileProfileBtnText.textContent = 'Account';
+            navLinks.classList.add('logged-out');
+            navLinks.classList.remove('logged-in');
         }
     }
     
@@ -211,23 +208,44 @@ document.addEventListener('DOMContentLoaded', function() {
         if (profileUserName) profileUserName.textContent = 'Account';
     }
     
-    updateMobileProfileContent();
+    updateMobileNav();
+    
+    // Toggle accordions in mobile view
+    document.querySelectorAll('.nav-links .dropdown-trigger').forEach(trigger => {
+        trigger.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const parent = this.closest('.nav-item-dropdown');
+                const submenu = parent.querySelector('.dropdown-submenu');
+                const arrow = this.querySelector('.dropdown-arrow');
+                
+                const isOpen = submenu.classList.contains('show-mobile');
+                
+                // Close other submenus
+                document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
+                    sub.classList.remove('show-mobile');
+                });
+                document.querySelectorAll('.nav-links .dropdown-arrow').forEach(arr => {
+                    arr.style.transform = '';
+                });
+                
+                if (!isOpen) {
+                    submenu.classList.add('show-mobile');
+                    if (arrow) {
+                        arrow.style.transform = 'rotate(180deg)';
+                    }
+                }
+            }
+        });
+    });
     
     let dropdownOpened = false;
     const profileBtn = document.getElementById('profileBtn');
     const dropdownMenu = document.getElementById('dropdownMenu');
     
-    const mobileProfileToggle = document.getElementById('mobileProfileToggle');
-    if (mobileProfileToggle && mobileProfileDropdown) {
-        mobileProfileToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            mobileProfileDropdown.classList.toggle('show');
-            const chevron = this.querySelector('i:last-child');
-            if (chevron) {
-                chevron.style.transform = mobileProfileDropdown.classList.contains('show') ? 'rotate(180deg)' : '';
-            }
-        });
-    }
+
     
     function getCartCount() {
         try {
@@ -385,9 +403,14 @@ document.addEventListener('DOMContentLoaded', function() {
         navLinks.classList.remove('show');
         mobileOverlay.classList.remove('show');
         document.body.classList.remove('menu-open');
-        if (mobileProfileDropdown) {
-            mobileProfileDropdown.classList.remove('show');
-        }
+        
+        // Reset mobile accordions when menu closes
+        document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
+            sub.classList.remove('show-mobile');
+        });
+        document.querySelectorAll('.nav-links .dropdown-arrow').forEach(arr => {
+            arr.style.transform = '';
+        });
     }
     
     if (mobileToggle) mobileToggle.addEventListener('click', openMobileMenu);
