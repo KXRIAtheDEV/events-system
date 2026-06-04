@@ -40,8 +40,12 @@ function formatDate(dateString) {
 }
 
 function getEventReviews(eventId) {
-    if (!window.MOCK_EVENTS_DATA) return [];
-    return window.MOCK_EVENTS_DATA.getReviews(eventId);
+    try {
+        return JSON.parse(localStorage.getItem(`reviews_${eventId}`) || '[]');
+    } catch (e) {
+        console.error('Error reading reviews from localStorage:', e);
+        return [];
+    }
 }
 
 function getAverageRating(eventId) {
@@ -235,8 +239,12 @@ function submitReview(eventId) {
         created_at: new Date().toISOString()
     };
     
-    if (window.MOCK_EVENTS_DATA) {
-        window.MOCK_EVENTS_DATA.addReview(parseInt(eventId), newReview);
+    try {
+        const localReviews = JSON.parse(localStorage.getItem(`reviews_${eventId}`) || '[]');
+        localReviews.push(newReview);
+        localStorage.setItem(`reviews_${eventId}`, JSON.stringify(localReviews));
+    } catch (e) {
+        console.error('Error writing review to localStorage:', e);
     }
     
     updateReviewsUI(eventId);
@@ -517,7 +525,7 @@ if (mpesaClose) {
     setupReviewModal(event.id);
 }
 
-function loadEventDetails() {
+async function loadEventDetails() {
     const container = document.getElementById('eventDetailContainer');
     if (!container) return;
     
@@ -526,26 +534,48 @@ function loadEventDetails() {
         return;
     }
     
-    if (!window.MOCK_EVENTS_DATA) {
-        container.innerHTML = '<div class="error-state">Data not loaded</div>';
-        return;
+    try {
+        const response = await fetch(`/api/attendee/events/${eventId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.event) {
+            const event = data.event;
+            
+            // Normalize/fallback for fields that are missing in the DB model but expected by renderEventDetails:
+            if (!event.features) {
+                event.features = ['General Admission', 'Standard Entry', 'Access to Venue'];
+            }
+            if (!event.original_price) {
+                event.original_price = event.price * 1.2;
+            }
+            if (!event.parking_available) {
+                event.parking_available = true;
+            }
+            if (!event.wheelchair_accessible) {
+                event.wheelchair_accessible = true;
+            }
+            if (!event.refund_policy) {
+                event.refund_policy = 'No refunds. Contact organizer for transfers.';
+            }
+            if (!event.organizer) {
+                event.organizer = event.organizer_name || 'Organizer';
+            }
+            
+            renderEventDetails(event);
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h2>Event Not Found</h2>
+                    <p>The event you're looking for doesn't exist or has been removed.</p>
+                    <a href="/events/" class="btn-primary">Browse Events</a>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error fetching event details:', error);
+        container.innerHTML = '<div class="error-state">Error loading event details. Please try again.</div>';
     }
-    
-    const event = window.MOCK_EVENTS_DATA.getEventById(eventId);
-    
-    if (!event) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h2>Event Not Found</h2>
-                <p>The event you're looking for doesn't exist or has been removed.</p>
-                <a href="/events/" class="btn-primary">Browse Events</a>
-            </div>
-        `;
-        return;
-    }
-    
-    renderEventDetails(event);
 }
 async function initiateMpesaPayment() {
     const phone = document.getElementById('mpesaPhone').value.trim();
