@@ -1,73 +1,36 @@
 // ============================================
-// ENHANCED PAGE LOADER MODULE
-// Circulating Dots with Sequential Text Animation
+// PAGE LOADER MODULE - Clean version
 // ============================================
 
 (function() {
     'use strict';
     
     let loader = null;
-    let isHidden = false;
     let navigationTimeout = null;
-    let activeRequests = 0;
-    let minDisplayTimer = null;
     let loaderStartTime = null;
     
-    // Configuration
-    const CONFIG = {
+    var CONFIG = {
         minDisplayTime: 500,
         maxDisplayTime: 10000,
         fadeOutDelay: 300,
         navigationDelay: 150
     };
     
-    // Create loader DOM element
     function createLoader() {
         if (document.getElementById('pageLoader')) return;
         
-        const loaderHTML = `
-            <div id="pageLoader" class="page-loader">
-                <div class="loader-overlay"></div>
-                <div class="loader-container">
-                    <div class="circulating-dots">
-                        <div class="dot dot-1"></div>
-                        <div class="dot dot-2"></div>
-                        <div class="dot dot-3"></div>
-                        <div class="dot dot-4"></div>
-                        <div class="dot dot-5"></div>
-                        <div class="dot dot-6"></div>
-                        <div class="dot dot-7"></div>
-                        <div class="dot dot-8"></div>
-                        <div class="loader-center-logo">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                    </div>
-                    <div class="loader-text">
-                        <div class="loading-bold">
-                            <span>LOADING</span>
-                            <div class="dots-container">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        var loaderHTML = '<div id="pageLoader" class="page-loader"><div class="loader-overlay"></div><div class="loader-container"><div class="circulating-dots"><div class="dot dot-1"></div><div class="dot dot-2"></div><div class="dot dot-3"></div><div class="dot dot-4"></div><div class="dot dot-5"></div><div class="dot dot-6"></div><div class="dot dot-7"></div><div class="dot dot-8"></div><div class="loader-center-logo"><i class="fas fa-calendar-alt"></i></div></div><div class="loader-text"><div class="loading-bold"><span>LOADING</span><div class="dots-container"><span></span><span></span><span></span></div></div></div></div></div>';
         document.body.insertAdjacentHTML('afterbegin', loaderHTML);
         loader = document.getElementById('pageLoader');
     }
     
-    // Check if minimum time has passed
     function hasMinimumTimePassed() {
         if (!loaderStartTime) return true;
-        const elapsed = Date.now() - loaderStartTime;
+        var elapsed = Date.now() - loaderStartTime;
         return elapsed >= CONFIG.minDisplayTime;
     }
     
-    // Show loader
-    function showLoader(message = null, delay = false) {
+    function showLoader() {
         if (!loader) {
             loader = document.getElementById('pageLoader');
             if (!loader) {
@@ -76,44 +39,33 @@
             }
         }
         
-        const showLoaderImmediately = () => {
-            if (loader) {
-                loader.style.display = 'flex';
-                loader.classList.remove('fade-out');
-                loader.classList.add('active');
-                isHidden = false;
-                document.body.style.overflow = 'hidden';
-                loaderStartTime = Date.now();
-                
-                if (navigationTimeout) clearTimeout(navigationTimeout);
-                navigationTimeout = setTimeout(() => {
-                    if (loader && loader.style.display !== 'none') {
-                        hideLoader();
-                    }
-                }, CONFIG.maxDisplayTime);
-            }
-        };
-        
-        if (delay) {
-            setTimeout(showLoaderImmediately, CONFIG.navigationDelay);
-        } else {
-            showLoaderImmediately();
+        if (loader) {
+            loader.style.display = 'flex';
+            loader.classList.remove('fade-out');
+            loader.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            loaderStartTime = Date.now();
+            
+            if (navigationTimeout) clearTimeout(navigationTimeout);
+            navigationTimeout = setTimeout(function() {
+                if (loader && loader.style.display !== 'none') {
+                    hideLoader();
+                }
+            }, CONFIG.maxDisplayTime);
         }
     }
     
-    // Hide loader
     function hideLoader() {
         if (!loader) {
             loader = document.getElementById('pageLoader');
         }
         
-        if (loader && !isHidden && loader.classList.contains('active')) {
+        if (loader && loader.classList && loader.classList.contains('active')) {
             if (hasMinimumTimePassed()) {
                 performHide();
             } else {
-                const remainingTime = CONFIG.minDisplayTime - (Date.now() - loaderStartTime);
-                if (minDisplayTimer) clearTimeout(minDisplayTimer);
-                minDisplayTimer = setTimeout(() => {
+                var remainingTime = CONFIG.minDisplayTime - (Date.now() - loaderStartTime);
+                setTimeout(function() {
                     performHide();
                 }, remainingTime);
             }
@@ -121,15 +73,13 @@
     }
     
     function performHide() {
-        if (loader && !isHidden && loader.classList.contains('active')) {
-            isHidden = true;
+        if (loader && loader.classList.contains('active')) {
             loader.classList.add('fade-out');
             document.body.style.overflow = '';
             
             if (navigationTimeout) clearTimeout(navigationTimeout);
-            if (minDisplayTimer) clearTimeout(minDisplayTimer);
             
-            setTimeout(() => {
+            setTimeout(function() {
                 if (loader) {
                     loader.style.display = 'none';
                     loader.classList.remove('fade-out', 'active');
@@ -139,36 +89,6 @@
         }
     }
     
-    // Force hide
-    function forceHideLoader() {
-        if (loader) {
-            loader.style.display = 'none';
-            loader.classList.remove('active', 'fade-out');
-            isHidden = true;
-            document.body.style.overflow = '';
-        }
-        
-        if (navigationTimeout) clearTimeout(navigationTimeout);
-        if (minDisplayTimer) clearTimeout(minDisplayTimer);
-        loaderStartTime = null;
-    }
-    
-    // Track async requests
-    function requestStarted() {
-        activeRequests++;
-        if (activeRequests === 1) {
-            showLoader(null, true);
-        }
-    }
-    
-    function requestFinished() {
-        activeRequests--;
-        if (activeRequests === 0) {
-            hideLoader();
-        }
-    }
-    
-    // Initialize
     function initLoader() {
         createLoader();
         loader = document.getElementById('pageLoader');
@@ -184,91 +104,54 @@
         }, CONFIG.maxDisplayTime);
     }
     
-    // Setup navigation detection
     function setupNavigationDetection() {
-        let navigationTimeoutId = null;
+        var navigationTimeoutId = null;
         
         document.addEventListener('click', function(e) {
-            const link = e.target.closest('a');
+            var link = e.target.closest('a');
             
             if (link && link.href) {
-                const isInternalLink = link.href.indexOf(window.location.origin) === 0;
-                const isAnchorLink = link.getAttribute('href')?.startsWith('#');
-                const isSamePage = link.href === window.location.href;
-                const hasNoLoader = link.hasAttribute('data-no-loader');
-                const isDownload = link.hasAttribute('download');
-                const isMailTo = link.href.startsWith('mailto:');
-                const isTel = link.href.startsWith('tel:');
+                var isInternalLink = link.href.indexOf(window.location.origin) === 0;
+                var isAnchorLink = link.getAttribute('href') && link.getAttribute('href').startsWith('#');
+                var isSamePage = link.href === window.location.href;
+                var hasNoLoader = link.hasAttribute('data-no-loader');
+                var isDownload = link.hasAttribute('download');
+                var isMailTo = link.href.startsWith('mailto:');
+                var isTel = link.href.startsWith('tel:');
                 
                 if (isInternalLink && !isAnchorLink && !isSamePage && !hasNoLoader && 
                     !isDownload && !isMailTo && !isTel) {
                     
                     if (navigationTimeoutId) clearTimeout(navigationTimeoutId);
-                    navigationTimeoutId = setTimeout(() => {
-                        showLoader(null, false);
+                    navigationTimeoutId = setTimeout(function() {
+                        showLoader();
                     }, 100);
                 }
             }
         });
         
         document.addEventListener('submit', function(e) {
-            const form = e.target.closest('form');
+            var form = e.target.closest('form');
             if (form && !form.hasAttribute('data-no-loader')) {
                 if (navigationTimeoutId) clearTimeout(navigationTimeoutId);
-                navigationTimeoutId = setTimeout(() => {
-                    showLoader(null, false);
+                navigationTimeoutId = setTimeout(function() {
+                    showLoader();
                 }, 100);
             }
         });
         
         window.addEventListener('beforeunload', function() {
             if (navigationTimeoutId) clearTimeout(navigationTimeoutId);
-            showLoader(null, false);
+            showLoader();
         });
         
-        // Intercept fetch requests
-        const originalFetch = window.fetch;
-        window.fetch = function(...args) {
-            requestStarted();
-            return originalFetch.apply(this, args)
-                .finally(() => requestFinished());
-        };
-        
-        // Intercept XMLHttpRequest
-        if (window.XMLHttpRequest) {
-            const originalOpen = XMLHttpRequest.prototype.open;
-            const originalSend = XMLHttpRequest.prototype.send;
-            
-            XMLHttpRequest.prototype.open = function() {
-                this._url = arguments[1];
-                return originalOpen.apply(this, arguments);
-            };
-            
-            XMLHttpRequest.prototype.send = function() {
-                requestStarted();
-                this.addEventListener('loadend', () => requestFinished());
-                return originalSend.apply(this, arguments);
-            };
-        }
-        
-        // Intercept jQuery AJAX if available
-        if (typeof jQuery !== 'undefined') {
-            $(document).ajaxStart(function() {
-                requestStarted();
-            });
-            $(document).ajaxComplete(function() {
-                requestFinished();
-            });
-        }
-        
-        // History API
-        const originalPushState = history.pushState;
-        const originalReplaceState = history.replaceState;
+        var originalPushState = history.pushState;
+        var originalReplaceState = history.replaceState;
         
         history.pushState = function() {
-            showLoader(null, true);
+            showLoader();
             originalPushState.apply(this, arguments);
-            setTimeout(() => {
+            setTimeout(function() {
                 if (loader && loader.style.display !== 'none') {
                     setTimeout(hideLoader, 500);
                 }
@@ -276,9 +159,9 @@
         };
         
         history.replaceState = function() {
-            showLoader(null, true);
+            showLoader();
             originalReplaceState.apply(this, arguments);
-            setTimeout(() => {
+            setTimeout(function() {
                 if (loader && loader.style.display !== 'none') {
                     setTimeout(hideLoader, 500);
                 }
@@ -286,8 +169,8 @@
         };
         
         window.addEventListener('popstate', function() {
-            showLoader(null, true);
-            setTimeout(() => {
+            showLoader();
+            setTimeout(function() {
                 if (loader && loader.style.display !== 'none') {
                     setTimeout(hideLoader, 500);
                 }
@@ -295,19 +178,14 @@
         });
     }
     
-    // Expose public API
     window.PageLoader = {
         show: showLoader,
         hide: hideLoader,
-        forceHide: forceHideLoader,
         init: initLoader,
         setMinDisplayTime: function(time) {
             CONFIG.minDisplayTime = time;
         }
     };
-    
-    window.showPageLoader = showLoader;
-    window.hidePageLoader = hideLoader;
     
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
@@ -319,7 +197,3 @@
         setupNavigationDetection();
     }
 })();
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = window.PageLoader;
-}
