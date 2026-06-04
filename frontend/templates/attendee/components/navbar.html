@@ -210,27 +210,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     updateMobileNav();
     
-    // Toggle accordions in mobile view
-    document.querySelectorAll('.nav-links .dropdown-trigger').forEach(trigger => {
+    // Toggle accordions in mobile view when clicking the arrow icon, or text of non-nav links like About
+    document.querySelectorAll('.nav-links .dropdown-arrow, .nav-links a[href="#"], .nav-links a[href="#"] span').forEach(trigger => {
         trigger.addEventListener('click', function(e) {
             if (window.innerWidth <= 768) {
-                const parent = this.closest('.nav-item-dropdown');
-                const submenu = parent.querySelector('.dropdown-submenu');
-                const arrow = this.querySelector('.dropdown-arrow');
-                
-                const isOpen = submenu.classList.contains('show-mobile');
-                
-                // If already open, allow default link click redirection
-                if (isOpen) {
-                    if (this.getAttribute('href') === '#' || this.getAttribute('href').startsWith('javascript')) {
-                        e.preventDefault();
-                    }
-                    return;
-                }
-                
-                // Prevent immediate redirection and toggle open
                 e.preventDefault();
                 e.stopPropagation();
+                
+                const parent = this.closest('.nav-item-dropdown');
+                const submenu = parent.querySelector('.dropdown-submenu');
+                const arrow = parent.querySelector('.dropdown-arrow');
+                
+                const isOpen = submenu.classList.contains('show-mobile');
                 
                 // Close other submenus
                 document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
@@ -240,9 +231,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     arr.style.transform = '';
                 });
                 
-                submenu.classList.add('show-mobile');
-                if (arrow) {
-                    arrow.style.transform = 'rotate(180deg)';
+                if (!isOpen) {
+                    submenu.classList.add('show-mobile');
+                    if (arrow) {
+                        arrow.style.transform = 'rotate(180deg)';
+                    }
                 }
             }
         });

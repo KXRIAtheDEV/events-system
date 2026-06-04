@@ -1313,6 +1313,11 @@ body.dashboard-page .notification-message {
         font-size: 0.8rem;
         transition: transform 0.2s ease;
         color: #cbd5e1;
+        padding: 0.75rem 1.5rem;
+        margin-right: -1.5rem;
+        cursor: pointer;
+        display: inline-block;
+        z-index: 10;
     }
     
     .mobile-cart-badge,
