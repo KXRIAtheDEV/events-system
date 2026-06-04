@@ -1,5 +1,3 @@
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -13,6 +11,12 @@ from .views import user_payload
 @csrf_exempt
 @require_http_methods(['POST'])
 def google_oauth_callback(request):
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+    except ImportError:
+        return json_error('Google Authentication library is not installed on the server.', status=501)
+
     data = parse_json_body(request)
     if data is None:
         return json_error('Invalid JSON body.')
