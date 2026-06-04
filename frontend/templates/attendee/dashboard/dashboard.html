@@ -4,6 +4,8 @@
 
 {% block title %}Dashboard - EventHub{% endblock %}
 
+{% block body_class %}dashboard-page{% endblock %}
+
 {% block extra_css %}
 <!-- Dashboard CSS -->
 <link rel="stylesheet" href="{% static 'css/attendee/dashboard/dashboard.css' %}">
@@ -25,6 +27,17 @@
             <i class="fas fa-calendar-alt"></i>
             <span id="currentDate"></span>
         </div>
+    </div>
+
+    <!-- Dashboard Center Search Section -->
+    <div class="dashboard-search-section">
+        <form class="dashboard-search-form" action="/events/search/" method="GET" id="dashboardSearchForm">
+            <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" name="q" id="dashboardSearchInput" placeholder="Search for music concerts, tech conferences, sports, and more events..." autocomplete="off">
+            </div>
+            <button type="submit" class="dashboard-search-btn">Search Events</button>
+        </form>
     </div>
 
     <!-- Stats Cards -->
