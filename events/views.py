@@ -246,7 +246,10 @@ def api_event_list(request):
     """API endpoint to list and search events for attendees"""
     query = request.GET.get('search', '').strip()
     category_id = request.GET.get('category', '').strip()
-    ordering = request.GET.get('ordering', 'date').strip()
+    city = request.GET.get('city', '').strip()
+    ordering = request.GET.get('ordering', '').strip()
+    if not ordering:
+        ordering = request.GET.get('sort', '').strip()
     
     # Handle search from both list.html and search.html
     if not query:
@@ -264,21 +267,29 @@ def api_event_list(request):
     if category_id:
         events = events.filter(category_id=category_id)
         
+    if city:
+        events = events.filter(Q(address__icontains=city) | Q(venue__icontains=city))
+        
     # Ordering
-    if ordering == 'price':
+    if ordering == 'price_asc' or ordering == 'price':
         events = events.order_by('price')
-    elif ordering == '-price':
+    elif ordering == 'price_desc' or ordering == '-price':
         events = events.order_by('-price')
+    elif ordering == 'date_desc' or ordering == '-date':
+        events = events.order_by('-start_date')
+    elif ordering == 'date_asc' or ordering == 'date':
+        events = events.order_by('start_date')
     elif ordering == 'title':
         events = events.order_by('title')
-    elif ordering == '-date':
-        events = events.order_by('-start_date')
     else:
         events = events.order_by('start_date')
         
     # Simple pagination
     page = int(request.GET.get('page', 1))
     limit = int(request.GET.get('limit', 6))
+    if 'limit' not in request.GET and 'q' in request.GET:
+        limit = 12  # match search.js default limit if searching
+        
     start = (page - 1) * limit
     end = page * limit
     
@@ -311,8 +322,11 @@ def api_event_list(request):
         })
         
     return JsonResponse({
+        'success': True,
         'count': count,
+        'total_count': count,
         'results': results,
+        'events': results,
         'total_pages': (count + limit - 1) // limit
     })
 
