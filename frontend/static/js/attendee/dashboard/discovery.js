@@ -54,6 +54,7 @@
         }
         
         updateDetectedLocationBadge();
+        initDynamicPlaceholder();
     });
 
     // -------------------------------------------------------------------------
@@ -413,6 +414,27 @@
         const city = window.AppLocation ? window.AppLocation.getCity() : 'Nairobi';
         const country = window.AppLocation ? window.AppLocation.getCountry() : 'Kenya';
         textSpan.textContent = `${city}, ${country}`;
+    }
+
+    function initDynamicPlaceholder() {
+        const input = document.getElementById('dashboardSearchInput');
+        if (!input) return;
+        
+        const placeholders = ["Nairobi", "Solfest", "Mombasa", "Karaoke"];
+        let index = 0;
+        
+        const setPlaceholder = (text) => {
+            input.placeholder = `e.g. Search for "${text}"`;
+        };
+
+        // Cycle through placeholders every 3 seconds
+        setInterval(() => {
+            index = (index + 1) % placeholders.length;
+            setPlaceholder(placeholders[index]);
+        }, 3000);
+        
+        // Initial setup
+        setPlaceholder(placeholders[0]);
     }
 
     // Listen for GeoIP resolutions to update dynamically
