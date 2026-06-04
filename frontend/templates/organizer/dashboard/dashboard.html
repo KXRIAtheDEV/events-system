@@ -8,6 +8,10 @@
 {% endblock %}
 
 {% block content %}
+<div class="main-content-header">
+    <h1>Welcome back, <span id="organizerName">{{ user.email|default:"Organizer" }}</span>!</h1>
+    <p>Here's what's happening with your events.</p>
+</div>
 <div>
     <!-- Metric Cards -->
     <div class="metrics-grid">
