@@ -456,44 +456,33 @@ function renderEventDetails(event) {
     
     // Book button
     if (bookBtn) {
-        bookBtn.onclick = () => {
-            const token = localStorage.getItem('attendee_access_token');
-            if (!token) {
-                showToast('Please login to book tickets', 'info');
-                setTimeout(() => window.location.href = '/login/', 1500);
-                return;
-            }
-            
-            if (event.available_tickets <= 0) {
-                showToast('Sorry, this event is sold out!', 'error');
-                return;
-            }
-            
-            let cart = JSON.parse(localStorage.getItem('eventhub_booking_cart') || '{"items":[],"total":0}');
-            
-            const existing = cart.items.find(i => i.id === event.id);
-            if (existing) {
-                showToast(`${event.title} is already in your booking cart!`, 'info');
-                return;
-            }
-            
-            cart.items.push({ 
-                id: event.id, 
-                title: event.title, 
-                price: event.price, 
-                quantity: quantity, 
-                image: event.image,
-                date: event.date,
-                location: event.location,
-                category: event.category_name
-            });
-            
-            cart.total = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-            localStorage.setItem('eventhub_booking_cart', JSON.stringify(cart));
-            showToast(`${quantity} ticket(s) for ${event.title} added to booking cart!`, 'success');
-            window.dispatchEvent(new Event('cart-updated'));
-        };
-    }
+    bookBtn.onclick = () => {
+        const token = localStorage.getItem('attendee_access_token');
+        if (!token) {
+            showToast('Please login to book tickets', 'info');
+            setTimeout(() => window.location.href = '/login/', 1500);
+            return;
+        }
+        if (event.available_tickets <= 0) {
+            showToast('Sorry, this event is sold out!', 'error');
+            return;
+        }
+        const total = quantity * (event.price || 0);
+        document.getElementById('mpesaAmount').textContent = `KES ${total.toLocaleString()}`;
+        document.getElementById('mpesaEventId').value = event.id;
+        document.getElementById('mpesaQuantity').value = quantity;
+        document.getElementById('mpesaTotal').value = total;
+        document.getElementById('mpesaModal').style.display = 'flex';
+    };
+}
+
+const mpesaClose = document.getElementById('mpesaClose');
+if (mpesaClose) {
+    mpesaClose.addEventListener('click', () => {
+        document.getElementById('mpesaModal').style.display = 'none';
+        resetMpesaModal();
+    });
+}
     
     // Wishlist button
     if (wishlistBtn) {
@@ -558,5 +547,101 @@ function loadEventDetails() {
     
     renderEventDetails(event);
 }
+async function initiateMpesaPayment() {
+    const phone = document.getElementById('mpesaPhone').value.trim();
+    const eventId = document.getElementById('mpesaEventId').value;
+    const quantity = document.getElementById('mpesaQuantity').value;
+    const amount = document.getElementById('mpesaTotal').value;
+    const token = localStorage.getItem('attendee_access_token');
 
+    if (!phone) {
+        showToast('Please enter your M-Pesa phone number', 'error');
+        return;
+    }
+
+    const payBtn = document.getElementById('mpesaPayBtn');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Sending prompt...';
+
+    try {
+        const response = await fetch('/payments/pay/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ event_id: eventId, quantity, phone_number: phone, amount })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById('mpesaForm').style.display = 'none';
+            document.getElementById('mpesaWaiting').style.display = 'block';
+            pollPaymentStatus(data.checkout_request_id);
+        } else {
+            showToast(data.message || 'Payment failed. Try again.', 'error');
+            payBtn.disabled = false;
+            payBtn.textContent = 'Pay Now';
+        }
+    } catch (error) {
+        showToast('Payment failed. Please try again.', 'error');
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay Now';
+    }
+}
+
+function pollPaymentStatus(checkoutId) {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const interval = setInterval(async () => {
+        attempts++;
+        try {
+            const response = await fetch(`/payments/status/${checkoutId}/`);
+            const data = await response.json();
+
+            if (data.status === 'completed') {
+                clearInterval(interval);
+                document.getElementById('mpesaModal').style.display = 'none';
+                showToast('Payment successful! Your ticket is confirmed.', 'success');
+                setTimeout(() => window.location.href = '/tickets/', 2000);
+            } else if (data.status === 'failed' || data.status === 'cancelled') {
+                clearInterval(interval);
+                resetMpesaModal();
+                showToast('Payment was not completed. Please try again.', 'error');
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                resetMpesaModal();
+                showToast('Payment timed out. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 3000);
+}
+
+function resetMpesaModal() {
+    document.getElementById('mpesaForm').style.display = 'block';
+    document.getElementById('mpesaWaiting').style.display = 'none';
+    const payBtn = document.getElementById('mpesaPayBtn');
+    if (payBtn) {
+        payBtn.disabled = false;
+        payBtn.textContent = 'Pay Now';
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(cookie => {
+            const c = cookie.trim();
+            if (c.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(c.slice(name.length + 1));
+            }
+        });
+    }
+    return cookieValue;
+}
 document.addEventListener('DOMContentLoaded', loadEventDetails);
