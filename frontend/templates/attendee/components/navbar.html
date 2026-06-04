@@ -3,7 +3,7 @@
     <div class="navbar-container">
         <a href="/" class="logo">
             <div class="logo-icon">
-                <img src="{% static 'icons/style1_calendar.svg' %}" style="width: 24px; height: 24px;" alt="Logo">
+                <img src="{% static 'icons/calendar.svg' %}" style="width: 24px; height: 24px;" alt="Logo">
             </div>
             <div class="logo-text">
                 <span>EventHub</span>
@@ -23,19 +23,19 @@
             </div>
 
             <a href="/events/" class="nav-link">
-                <img src="{% static 'icons/style1_calendar.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Events">
+                <img src="{% static 'icons/calendar.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Events">
                 <span>Events</span>
             </a>
             <a href="/contact/" class="nav-link">
-                <img src="{% static 'icons/style1_mail.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Contact">
+                <img src="{% static 'icons/email_envelope.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Contact">
                 <span>Contact Us</span>
             </a>
             <a href="/why-eventhub/" class="nav-link">
-                <img src="{% static 'icons/style1_support.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Help">
+                <img src="{% static 'icons/headset.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Help">
                 <span>Why EventHub</span>
             </a>
             <a href="/customer-stories/" class="nav-link">
-                <img src="{% static 'icons/style1_reviews.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Stories">
+                <img src="{% static 'icons/review.svg' %}" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;" alt="Stories">
                 <span>Customer Stories</span>
             </a>
             
@@ -92,7 +92,6 @@
                 <div class="dropdown-menu" id="dropdownMenu">
                     <div id="desktopGuestLinks">
                         <a href="/login/" class="dropdown-item">
-                            <img src="{% static 'icons/style1_login.svg' %}" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Login">
                             <span>Login</span>
                         </a>
                     </div>
@@ -109,26 +108,21 @@
                         </div>
                         <div class="dropdown-divider"></div>
                         <a href="/dashboard/" class="dropdown-item">
-                            <img src="{% static 'icons/style1_home.svg' %}" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Dashboard">
                             <span>Dashboard</span>
                         </a>
                         <a href="/cart/" class="dropdown-item" id="dropdownCartLink">
-                            <img src="{% static 'icons/style1_bookings.svg' %}" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Cart">
                             <span>My Bookings</span>
                             <span class="cart-badge-dropdown" id="dropdownCartBadge">0</span>
                         </a>
                         <a href="/wishlist/" class="dropdown-item" id="dropdownWishlistLink">
-                            <img src="{% static 'icons/style1_reviews.svg' %}" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Wishlist">
                             <span>Wishlist</span>
                             <span class="wishlist-badge-dropdown" id="dropdownWishlistBadge">0</span>
                         </a>
                         <a href="/settings/" class="dropdown-item">
-                            <img src="{% static 'icons/style1_settings.svg' %}" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Settings">
                             <span>Settings</span>
                         </a>
                         <div class="dropdown-divider"></div>
                         <a href="#" onclick="logout()" class="dropdown-item logout-link">
-                            <img src="{% static 'icons/style1_logout.svg' %}" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Logout">
                             <span>Logout</span>
                         </a>
                     </div>
@@ -173,26 +167,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="mobile-divider"></div>
                 <a href="/dashboard/" class="mobile-dropdown-item">
-                    <img src="/static/icons/style1_home.svg" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Dashboard">
                     <span>Dashboard</span>
                 </a>
                 <a href="/cart/" class="mobile-dropdown-item" id="mobileCartLink">
-                    <img src="/static/icons/style1_bookings.svg" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Cart">
                     <span>My Cart</span>
                     <span class="mobile-cart-badge" id="mobileCartBadge">${cartCount}</span>
                 </a>
                 <a href="/wishlist/" class="mobile-dropdown-item" id="mobileWishlistLink">
-                    <img src="/static/icons/style1_reviews.svg" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Wishlist">
                     <span>Wishlist</span>
                     <span class="mobile-wishlist-badge" id="mobileWishlistBadge">${wishlistCount}</span>
                 </a>
                 <a href="/settings/" class="mobile-dropdown-item">
-                    <img src="/static/icons/style1_settings.svg" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Settings">
                     <span>Settings</span>
                 </a>
                 <div class="mobile-divider"></div>
                 <a href="#" onclick="logout()" class="mobile-dropdown-item logout-link">
-                    <img src="/static/icons/style1_logout.svg" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Logout">
                     <span>Logout</span>
                 </a>
             `;
@@ -200,7 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             mobileProfileDropdown.innerHTML = `
                 <a href="/login/" class="mobile-dropdown-item">
-                    <img src="/static/icons/style1_login.svg" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;" alt="Login">
                     <span>Login</span>
                 </a>
             `;
