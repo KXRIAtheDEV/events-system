@@ -34,11 +34,16 @@
         <form class="dashboard-search-form" action="/events/search/" method="GET" id="dashboardSearchForm">
             <div class="search-input-wrapper">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" name="q" id="dashboardSearchInput" placeholder="Search for music concerts, tech conferences, sports, and more events..." autocomplete="off">
+                <input type="text" name="q" id="dashboardSearchInput" placeholder="Search for events in your city, e.g. Nairobi..." autocomplete="off">
             </div>
-            <button type="submit" class="dashboard-search-btn">Search Events</button>
+            <button type="submit" class="dashboard-search-btn" id="dashboardSearchBtn">
+                <i class="fas fa-search"></i> Search Events
+            </button>
         </form>
     </div>
+
+    <!-- Discovery Results — populated dynamically by discovery.js -->
+    <div id="discoveryResultsSection" style="display:none;"></div>
 
     <!-- Stats Cards -->
     <div class="stats-grid" id="statsContainer">
@@ -193,4 +198,6 @@
 
 {% block extra_js %}
 <script src="{% static 'js/attendee/dashboard/dashboard.js' %}"></script>
+<script src="{% static 'js/attendee/dashboard/discovery.js' %}"></script>
 {% endblock %}
+

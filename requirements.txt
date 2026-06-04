@@ -7,3 +7,6 @@ dj-database-url==1.0.0
 psycopg2-binary==2.9.12
 django-extensions
 python-dateutil
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0

@@ -18,7 +18,8 @@ from django.contrib import messages
 from events.views import (
     organizer_dashboard_stats, organizer_dashboard_revenue, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_featured_events, api_events_check_expired, homepage_view
+    api_featured_events, api_events_check_expired, homepage_view,
+    api_discover_local_events,
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
@@ -222,6 +223,7 @@ urlpatterns = [
     path('api/events/categories/', get_categories_list, name='api_categories'),
     path('newsletter/subscribe/', newsletter_subscribe, name='newsletter_subscribe'),
     path('api/events/check-expired/', api_events_check_expired, name='api_events_check_expired'),
+    path('api/events/discover/', api_discover_local_events, name='api_events_discover'),
     # ============ ADMIN PORTAL API ENDPOINTS ============
     # Dashboard
     path('api/admin/dashboard/stats/', admin_api.dashboard_stats, name='admin_dashboard_stats'),
