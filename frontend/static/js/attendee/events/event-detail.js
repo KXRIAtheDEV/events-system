@@ -149,11 +149,9 @@ function setupRatingStars() {
             if (ratingInput) ratingInput.value = rating;
             stars.forEach((s, i) => {
                 if (i < rating) {
-                    s.classList.remove('far');
-                    s.classList.add('fas');
+                    s.style.color = '#f59e0b';
                 } else {
-                    s.classList.remove('fas');
-                    s.classList.add('far');
+                    s.style.color = '#cbd5e1';
                 }
             });
         };
@@ -162,42 +160,35 @@ function setupRatingStars() {
             const rating = parseInt(this.dataset.rating);
             stars.forEach((s, i) => {
                 if (i < rating) {
-                    s.classList.remove('far');
-                    s.classList.add('fas');
+                    s.style.color = '#f59e0b';
                 } else {
-                    s.classList.remove('fas');
-                    s.classList.add('far');
-                }
-            });
-        };
-        
-        star.onmouseleave = function() {
-            const currentRating = parseInt(ratingInput?.value || 5);
-            stars.forEach((s, i) => {
-                if (i < currentRating) {
-                    s.classList.remove('far');
-                    s.classList.add('fas');
-                } else {
-                    s.classList.remove('fas');
-                    s.classList.add('far');
+                    s.style.color = '#cbd5e1';
                 }
             });
         };
     });
+
+    const container = document.querySelector('.rating-select');
+    if (container) {
+        container.onmouseleave = function() {
+            const currentRating = parseInt(ratingInput?.value || 5);
+            stars.forEach((s, i) => {
+                if (i < currentRating) {
+                    s.style.color = '#f59e0b';
+                } else {
+                    s.style.color = '#cbd5e1';
+                }
+            });
+        };
+    }
 }
 
 function resetRatingStars() {
     const stars = document.querySelectorAll('.rating-select i');
     const ratingInput = document.getElementById('reviewRating');
     if (ratingInput) ratingInput.value = 5;
-    stars.forEach((s, i) => {
-        if (i < 5) {
-            s.classList.remove('far');
-            s.classList.add('fas');
-        } else {
-            s.classList.remove('fas');
-            s.classList.add('far');
-        }
+    stars.forEach((s) => {
+        s.style.color = '#f59e0b';
     });
 }
 
