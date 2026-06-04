@@ -1073,6 +1073,7 @@ def tickets_list_api(request):
             'event_title': t.event.title,
             'booking_id': t.ticket_number,
             'status': t.status,
+            'purchase_date': t.purchase_date.isoformat(),
             'checked_in_at': t.checked_in_at.isoformat() if t.checked_in_at else None
         } for t in tickets_slice]
         
