@@ -195,7 +195,7 @@ def scrape_ticketsasa(county: str) -> list[dict]:
         url = f"{base}/events?q={county}"
         resp = requests.get(url, headers=SCRAPER_HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         # Ticketsasa uses various card structures depending on the version
         cards = (
@@ -250,7 +250,7 @@ def scrape_allevents(county: str) -> list[dict]:
         url = f"{base}/{city_slug}/all"
         resp = requests.get(url, headers=SCRAPER_HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         cards = (
             soup.select(".event-item")
@@ -310,7 +310,7 @@ def scrape_eventbrite(county: str) -> list[dict]:
         url = f"{base}/d/kenya--{city_slug}/events/"
         resp = requests.get(url, headers=SCRAPER_HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         # Eventbrite renders multiple card shapes depending on A/B tests
         cards = (
@@ -380,7 +380,7 @@ def scrape_duckduckgo_events(county: str) -> list[dict]:
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "lxml")
+        soup = BeautifulSoup(resp.text, "html.parser")
 
         for el in soup.select(".result__body, .result")[:8]:
             title_el = el.select_one(".result__a")
