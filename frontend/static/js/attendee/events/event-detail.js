@@ -427,9 +427,12 @@ function renderEventDetails(event) {
     const bookBtn = document.getElementById('bookNowBtn');
     const wishlistBtn = document.getElementById('wishlistBtn');
     
+    const price = parseFloat(event.price) || 0;
+    const availableTickets = parseInt(event.available_tickets) || parseInt(event.available_seats) || 100;
+    
     function updateTotal() {
-        const total = quantity * event.price;
-        totalSpan.textContent = `KES ${total.toLocaleString()}`;
+        const total = quantity * price;
+        totalSpan.textContent = `KES ${total.toLocaleString('en-KE')}`;
     }
     
     if (decreaseBtn) {
@@ -444,7 +447,7 @@ function renderEventDetails(event) {
     
     if (increaseBtn) {
         increaseBtn.onclick = () => {
-            if (quantity < event.available_tickets) {
+            if (quantity < availableTickets) {
                 quantity++;
                 qtyInput.value = quantity;
                 updateTotal();
@@ -456,7 +459,7 @@ function renderEventDetails(event) {
         qtyInput.onchange = () => {
             quantity = parseInt(qtyInput.value) || 1;
             if (quantity < 1) quantity = 1;
-            if (quantity > event.available_tickets) quantity = event.available_tickets;
+            if (quantity > availableTickets) quantity = availableTickets;
             qtyInput.value = quantity;
             updateTotal();
         };

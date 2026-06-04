@@ -245,3 +245,4 @@ REST_FRAMEWORK = {
 
 # Google OAuth Config
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '229812600705-ih8rqfhe2jrv0lhb3vc4b7gt858p42fd.apps.googleusercontent.com')
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
