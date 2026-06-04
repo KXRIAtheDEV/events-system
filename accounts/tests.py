@@ -115,6 +115,63 @@ class AccountAPITests(TestCase):
         )
         self.assertEqual(status_after_logout.status_code, 401)
 
+    def test_google_oauth_success_new_user(self):
+        from unittest.mock import patch
+        with patch('google.oauth2.id_token.verify_oauth2_token') as mock_verify:
+            mock_verify.return_value = {
+                'email': 'newgoogleuser@example.com',
+                'sub': 'google_123456789',
+                'given_name': 'New',
+                'family_name': 'GoogleUser'
+            }
+            
+            response = self.post_json('/api/auth/google/', {
+                'credential': 'fake_credential_token',
+                'role': 'attendee'
+            })
+            
+            self.assertEqual(response.status_code, 200) # Since it resolves/returns tokens directly
+            data = response.json()
+            self.assertEqual(data['user']['email'], 'newgoogleuser@example.com')
+            self.assertEqual(data['user']['role'], 'attendee')
+            self.assertIn('access', data)
+            
+            # Check db association
+            User = get_user_model()
+            user = User.objects.get(email='newgoogleuser@example.com')
+            self.assertEqual(user.google_id, 'google_123456789')
+
+    def test_google_oauth_success_existing_user_by_email(self):
+        User = get_user_model()
+        existing_user = User.objects.create_user(
+            username='existinguser',
+            email='existing@example.com',
+            password='Password123!',
+            role='attendee'
+        )
+        
+        from unittest.mock import patch
+        with patch('google.oauth2.id_token.verify_oauth2_token') as mock_verify:
+            mock_verify.return_value = {
+                'email': 'existing@example.com',
+                'sub': 'google_987654321',
+                'given_name': 'Existing',
+                'family_name': 'User'
+            }
+            
+            response = self.post_json('/api/auth/google/', {
+                'credential': 'fake_credential_token',
+                'role': 'attendee'
+            })
+            
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+            self.assertEqual(data['user']['id'], existing_user.id)
+            
+            # Verify google_id association
+            existing_user.refresh_from_db()
+            self.assertEqual(existing_user.google_id, 'google_987654321')
+
 
 from events.models import Event, Category
 from bookings.models import Ticket

@@ -12,6 +12,7 @@ class User(AbstractUser):
     phone = models.CharField(max_length=15, blank=True)
     organization_name = models.CharField(max_length=150, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
+    google_id = models.CharField(max_length=128, blank=True, default='')
     location = models.CharField(max_length=100, blank=True)
     
     # Organizer settings fields

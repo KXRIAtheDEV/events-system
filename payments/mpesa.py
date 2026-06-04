@@ -1,7 +1,73 @@
-import requests
 import base64
+import json
+import logging
+import urllib.request
+import urllib.parse
 from datetime import datetime
-from decouple import config
+import os
+
+logger = logging.getLogger(__name__)
+
+
+# Fallback helper to mimic decouple.config()
+def config(key, default=None):
+    val = os.environ.get(key)
+    if val is None:
+        if default is not None:
+            return default
+        logger.warning(f"Environment variable '{key}' is not set.")
+        return ""
+    return val
+
+
+# standard-library urllib request compatibility wrappers
+class UrllibResponse:
+    def __init__(self, content, status_code):
+        self.content = content
+        self.text = content.decode('utf-8', errors='ignore') if isinstance(content, bytes) else content
+        self.status_code = status_code
+
+    def json(self):
+        try:
+            return json.loads(self.text)
+        except Exception:
+            return {}
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise Exception(f"HTTP Error {self.status_code}: {self.text}")
+
+
+def urllib_request(method, url, data=None, headers=None, auth=None, timeout=10):
+    req_headers = {}
+    if headers:
+        for k, v in headers.items():
+            req_headers[k] = v
+
+    if auth:
+        auth_str = f"{auth[0]}:{auth[1]}"
+        auth_encoded = base64.b64encode(auth_str.encode()).decode()
+        req_headers["Authorization"] = f"Basic {auth_encoded}"
+
+    req_data = None
+    if data:
+        if isinstance(data, (dict, list)):
+            req_data = json.dumps(data).encode('utf-8')
+            if 'Content-Type' not in req_headers:
+                req_headers['Content-Type'] = 'application/json'
+        elif isinstance(data, str):
+            req_data = data.encode('utf-8')
+        else:
+            req_data = data
+
+    req = urllib.request.Request(url, data=req_data, headers=req_headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return UrllibResponse(response.read(), response.status)
+    except urllib.error.HTTPError as e:
+        return UrllibResponse(e.read(), e.code)
+    except Exception as e:
+        return UrllibResponse(str(e).encode('utf-8'), 500)
 
 
 class MpesaClient:
@@ -20,7 +86,7 @@ class MpesaClient:
 
     def get_access_token(self):
         url = f"{self.base_url}/oauth/v1/generate?grant_type=client_credentials"
-        response = requests.get(url, auth=(self.consumer_key, self.consumer_secret))
+        response = urllib_request("GET", url, auth=(self.consumer_key, self.consumer_secret))
         response.raise_for_status()
         return response.json()["access_token"]
 
@@ -59,5 +125,5 @@ class MpesaClient:
         }
 
         url = f"{self.base_url}/mpesa/stkpush/v1/processrequest"
-        response = requests.post(url, json=payload, headers=headers)
+        response = urllib_request("POST", url, data=payload, headers=headers)
         return response.json()

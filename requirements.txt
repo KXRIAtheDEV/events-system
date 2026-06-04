@@ -5,3 +5,4 @@ django-extensions
 python-dateutil
 requests==2.31.0
 beautifulsoup4==4.12.3
+google-auth==2.29.0
