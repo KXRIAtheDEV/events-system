@@ -333,6 +333,8 @@ urlpatterns = [
     path('api/admin/settings/', admin_api.settings_api, name='admin_settings_api'),
     path('api/admin/broadcast/', admin_api.api_admin_broadcast, name='admin_settings_broadcast'),
 
+    # Payments - M-Pesa
+    path('payments/', include('payments.urls')),
     
     # Portal URLs
     path('', include('config.attendee_urls')),
