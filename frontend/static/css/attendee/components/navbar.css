@@ -448,6 +448,7 @@
     background: #1e293b;
     border-radius: 16px;
     border: 1px solid rgba(245, 158, 11, 0.2);
+    padding: 12px;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
@@ -479,7 +480,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.7rem 1.2rem;
+    padding: 12px 18px;
+    border-radius: 8px;
     color: #cbd5e1;
     text-decoration: none;
     font-size: 0.85rem;
@@ -504,7 +506,7 @@
 .dropdown-divider {
     height: 1px;
     background: rgba(255, 255, 255, 0.08);
-    margin: 0.3rem 0;
+    margin: 10px 0;
 }
 
 /* Badges in Dropdown */
@@ -526,9 +528,10 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem;
+    padding: 16px 24px;
     background: rgba(245, 158, 11, 0.08);
-    border-bottom: 1px solid rgba(245, 158, 11, 0.1);
+    border-radius: 12px;
+    margin-bottom: 8px;
 }
 
 .user-avatar-dropdown {
@@ -683,7 +686,7 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     margin-top: 0.5rem;
-    overflow: hidden;
+    padding: 12px;
     animation: fadeIn 0.2s ease;
 }
 
@@ -695,7 +698,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.7rem 1rem;
+    padding: 12px 18px;
+    border-radius: 8px;
     color: #cbd5e1;
     text-decoration: none;
     font-size: 0.85rem;
@@ -735,10 +739,10 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.8rem;
+    padding: 16px 24px;
     background: rgba(245, 158, 11, 0.08);
     border-radius: 12px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
 }
 
 .mobile-user-avatar {
@@ -768,7 +772,7 @@
 .mobile-divider {
     height: 1px;
     background: rgba(255, 255, 255, 0.08);
-    margin: 0.5rem 0;
+    margin: 10px 0;
 }
 
 /* Custom Toast */
@@ -1028,3 +1032,126 @@ button, button:hover, button:focus {
     text-decoration: none !important;
     outline: none;
 }
+
+/* Hide navbar search forms on dashboard page */
+body.dashboard-page .search-form-desktop,
+body.dashboard-page .mobile-search {
+    display: none !important;
+}
+
+/* Dashboard Page Navbar Overrides */
+body.dashboard-page .attendee-navbar {
+    background: white !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.dashboard-page .logo-text span {
+    color: #0f172a !important;
+}
+
+@media (min-width: 769px) {
+    body.dashboard-page .nav-links {
+        justify-content: flex-start !important;
+        padding-left: 2rem !important;
+    }
+}
+
+body.dashboard-page .nav-link {
+    color: #475569 !important;
+}
+
+body.dashboard-page .nav-link:hover {
+    background: rgba(245, 158, 11, 0.08) !important;
+    color: #f59e0b !important;
+}
+
+body.dashboard-page .nav-link i {
+    color: #475569 !important;
+}
+
+body.dashboard-page .nav-link:hover i {
+    color: #f59e0b !important;
+}
+
+body.dashboard-page .notifications-btn,
+body.dashboard-page .profile-btn,
+body.dashboard-page .mobile-toggle {
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+}
+
+body.dashboard-page .notifications-btn:hover,
+body.dashboard-page .profile-btn:hover,
+body.dashboard-page .mobile-toggle:hover {
+    background: rgba(245, 158, 11, 0.08) !important;
+    border-color: rgba(245, 158, 11, 0.2) !important;
+    color: #f59e0b !important;
+}
+
+/* Light theme dropdowns on dashboard page */
+body.dashboard-page .dropdown-menu,
+body.dashboard-page .notifications-panel {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.dashboard-page .dropdown-menu::before,
+body.dashboard-page .notifications-panel::before {
+    background: white !important;
+    border-left: 1px solid #e2e8f0 !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+body.dashboard-page .dropdown-item {
+    color: #475569 !important;
+}
+
+body.dashboard-page .dropdown-item:hover {
+    background: #f8fafc !important;
+    color: #f59e0b !important;
+}
+
+body.dashboard-page .dropdown-divider {
+    background: #e2e8f0 !important;
+}
+
+body.dashboard-page .user-info-dropdown {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.dashboard-page .user-name-dropdown {
+    color: #0f172a !important;
+}
+
+body.dashboard-page .notifications-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.dashboard-page .notifications-header h4 {
+    color: #0f172a !important;
+}
+
+body.dashboard-page .notification-item {
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+body.dashboard-page .notification-item:hover {
+    background: #f8fafc !important;
+}
+
+body.dashboard-page .notification-item.unread {
+    background: rgba(245, 158, 11, 0.04) !important;
+}
+
+body.dashboard-page .notification-title {
+    color: #0f172a !important;
+}
+
+body.dashboard-page .notification-message {
+    color: #475569 !important;
+}
+

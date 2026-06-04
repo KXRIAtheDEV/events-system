@@ -71,33 +71,6 @@ urlpatterns = [
          TemplateView.as_view(template_name='organizer/dashboard/reviews.html'),
          name='organizer_reviews'),
 
-    # Notifications
-    path('notifications/',
-         TemplateView.as_view(template_name='organizer/dashboard/notifications.html'),
-         name='organizer_notifications'),
-    path('notifications/send/',
-         TemplateView.as_view(template_name='organizer/dashboard/notifications.html'),
-         name='organizer_notifications_send'),
-
-    # Reports
-    path('reports/',
-         TemplateView.as_view(template_name='organizer/dashboard/reports.html'),
-         name='organizer_reports'),
-    path('reports/sales/',
-         TemplateView.as_view(template_name='organizer/dashboard/reports.html'),
-         name='organizer_reports_sales'),
-    path('reports/events/',
-         TemplateView.as_view(template_name='organizer/dashboard/reports.html'),
-         name='organizer_reports_events'),
-
-    # Check-in
-    path('checkin/',
-         TemplateView.as_view(template_name='organizer/dashboard/checkin.html'),
-         name='organizer_checkin'),
-    path('checkin/devices/',
-         TemplateView.as_view(template_name='organizer/dashboard/checkin.html'),
-         name='organizer_checkin_devices'),
-
     # Settings
     path('settings/',
          TemplateView.as_view(template_name='organizer/dashboard/settings.html'),

@@ -8,6 +8,10 @@
 {% endblock %}
 
 {% block content %}
+<div class="main-content-header">
+    <h1>Welcome back, <span id="organizerName">{{ user.email|default:"Organizer" }}</span>!</h1>
+    <p>Here's what's happening with your events.</p>
+</div>
 <div>
     <!-- Metric Cards -->
     <div class="metrics-grid">
@@ -15,9 +19,6 @@
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Events</span>
-                <div class="metric-icon-glass metric-icon-glass--orange">
-                    <img src="/static/icons/calendar.svg" alt="Events">
-                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalEvents">--</span>
@@ -30,9 +31,6 @@
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Tickets Sold</span>
-                <div class="metric-icon-glass metric-icon-glass--orange">
-                    <img src="/static/icons/ticket.svg" alt="Tickets">
-                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalTicketsSold">--</span>
@@ -45,9 +43,6 @@
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Revenue</span>
-                <div class="metric-icon-glass metric-icon-glass--orange">
-                    <img src="/static/icons/money_note.svg" alt="Revenue">
-                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalRevenue">Kes --</span>
@@ -60,9 +55,6 @@
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Attendees</span>
-                <div class="metric-icon-glass metric-icon-glass--orange">
-                    <img src="/static/icons/people_group.svg" alt="Attendees">
-                </div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalAttendees">--</span>
@@ -117,8 +109,6 @@
             <div class="chart-header"><h3>Quick Actions</h3></div>
             <div class="row g-2">
                 <div class="col-6"><button class="btn btn-primary w-100" onclick="location.href='/organizer/events/create/'"><i class="fas fa-plus me-2"></i>Create Event</button></div>
-                <div class="col-6"><button class="btn btn-outline w-100" onclick="location.href='/organizer/checkin/'"><i class="fas fa-qrcode me-2"></i>Check‑in</button></div>
-                <div class="col-6"><button class="btn btn-outline w-100" onclick="location.href='/organizer/reports/'"><i class="fas fa-chart-line me-2"></i>Reports</button></div>
                 <div class="col-6"><button class="btn btn-outline w-100" onclick="location.href='/organizer/promotions/'"><i class="fas fa-tags me-2"></i>Promotions</button></div>
             </div>
         </div>

@@ -85,7 +85,6 @@ TEMPLATES = [
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'attendees'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'payouts'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'promotions'),
-            os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'reports'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'profile'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'settings'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'support'),

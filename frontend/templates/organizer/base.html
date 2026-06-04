@@ -14,92 +14,35 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+<nav class="top-navbar">
+    <div class="navbar-brand">
+        <h2>EventHub</h2>
+    </div>
+    <button class="navbar-toggle" id="navbarToggleBtn" aria-expanded="false" aria-label="Toggle Navigation">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="navbar-menu" id="navbarMenu">
+        <a href="/organizer/dashboard/" class="menu-item">Dashboard</a>
+        <a href="/organizer/events/" class="menu-item">Events</a>
+        <a href="/organizer/analytics/" class="menu-item">Analytics</a>
+        <a href="/organizer/attendees/" class="menu-item">Attendees</a>
+        <a href="/organizer/bookings/" class="menu-item">Bookings</a>
+        <a href="/organizer/payouts/" class="menu-item">Payouts</a>
+        <a href="/organizer/promotions/" class="menu-item">Promotions</a>
+        <a href="/organizer/reviews/" class="menu-item">Reviews</a>
+        <a href="/organizer/settings/" class="menu-item">Settings</a>
+        <a href="/organizer/support/" class="menu-item">Support</a>
+        <a href="/" class="menu-item back-home-mobile">Back to Home</a>
+    </div>
+    <div class="navbar-user">
+        <span id="organizerProfileEmail" class="profile-email">{{ user.email|default:"Organizer" }}</span>
+        <a href="/" class="back-home-btn" title="Back to Home"><i class="fas fa-sign-out-alt"></i></a>
+    </div>
+</nav>
+
 <div class="dashboard-wrapper">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-icon"><img src="/static/icons/calendar.svg" class="menu-svg" alt="Logo"></div>
-            <h2>EventHub</h2>
-        </div>
-        <div class="sidebar-menu">
-            <a href="/organizer/dashboard/" class="menu-item">
-                <img src="/static/icons/home.svg" class="menu-svg" alt="Dashboard">
-                <span>Dashboard</span>
-            </a>
-            <a href="/organizer/events/" class="menu-item">
-                <img src="/static/icons/calendar.svg" class="menu-svg" alt="Events">
-                <span>Events</span>
-            </a>
-            <a href="/organizer/analytics/" class="menu-item">
-                <img src="/static/icons/tickets_stack.svg" class="menu-svg" alt="Analytics">
-                <span>Analytics</span>
-            </a>
-
-            <a href="/organizer/attendees/" class="menu-item">
-                <img src="/static/icons/people_group.svg" class="menu-svg" alt="Attendees">
-                <span>Attendees</span>
-            </a>
-            <a href="/organizer/bookings/" class="menu-item">
-                <img src="/static/icons/cart.svg" class="menu-svg" alt="Bookings">
-                <span>Bookings</span>
-            </a>
-            <a href="/organizer/payouts/" class="menu-item">
-                <img src="/static/icons/money_note.svg" class="menu-svg" alt="Payouts">
-                <span>Payouts</span>
-            </a>
-            <a href="/organizer/promotions/" class="menu-item">
-                <img src="/static/icons/pen_stylus.svg" class="menu-svg" alt="Promotions">
-                <span>Promotions</span>
-            </a>
-            <a href="/organizer/reviews/" class="menu-item">
-                <img src="/static/icons/review.svg" class="menu-svg" alt="Reviews">
-                <span>Reviews</span>
-            </a>
-            <a href="/organizer/notifications/" class="menu-item">
-                <img src="/static/icons/chat_bubble.svg" class="menu-svg" alt="Notifications">
-                <span>Notifications</span>
-            </a>
-            <a href="/organizer/reports/" class="menu-item">
-                <img src="/static/icons/tickets_stack.svg" class="menu-svg" alt="Reports">
-                <span>Reports</span>
-            </a>
-            <a href="/organizer/checkin/" class="menu-item">
-                <img src="/static/icons/ticket.svg" class="menu-svg" alt="Check-in">
-                <span>Check‑in</span>
-            </a>
-            <a href="/organizer/settings/" class="menu-item">
-                <img src="/static/icons/settings.svg" class="menu-svg" alt="Settings">
-                <span>Settings</span>
-            </a>
-            <a href="/organizer/support/" class="menu-item">
-                <img src="/static/icons/headset.svg" class="menu-svg" alt="Support">
-                <span>Support</span>
-            </a>
-        </div>
-        <div class="sidebar-footer">
-            <a href="/" class="menu-item back-home"><img src="/static/icons/home.svg" class="menu-svg" alt="Back" style="margin-right: 10px;"><span>Back to Home</span></a>
-        </div>
-    </aside>
-
     <!-- Main Content -->
     <main class="main-content">
-        <div class="topbar">
-            <div class="topbar-welcome">
-                <h1>Welcome back, <span id="organizerName">Organizer</span>!</h1>
-                <p>Here's what's happening with your events.</p>
-            </div>
-            <div class="topbar-actions">
-                <div class="notification-badge">
-                    <i class="fas fa-bell"></i>
-                    <span class="dot"></span>
-                </div>
-                <div class="user-profile">
-                    <div class="profile-meta">
-                        <span class="profile-name" id="organizerProfileEmail">{{ user.email|default:"Organizer" }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
         {% block content %}{% endblock %}
     </main>
 </div>
@@ -135,7 +78,7 @@
 
     (function highlightActiveMenuItem() {
         const currentPath = window.location.pathname;
-        const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
+        const menuItems = document.querySelectorAll('.navbar-menu .menu-item');
         
         menuItems.forEach(item => {
             const href = item.getAttribute('href');
@@ -149,6 +92,24 @@
                 item.classList.add('active');
             } else {
                 item.classList.remove('active');
+            }
+        });
+    })();
+
+    (function initNavbarToggle() {
+        const toggleBtn = document.getElementById('navbarToggleBtn');
+        const menu = document.getElementById('navbarMenu');
+        if (!toggleBtn || !menu) return;
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+            toggleBtn.setAttribute('aria-expanded', !expanded);
+            menu.classList.toggle('show');
+        });
+        document.addEventListener('click', function(e) {
+            if (menu.classList.contains('show') && !menu.contains(e.target) && e.target !== toggleBtn) {
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                menu.classList.remove('show');
             }
         });
     })();

@@ -78,7 +78,7 @@ async function loadTickets() {
     } catch (error) {
         console.error('Error loading tickets:', error);
         document.getElementById('ticketsList').innerHTML = 
-            '<tr><td colspan="7" class="text-center">Failed to load tickets</td></tr>';
+            '<tr><td colspan="8" class="text-center">Failed to load tickets</td></tr>';
     } finally {
         Loader.hide();
     }
@@ -88,7 +88,7 @@ function displayTickets(tickets) {
     const tbody = document.getElementById('ticketsList');
     
     if (!tickets || tickets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No tickets found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No tickets found</td></tr>';
         document.getElementById('recordsCount').textContent = 'Showing 0 records';
         return;
     }
@@ -102,6 +102,7 @@ function displayTickets(tickets) {
             </td>
             <td>${escapeHtml(ticket.event_title)}</td>
             <td>#${escapeHtml(ticket.booking_id)}</td>
+            <td>${ticket.purchase_date ? formatDateTime(ticket.purchase_date) : 'N/A'}</td>
             <td>${getTicketStatusBadge(ticket.status)}</td>
             <td>${ticket.checked_in_at ? formatDateTime(ticket.checked_in_at) : 'Not checked in'}</td>
             <td class="action-buttons">

@@ -594,6 +594,130 @@ def api_events_check_expired(request):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
+# ---------------------------------------------------------------------------
+# Location-Based Event Discovery
+# ---------------------------------------------------------------------------
 
 
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def api_discover_local_events(request):
+    """
+    POST /api/events/discover/
+
+    Body (JSON):
+      { "lat": -1.286389, "lng": 36.817223 }         # browser GPS
+      OR
+      { "location_text": "Nairobi" }                  # typed / profile fallback
+
+    Response:
+      {
+        "success": true,
+        "location": "Nairobi",
+        "county": "Nairobi County",
+        "location_source": "browser_geolocation" | "user_profile" | "ip_detection",
+        "internal_count": <int>,
+        "external_count": <int>,
+        "internal_events": [ ... ],   # app DB events — ticket purchasing enabled
+        "external_events": [ ... ]    # scraped events  — view-only
+      }
+    """
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        from django.http import HttpResponse as _HR
+        return _HR(status=204)
+
+    import json as _json
+    from django.db.models import Q
+    from events.discovery import (
+        resolve_county_from_coords,
+        resolve_county_from_ip,
+        normalize_county,
+        discover_events_for_county,
+    )
+
+    # ---- Parse body ----
+    try:
+        data = _json.loads(request.body or "{}")
+    except (_json.JSONDecodeError, Exception):
+        data = {}
+
+    # ---- Resolve county (3-level fallback) ----
+    county: str | None = None
+    location_source = "unknown"
+
+    lat = data.get("lat")
+    lng = data.get("lng")
+    location_text = str(data.get("location_text") or "").strip()
+
+    if lat is not None and lng is not None:
+        try:
+            county = resolve_county_from_coords(float(lat), float(lng))
+            if county:
+                location_source = "browser_geolocation"
+        except (ValueError, TypeError):
+            pass
+
+    if not county and location_text:
+        county = normalize_county(location_text)
+        location_source = "user_profile"
+
+    if not county:
+        # Last resort: IP-based detection
+        x_fwd = request.META.get("HTTP_X_FORWARDED_FOR", "")
+        client_ip = x_fwd.split(",")[0].strip() if x_fwd else request.META.get("REMOTE_ADDR", "")
+        county = resolve_county_from_ip(client_ip)
+        location_source = "ip_detection"
+
+    county = county or "Nairobi"
+
+    # ---- Query internal (app) events ----
+    now = timezone.now()
+    internal_qs = (
+        Event.objects.filter(
+            status="published",
+            end_date__gte=now,
+        )
+        .filter(
+            Q(venue__icontains=county)
+            | Q(address__icontains=county)
+            | Q(title__icontains=county)
+        )
+        .select_related("category")
+        .order_by("start_date")[:20]
+    )
+
+    internal_events = []
+    for e in internal_qs:
+        internal_events.append({
+            "type": "internal",
+            "id": e.id,
+            "title": e.title,
+            "start_date": e.start_date.isoformat(),
+            "end_date": e.end_date.isoformat(),
+            "venue": e.venue,
+            "address": e.address,
+            "price": float(e.price),
+            "slug": e.slug,
+            "banner_image": e.banner_image or "",
+            "category": e.category.name if e.category else "General",
+            "available_seats": e.available_seats,
+            "status": e.status,
+            "can_purchase": True,
+            "detail_url": f"/events/detail/?id={e.id}",
+        })
+
+    # ---- Scrape external events in parallel ----
+    external_events = discover_events_for_county(county)
+
+    return JsonResponse({
+        "success": True,
+        "location": county,
+        "county": f"{county} County",
+        "location_source": location_source,
+        "internal_count": len(internal_events),
+        "external_count": len(external_events),
+        "internal_events": internal_events,
+        "external_events": external_events,
+    })
 
