@@ -378,6 +378,7 @@ def api_event_detail(request, event_id):
             'category_name': e.category.name if e.category else 'General',
             'is_featured': e.is_featured,
             'organizer_name': e.organizer.organization_name or e.organizer.username,
+            'images': [img.image.url for img in e.images.all()],
         }
         return JsonResponse({'success': True, 'event': data})
     except Event.DoesNotExist:

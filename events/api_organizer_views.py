@@ -1,9 +1,10 @@
 import json
+import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from .models import Event, Category
+from .models import Event, Category, EventImage
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage
 from datetime import timedelta
@@ -36,7 +37,8 @@ def serialize_organizer_event(event):
         'tickets_sold': sold,
         'revenue': revenue,
         'status': event.status,
-        'image_url': event.banner_image or ''
+        'image_url': event.banner_image or '',
+        'images': [{'id': img.id, 'url': img.image.url} for img in event.images.all()]
     }
 
 def organizer_required(view_func):
@@ -604,4 +606,127 @@ def api_organizer_event_analytics(request, event_id):
         return JsonResponse({'success': False, 'message': 'Event not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif'}
+ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'}
+
+def validate_uploaded_file(file):
+    # Check extension
+    ext = os.path.splitext(file.name)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return False, f"Unsupported file extension: {ext}. Allowed types: PNG, JPEG, SVG, WEBP, GIF."
+    
+    # Check size (max 5MB)
+    if file.size > 5 * 1024 * 1024:
+        return False, "File is too large. Max size is 5MB."
+        
+    # Check MIME type
+    content_type = getattr(file, 'content_type', None)
+    if content_type and content_type not in ALLOWED_MIME_TYPES:
+        return False, f"Unsupported file MIME type: {content_type}."
+        
+    return True, None
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_upload_image(request, event_id):
+    """Upload a banner image for the event."""
+    try:
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        if 'image' not in request.FILES:
+            return JsonResponse({'success': False, 'message': 'No image file uploaded.'}, status=400)
+        
+        file = request.FILES['image']
+        is_valid, err_msg = validate_uploaded_file(file)
+        if not is_valid:
+            return JsonResponse({'success': False, 'message': err_msg}, status=400)
+        
+        from django.conf import settings
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import uuid
+        
+        ext = os.path.splitext(file.name)[1].lower()
+        filename = f"banner_{event_id}_{uuid.uuid4().hex[:8]}{ext}"
+        filepath = os.path.join('events', 'banners', filename)
+        
+        # Save to media folder
+        saved_path = default_storage.save(filepath, ContentFile(file.read()))
+        
+        # Construct dynamic path url
+        url = settings.MEDIA_URL + saved_path.replace('\\', '/')
+        event.banner_image = url
+        event.save()
+        
+        return JsonResponse({'success': True, 'image_url': url, 'image': url})
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_upload_gallery(request, event_id):
+    """Upload multiple gallery images for the event."""
+    try:
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        
+        files = []
+        if 'gallery' in request.FILES:
+            files = request.FILES.getlist('gallery')
+        else:
+            for key in request.FILES:
+                files.extend(request.FILES.getlist(key))
+            
+        if not files:
+            return JsonResponse({'success': False, 'message': 'No gallery images uploaded.'}, status=400)
+            
+        # First validate all files
+        for file in files:
+            is_valid, err_msg = validate_uploaded_file(file)
+            if not is_valid:
+                return JsonResponse({'success': False, 'message': f"File '{file.name}': {err_msg}"}, status=400)
+                
+        saved_images = []
+        for file in files:
+            img_obj = EventImage.objects.create(event=event, image=file)
+            saved_images.append({
+                'id': img_obj.id,
+                'url': img_obj.image.url
+            })
+            
+        return JsonResponse({'success': True, 'images': saved_images})
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["DELETE"])
+def api_organizer_delete_gallery_image(request, event_id, image_id):
+    """Delete a specific gallery image."""
+    try:
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        img_obj = EventImage.objects.get(id=image_id, event=event)
+        
+        # Delete file from storage
+        if img_obj.image:
+            img_obj.image.delete(save=False)
+            
+        img_obj.delete()
+        return JsonResponse({'success': True, 'message': 'Gallery image deleted successfully.'})
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
+    except EventImage.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Gallery image not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
 

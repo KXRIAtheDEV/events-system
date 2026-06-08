@@ -635,8 +635,9 @@ class OrganizerAPIService {
             if (cachedData) return cachedData;
         }
 
-        // Fast-path for explicit mock activation
-        if (this.config.USE_MOCK) {
+        // Fast-path for explicit mock activation (bypass for actual file uploads/deletions)
+        const isUploadOrDeleteImage = endpoint.includes('/upload-image/') || endpoint.includes('/upload-gallery/') || (endpoint.includes('/gallery/') && endpoint.includes('/delete/'));
+        if (this.config.USE_MOCK && !isUploadOrDeleteImage) {
             console.log(`[MOCK MODE] Serving local response for ${method} ${endpoint}`);
             return this.getMockResponse(method, endpoint, data, options);
         }

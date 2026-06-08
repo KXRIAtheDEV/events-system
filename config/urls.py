@@ -48,7 +48,10 @@ from events.api_organizer_views import (
     api_organizer_settings_apikeys_create,
     api_organizer_settings_apikeys_revoke,
     api_organizer_reviews_stats,
-    api_organizer_event_analytics
+    api_organizer_event_analytics,
+    api_organizer_upload_image,
+    api_organizer_upload_gallery,
+    api_organizer_delete_gallery_image
 )
 import json
 
@@ -194,6 +197,9 @@ urlpatterns = [
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
     path('api/organizer/events/<int:event_id>/', api_organizer_events_detail, name='api_organizer_events_detail'),
     path('api/organizer/events/<int:event_id>/analytics/', api_organizer_event_analytics, name='api_organizer_event_analytics'),
+    path('api/organizer/events/<int:event_id>/upload-image/', api_organizer_upload_image, name='api_organizer_upload_image'),
+    path('api/organizer/events/<int:event_id>/upload-gallery/', api_organizer_upload_gallery, name='api_organizer_upload_gallery'),
+    path('api/organizer/events/<int:event_id>/gallery/<int:image_id>/delete/', api_organizer_delete_gallery_image, name='api_organizer_delete_gallery_image'),
     path('api/organizer/events/<int:event_id>/update/', api_organizer_events_update, name='api_organizer_events_update'),
     path('api/organizer/events/<int:event_id>/delete/', api_organizer_events_delete, name='api_organizer_events_delete'),
     path('api/organizer/bookings/', api_organizer_bookings_list, name='api_organizer_bookings_list'),

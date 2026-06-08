@@ -74,3 +74,13 @@ class Event(models.Model):
             
         super().save(*args, **kwargs)
 
+
+class EventImage(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='images')
+    image = models.FileField(upload_to='events/gallery/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.event.title}"
+
+
