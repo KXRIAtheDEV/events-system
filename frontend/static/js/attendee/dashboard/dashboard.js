@@ -7,9 +7,24 @@ let refreshInterval = null;
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
     displayCurrentDate();
+    displayGreeting();
     displayUserName();
     setupAutoRefresh();
 });
+
+function displayGreeting() {
+    const greetingTextEl = document.getElementById('greetingText');
+    if (greetingTextEl) {
+        const hour = new Date().getHours();
+        let greeting = "Good Evening";
+        if (hour >= 3 && hour < 12) {
+            greeting = "Good Morning";
+        } else if (hour >= 12 && hour < 18) {
+            greeting = "Good Afternoon";
+        }
+        greetingTextEl.textContent = greeting;
+    }
+}
 
 function displayCurrentDate() {
     const dateElement = document.getElementById('currentDate');

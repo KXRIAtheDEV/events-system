@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="main-content-header">
-    <h1>Welcome back, <span id="organizerName">{{ user.email|default:"Organizer" }}</span>!</h1>
+    <h1><span id="greetingText">Welcome back</span>, <span id="organizerName">{{ user.email|default:"Organizer" }}</span>!</h1>
     <p>Here's what's happening with your events.</p>
 </div>
 <div>
@@ -120,6 +120,9 @@
 <script src="/static/js/organizer/dashboard.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        if (typeof displayGreeting === 'function') {
+            displayGreeting();
+        }
         if (typeof OrganizerAPI !== 'undefined') {
             loadDashboardStats();
             loadRevenueChart('12months');

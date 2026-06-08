@@ -2,6 +2,20 @@
 // GLOBAL HELPERS (used across all modules)
 // ============================================
 
+window.displayGreeting = function() {
+    const greetingTextEl = document.getElementById('greetingText');
+    if (greetingTextEl) {
+        const hour = new Date().getHours();
+        let greeting = "Good Evening";
+        if (hour >= 3 && hour < 12) {
+            greeting = "Good Morning";
+        } else if (hour >= 12 && hour < 18) {
+            greeting = "Good Afternoon";
+        }
+        greetingTextEl.textContent = greeting;
+    }
+};
+
 window.showToast = function(message, type = 'info') {
     let toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
