@@ -771,3 +771,94 @@ def api_discover_local_events(request):
         "external_events": external_events,
     })
 
+
+def api_db_status(request):
+    """Diagnostic view to inspect database engine, columns, and migrations status."""
+    from django.conf import settings
+    from django.db import connection
+    
+    db_engine = settings.DATABASES['default']['ENGINE']
+    
+    status_info = {
+        'db_engine': db_engine,
+        'connection_vendor': connection.vendor,
+        'banner_image_column_type': None,
+        'eventimage_image_column_type': None,
+        'applied_migrations': [],
+        'error': None
+    }
+    
+    try:
+        # 1. Fetch column info for events_event.banner_image
+        with connection.cursor() as cursor:
+            if connection.vendor == 'postgresql':
+                cursor.execute("""
+                    SELECT data_type, character_maximum_length 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'events_event' AND column_name = 'banner_image';
+                """)
+                row = cursor.fetchone()
+                if row:
+                    status_info['banner_image_column_type'] = f"{row[0]}({row[1]})" if row[1] else row[0]
+                
+                cursor.execute("""
+                    SELECT data_type, character_maximum_length 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'events_eventimage' AND column_name = 'image';
+                """)
+                row = cursor.fetchone()
+                if row:
+                    status_info['eventimage_image_column_type'] = f"{row[0]}({row[1]})" if row[1] else row[0]
+            elif connection.vendor == 'sqlite':
+                cursor.execute("PRAGMA table_info(events_event);")
+                rows = cursor.fetchall()
+                for r in rows:
+                    if r[1] == 'banner_image':
+                        status_info['banner_image_column_type'] = r[2]
+                
+                cursor.execute("PRAGMA table_info(events_eventimage);")
+                rows = cursor.fetchall()
+                for r in rows:
+                    if r[1] == 'image':
+                        status_info['eventimage_image_column_type'] = r[2]
+                        
+        # 2. Get applied migrations
+        from django.db.migrations.recorder import MigrationRecorder
+        applied = MigrationRecorder.Migration.objects.filter(app='events').values_list('name', flat=True)
+        status_info['applied_migrations'] = list(applied)
+        
+    except Exception as e:
+        status_info['error'] = str(e)
+        
+    return JsonResponse(status_info)
+
+
+def api_run_migrations(request):
+    """Diagnostic view to run Django migrations on the database."""
+    from django.core.management import call_command
+    import io
+    
+    out = io.StringIO()
+    err = io.StringIO()
+    
+    success = False
+    error_msg = None
+    output_str = ""
+    
+    try:
+        call_command('migrate', interactive=False, stdout=out, stderr=err)
+        success = True
+        output_str = out.getvalue()
+    except Exception as e:
+        success = False
+        error_msg = str(e)
+        output_str = out.getvalue() + "\n" + err.getvalue()
+        
+    return JsonResponse({
+        'success': success,
+        'output': output_str,
+        'error': error_msg
+    })
+
+
+

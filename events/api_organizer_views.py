@@ -691,27 +691,40 @@ def api_organizer_upload_image(request, event_id):
             url = data_uri
             image_value = data_uri  # store the full data URI directly in the TEXT column
 
-        # Persist the image record (TEXT column – always safe regardless of migration state)
+        # Persist the image record
+        db_saved = False
         try:
             EventImage.objects.create(event=event, image=image_value)
+            db_saved = True
         except Exception as db_err:
             print("Failed to save to EventImage table:", db_err)
 
         # Update event.banner_image – wrap in its own try-except because the column
         # may still be VARCHAR(200) on production if migration 0005 hasn't run yet.
+        banner_saved = False
         try:
             event.banner_image = url
             event.save(update_fields=['banner_image'])
+            banner_saved = True
         except Exception as banner_err:
             print("Could not save banner_image to event (possible column length issue):", banner_err)
-            # The EventImage record was already saved above, so the image is preserved.
-            # Attempt a short-URL fallback: store only the first 190 chars so the column won't truncate.
-            try:
-                short_url = url[:190] if len(url) > 190 else url
-                event.banner_image = short_url
-                event.save(update_fields=['banner_image'])
-            except Exception:
-                pass  # silently ignore – EventImage is the source of truth
+            # Do NOT truncate base64 data URIs! They are useless when truncated.
+            # Only attempt a short-URL fallback if it is a normal URL (starts with http or static path).
+            if url and not url.startswith('data:'):
+                try:
+                    short_url = url[:190] if len(url) > 190 else url
+                    event.banner_image = short_url
+                    event.save(update_fields=['banner_image'])
+                    banner_saved = True
+                except Exception:
+                    pass
+
+        # If we failed to save the image anywhere due to database schema limitations, return a descriptive error
+        if not db_saved and not banner_saved:
+            return JsonResponse({
+                'success': False,
+                'message': 'Failed to save event image to the database due to schema limits. Please run migrations on Supabase by visiting: https://events-system-sable.vercel.app/api/events/run-migrations/'
+            }, status=400)
 
         return JsonResponse({'success': True, 'image_url': url, 'image': url})
     except Event.DoesNotExist:
@@ -764,8 +777,14 @@ def api_organizer_upload_gallery(request, event_id):
             except Exception:
                 image_value = _file_to_base64_uri(file, ext)
 
-            img_obj = EventImage.objects.create(event=event, image=image_value)
-            saved_images.append({'id': img_obj.id, 'url': img_obj.url})
+            try:
+                img_obj = EventImage.objects.create(event=event, image=image_value)
+                saved_images.append({'id': img_obj.id, 'url': img_obj.url})
+            except Exception as db_err:
+                return JsonResponse({
+                    'success': False,
+                    'message': f"Failed to save gallery image to database: {str(db_err)}. Please run migrations by visiting: https://events-system-sable.vercel.app/api/events/run-migrations/"
+                }, status=400)
             
         return JsonResponse({'success': True, 'images': saved_images})
     except Event.DoesNotExist:

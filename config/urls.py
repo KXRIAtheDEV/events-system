@@ -19,7 +19,7 @@ from events.views import (
     organizer_dashboard_stats, organizer_dashboard_revenue, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
     api_featured_events, api_events_check_expired, homepage_view,
-    api_discover_local_events, api_platform_stats,
+    api_discover_local_events, api_platform_stats, api_db_status, api_run_migrations,
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
@@ -353,6 +353,10 @@ urlpatterns = [
 
     # Payments - M-Pesa
     path('payments/', include('payments.urls')),
+    
+    # DB Status Diagnostics
+    path('api/events/db-status/', api_db_status, name='api_db_status'),
+    path('api/events/run-migrations/', api_run_migrations, name='api_run_migrations'),
     
     # Portal URLs
     path('', include('config.attendee_urls')),
