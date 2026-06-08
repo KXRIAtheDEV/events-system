@@ -661,6 +661,9 @@ def api_organizer_upload_image(request, event_id):
         event.banner_image = url
         event.save()
         
+        # Save to events_eventimage table as well
+        EventImage.objects.create(event=event, image=saved_path)
+        
         return JsonResponse({'success': True, 'image_url': url, 'image': url})
     except Event.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)

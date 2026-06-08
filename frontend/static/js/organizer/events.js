@@ -73,8 +73,10 @@ async function editEvent(eventId = null) {
             await loadTicketTypes(eventId);
             await loadScheduleItems(eventId);
             await loadAnalytics(eventId);
-            if (event.image_url) document.getElementById('bannerPreview').innerHTML = `<img src="${event.image_url}" class="image-preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">`;
-            renderGallery(event.images, eventId);
+            if (event.image_url) {
+                const bannerPreview = document.getElementById('bannerPreview');
+                if (bannerPreview) bannerPreview.innerHTML = `<img src="${event.image_url}" class="image-preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">`;
+            }
         } catch(e) {
             console.error(e);
             if(window.showToast) window.showToast('Error loading event', 'error');
@@ -107,13 +109,22 @@ async function saveEvent() {
     };
     const eventId = document.getElementById('eventId').value;
     try {
+        let targetId = eventId;
         if (eventId) {
             await OrganizerAPI.events.update(eventId, data);
-            if(window.showToast) window.showToast('Event updated', 'success');
+            if(window.showToast) window.showToast('Event updated successfully', 'success');
         } else {
-            await OrganizerAPI.events.create(data);
-            if(window.showToast) window.showToast('Event created', 'success');
+            const result = await OrganizerAPI.events.create(data);
+            targetId = result.id;
+            if(window.showToast) window.showToast('Event created successfully', 'success');
         }
+
+        // Upload banner file if one was selected
+        const bannerFile = document.getElementById('eventBannerFile').files[0];
+        if (bannerFile && targetId) {
+            await OrganizerAPI.events.uploadImage(targetId, bannerFile);
+        }
+
         bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
         loadEvents(currentPage);
     } catch(e) {
@@ -289,80 +300,7 @@ async function deleteScheduleItem(itemId) {
     } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
 }
 
-// Media uploads
-async function uploadBanner() {
-    const eventId = ensureSavedEvent('uploading banner');
-    if (!eventId) return;
-    const file = document.getElementById('bannerImage').files[0];
-    if (!file) return;
-    try {
-        const result = await OrganizerAPI.events.uploadImage(eventId, file);
-        if(window.showToast) window.showToast('Banner uploaded successfully', 'success');
-        document.getElementById('bannerPreview').innerHTML = `<img src="${result.image_url || result.image || ''}" class="image-preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">`;
-    } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
-}
-
-async function uploadGallery() {
-    const eventId = ensureSavedEvent('uploading gallery images');
-    if (!eventId) return;
-    const files = document.getElementById('galleryImages').files;
-    if (!files.length) return;
-    try {
-        await OrganizerAPI.events.uploadGallery(eventId, Array.from(files));
-        if(window.showToast) window.showToast('Gallery uploaded successfully', 'success');
-        // Reload detail of event and render gallery
-        const event = await OrganizerAPI.events.getDetail(eventId);
-        renderGallery(event.images, eventId);
-        document.getElementById('galleryImages').value = ''; // clear input
-    } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
-}
-
-function renderGallery(images, eventId) {
-    const previewContainer = document.getElementById('galleryPreview');
-    if (!images || !images.length) {
-        previewContainer.innerHTML = '<p class="text-muted w-100 m-2">No gallery images uploaded yet.</p>';
-        return;
-    }
-    
-    // Create a beautiful premium grid of image cards with delete buttons
-    previewContainer.innerHTML = images.map(img => {
-        const url = typeof img === 'string' ? img : (img && img.url ? img.url : '');
-        const id = typeof img === 'string' ? null : (img && img.id ? img.id : null);
-        return `
-        <div class="gallery-item-card position-relative m-2" style="width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s ease;">
-            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
-            <div class="delete-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s ease; cursor: pointer;" ${id !== null ? `onclick="deleteGalleryImage(${eventId}, ${id})"` : ''}>
-                <i class="fas fa-trash text-danger" style="font-size: 1.25rem;"></i>
-            </div>
-        </div>
-        `;
-    }).join('');
-
-    // Add CSS transition rules dynamically
-    const styleId = 'gallery-styles';
-    if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            .gallery-item-card:hover { transform: scale(1.05); }
-            .gallery-item-card:hover .delete-overlay { opacity: 1 !important; }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-async function deleteGalleryImage(eventId, imageId) {
-    if (!confirm('Are you sure you want to delete this image from the gallery?')) return;
-    try {
-        await OrganizerAPI.events.deleteGallery(eventId, imageId);
-        if (window.showToast) window.showToast('Image deleted from gallery', 'success');
-        // Reload detail of event and render gallery
-        const event = await OrganizerAPI.events.getDetail(eventId);
-        renderGallery(event.images, eventId);
-    } catch(e) {
-        if (window.showToast) window.showToast(e.message || 'Failed to delete image', 'error');
-    }
-}
+// Media uploads helper placeholders removed (handled in saveEvent flow)
 
 // Analytics
 async function loadAnalytics(eventId) {
@@ -407,8 +345,16 @@ function resetEventForm() {
     document.getElementById('eventModalTitle').innerText = 'Create New Event';
     document.getElementById('saveEventBtn').innerText = 'Create Event';
     document.getElementById('eventStatus').value = 'draft';
-    document.getElementById('bannerPreview').innerHTML = '';
-    document.getElementById('galleryPreview').innerHTML = '';
+    
+    const bannerPreview = document.getElementById('bannerPreview');
+    if (bannerPreview) bannerPreview.innerHTML = '';
+    
+    const bannerFile = document.getElementById('eventBannerFile');
+    if (bannerFile) bannerFile.value = '';
+    
+    const galleryPreview = document.getElementById('galleryPreview');
+    if (galleryPreview) galleryPreview.innerHTML = '';
+    
     document.getElementById('ticketTypesList').innerHTML = '<p class="text-muted">No ticket types</p>';
     document.getElementById('scheduleList').innerHTML = '<p class="text-muted">No schedule items</p>';
     document.getElementById('analyticsTotalTickets').innerText = '--';
@@ -426,4 +372,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveEventBtn')?.addEventListener('click', saveEvent);
     document.getElementById('saveTicketTypeBtn')?.addEventListener('click', saveTicketType);
     document.getElementById('saveScheduleItemBtn')?.addEventListener('click', saveScheduleItem);
+    
+    // Live local preview for event banner selection
+    document.getElementById('eventBannerFile')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const previewContainer = document.getElementById('bannerPreview');
+            if (previewContainer) {
+                previewContainer.innerHTML = `<img src="${URL.createObjectURL(file)}" class="image-preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">`;
+            }
+        } else {
+            const previewContainer = document.getElementById('bannerPreview');
+            if (previewContainer) previewContainer.innerHTML = '';
+        }
+    });
 });
