@@ -312,3 +312,45 @@ class AdminCheckinAPITests(TestCase):
         self.assertEqual(response['Content-Type'], 'text/csv')
         self.assertIn('TICKET1001', response.content.decode())
 
+
+class AdminEventApprovalTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create_user(
+            username='adminuser',
+            email='admin@example.com',
+            password='Password123!',
+            is_staff=True,
+            is_superuser=True
+        )
+        self.organizer = User.objects.create_user(
+            username='orguser',
+            email='org@example.com',
+            password='Password123!',
+            role='organizer'
+        )
+        self.category = Category.objects.create(name='Music', slug='music')
+        self.event = Event.objects.create(
+            title='Draft Event',
+            organizer=self.organizer,
+            category=self.category,
+            start_date=timezone.now() + timezone.timedelta(days=1),
+            end_date=timezone.now() + timezone.timedelta(days=1, hours=3),
+            venue='Arena 1',
+            price=50.0,
+            total_seats=100,
+            available_seats=100,
+            status='pending'
+        )
+
+    def test_admin_approve_event_sets_published(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(f'/api/admin/events/{self.event.id}/approve/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        # Verify status in DB transitions directly to published
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.status, 'published')
+
+

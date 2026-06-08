@@ -258,7 +258,7 @@ def api_organizer_events_update(request, event_id):
         if 'status' in data:
             status = data['status']
             if status in ('published', 'active'):
-                if event.status == 'approved':
+                if event.status in ('approved', 'published'):
                     event.status = 'published'
                 else:
                     event.status = 'pending'

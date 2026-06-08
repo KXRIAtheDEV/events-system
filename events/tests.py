@@ -134,3 +134,14 @@ class EventImageUploadTests(TestCase):
         # Verify db updated
         self.assertEqual(self.event.images.count(), 0)
 
+    def test_get_event_detail_approved(self):
+        self.event.status = 'approved'
+        self.event.save()
+        
+        response = self.client.get(f'/api/organizer/events/{self.event.id}/')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['id'], self.event.id)
+        self.assertEqual(data['status'], 'approved')
+
+

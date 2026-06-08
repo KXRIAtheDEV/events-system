@@ -24,7 +24,7 @@ async function loadEvents(page = 1) {
             const ticketsSold = event.tickets_sold ?? event.sold ?? 0;
             const capacity = event.capacity || 0;
             const status = event.status || 'draft';
-            const badgeClass = status === 'published' || status === 'active' ? 'bg-success' : status === 'draft' ? 'bg-secondary' : 'bg-danger';
+            const badgeClass = status === 'published' || status === 'active' ? 'bg-success' : status === 'draft' ? 'bg-secondary' : status === 'approved' ? 'bg-info' : 'bg-danger';
             return `
             <div class="col-md-4 col-lg-3">
                 <div class="event-card" onclick="editEvent(${event.id})">
@@ -325,14 +325,18 @@ function renderGallery(images, eventId) {
     }
     
     // Create a beautiful premium grid of image cards with delete buttons
-    previewContainer.innerHTML = images.map(img => `
+    previewContainer.innerHTML = images.map(img => {
+        const url = typeof img === 'string' ? img : (img && img.url ? img.url : '');
+        const id = typeof img === 'string' ? null : (img && img.id ? img.id : null);
+        return `
         <div class="gallery-item-card position-relative m-2" style="width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s ease;">
-            <img src="${img.url}" style="width: 100%; height: 100%; object-fit: cover;">
-            <div class="delete-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s ease; cursor: pointer;" onclick="deleteGalleryImage(${eventId}, ${img.id})">
+            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
+            <div class="delete-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s ease; cursor: pointer;" ${id !== null ? `onclick="deleteGalleryImage(${eventId}, ${id})"` : ''}>
                 <i class="fas fa-trash text-danger" style="font-size: 1.25rem;"></i>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     // Add CSS transition rules dynamically
     const styleId = 'gallery-styles';

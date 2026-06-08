@@ -401,7 +401,7 @@ def api_event_detail(request, event_id):
 def api_approve_event(request, event_id):
     try:
         e = get_object_or_404(Event, id=event_id)
-        e.status = 'approved'
+        e.status = 'published'
         e.save()
         add_notification(
             title="Event Approved",
@@ -422,7 +422,7 @@ def api_reject_event(request, event_id):
         reason = data.get('reason', 'Does not meet platform guidelines')
         e = get_object_or_404(Event, id=event_id)
         
-        is_revocation = e.status == 'approved'
+        is_revocation = e.status in ('approved', 'published')
         e.status = 'draft' # Rejects back to draft
         e.save()
         
@@ -483,7 +483,7 @@ def api_event_stats(request):
         pending = Event.objects.filter(status='pending').count()
         now = timezone.now()
         month_start = datetime(now.year, now.month, 1, tzinfo=dt_timezone.utc)
-        approved = Event.objects.filter(status='approved', updated_at__gte=month_start).count()
+        approved = Event.objects.filter(status__in=['approved', 'published'], updated_at__gte=month_start).count()
         stats = {
             'pending': pending,
             'approved_this_month': approved,
@@ -500,7 +500,7 @@ def api_bulk_approve(request):
     try:
         data = json.loads(request.body)
         ids = data.get('event_ids', [])
-        Event.objects.filter(id__in=ids).update(status='approved')
+        Event.objects.filter(id__in=ids).update(status='published')
         return JsonResponse({'success': True, 'message': f'Successfully approved {len(ids)} events'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
