@@ -122,7 +122,13 @@ async function saveEvent() {
         // Upload banner file if one was selected
         const bannerFile = document.getElementById('eventBannerFile').files[0];
         if (bannerFile && targetId) {
-            await OrganizerAPI.events.uploadImage(targetId, bannerFile);
+            try {
+                await OrganizerAPI.events.uploadImage(targetId, bannerFile);
+                if(window.showToast) window.showToast('Banner uploaded successfully', 'success');
+            } catch(uploadErr) {
+                console.error('Banner upload failed:', uploadErr);
+                if(window.showToast) window.showToast('Event details saved, but banner image upload failed.', 'warning');
+            }
         }
 
         bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
