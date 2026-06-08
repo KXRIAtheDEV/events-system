@@ -39,6 +39,8 @@ class Event(models.Model):
     address = models.CharField(max_length=300, blank=True)
     
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    vip_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    vvip_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_seats = models.IntegerField(default=0)
     available_seats = models.IntegerField(default=0)
     

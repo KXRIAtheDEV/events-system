@@ -55,7 +55,7 @@ async function editEvent(eventId = null) {
     currentEventId = eventId;
     resetEventForm();
     if (eventId) {
-        document.getElementById('eventModalTitle').innerText = 'Edit Event';
+        document.getElementById('eventModalTitle').innerText = 'Create New Event';
         document.getElementById('saveEventBtn').innerText = 'Update Event';
         try {
             const event = await OrganizerAPI.events.getDetail(eventId);
@@ -69,7 +69,29 @@ async function editEvent(eventId = null) {
             document.getElementById('eventEndDate').value = endDate ? endDate.slice(0,16) : '';
             document.getElementById('eventVenue').value = event.location || event.venue || '';
             document.getElementById('eventCapacity').value = event.capacity || '';
-            document.getElementById('eventStatus').value = event.status || 'draft';
+            document.getElementById('eventStatus').value = event.status || 'published';
+            document.getElementById('eventPrice').value = event.price || 0;
+            
+            if (event.vip_price !== null && event.vip_price !== undefined) {
+                document.getElementById('hasVipTicket').checked = true;
+                document.getElementById('eventVipPrice').value = event.vip_price;
+                document.getElementById('vipPriceContainer').style.display = 'block';
+            } else {
+                document.getElementById('hasVipTicket').checked = false;
+                document.getElementById('eventVipPrice').value = '';
+                document.getElementById('vipPriceContainer').style.display = 'none';
+            }
+            
+            if (event.vvip_price !== null && event.vvip_price !== undefined) {
+                document.getElementById('hasVvipTicket').checked = true;
+                document.getElementById('eventVvipPrice').value = event.vvip_price;
+                document.getElementById('vvipPriceContainer').style.display = 'block';
+            } else {
+                document.getElementById('hasVvipTicket').checked = false;
+                document.getElementById('eventVvipPrice').value = '';
+                document.getElementById('vvipPriceContainer').style.display = 'none';
+            }
+            
             await loadTicketTypes(eventId);
             await loadScheduleItems(eventId);
             await loadAnalytics(eventId);
@@ -98,14 +120,17 @@ async function saveEvent() {
     const data = {
         name: document.getElementById('eventTitle').value,
         category: document.getElementById('eventCategory').value,
-        description: document.getElementById('eventDescription').value,
+        description: document.getElementById('eventDescription')?.value || 'Event description',
         date: startDate || '',
         startTime: startTime || '00:00',
         endTime: endTime || '00:00',
         venue: document.getElementById('eventVenue').value,
         location: document.getElementById('eventVenue').value,
         capacity: parseInt(document.getElementById('eventCapacity').value) || 0,
-        status: document.getElementById('eventStatus').value
+        status: document.getElementById('eventStatus')?.value || 'published',
+        price: parseFloat(document.getElementById('eventPrice').value) || 0,
+        vip_price: document.getElementById('hasVipTicket').checked ? (parseFloat(document.getElementById('eventVipPrice').value) || null) : null,
+        vvip_price: document.getElementById('hasVvipTicket').checked ? (parseFloat(document.getElementById('eventVvipPrice').value) || null) : null
     };
     const eventId = document.getElementById('eventId').value;
     try {
@@ -392,7 +417,24 @@ function resetEventForm() {
         analyticsChart.destroy();
         analyticsChart = null;
     }
+    const vipContainer = document.getElementById('vipPriceContainer');
+    if (vipContainer) vipContainer.style.display = 'none';
+    const vvipContainer = document.getElementById('vvipPriceContainer');
+    if (vvipContainer) vvipContainer.style.display = 'none';
 }
+
+function togglePriceInput(type) {
+    const checkbox = document.getElementById(`has${type.charAt(0).toUpperCase() + type.slice(1)}Ticket`);
+    const container = document.getElementById(`${type}PriceContainer`);
+    if (checkbox && container) {
+        container.style.display = checkbox.checked ? 'block' : 'none';
+        const input = container.querySelector('input');
+        if (input && !checkbox.checked) {
+            input.value = '';
+        }
+    }
+}
+window.togglePriceInput = togglePriceInput;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadEvents();

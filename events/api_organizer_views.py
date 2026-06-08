@@ -33,6 +33,8 @@ def serialize_organizer_event(event):
         'address': event.address,
         'capacity': event.total_seats,
         'price': float(event.price),
+        'vip_price': float(event.vip_price) if event.vip_price is not None else None,
+        'vvip_price': float(event.vvip_price) if event.vvip_price is not None else None,
         'sold': sold,
         'tickets_sold': sold,
         'revenue': revenue,
@@ -113,6 +115,13 @@ def api_organizer_events_create(request):
         address = data.get('address', '').strip()
         capacity = int(data.get('capacity', 0))
         price = float(data.get('price', 0))
+        
+        vip_val = data.get('vip_price')
+        vip_price = float(vip_val) if (vip_val is not None and str(vip_val).strip() != '') else None
+        
+        vvip_val = data.get('vvip_price')
+        vvip_price = float(vvip_val) if (vvip_val is not None and str(vvip_val).strip() != '') else None
+        
         image = data.get('image', '').strip() or data.get('banner_image', '').strip()
         category_name = data.get('category', 'Technology')
         status = data.get('status', 'draft')
@@ -153,6 +162,8 @@ def api_organizer_events_create(request):
             venue=venue,
             address=address,
             price=price,
+            vip_price=vip_price,
+            vvip_price=vvip_price,
             total_seats=capacity,
             available_seats=capacity,
             banner_image=image,
@@ -235,6 +246,12 @@ def api_organizer_events_update(request, event_id):
             event.available_seats += diff
         if 'price' in data:
             event.price = float(data['price'])
+        if 'vip_price' in data:
+            vip_val = data['vip_price']
+            event.vip_price = float(vip_val) if (vip_val is not None and str(vip_val).strip() != '') else None
+        if 'vvip_price' in data:
+            vvip_val = data['vvip_price']
+            event.vvip_price = float(vvip_val) if (vvip_val is not None and str(vvip_val).strip() != '') else None
         if 'date' in data or 'start_date' in data:
             date_str = data.get('date', '') or data.get('start_date', '').split('T')[0]
             start_time_str = data.get('startTime', '') or (data.get('start_date', '').split('T')[1] if 'T' in data.get('start_date', '') else '')

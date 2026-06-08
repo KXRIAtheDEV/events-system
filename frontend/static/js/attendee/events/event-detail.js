@@ -357,8 +357,20 @@ function renderEventDetails(event) {
             <div class="event-sidebar">
                 <div class="ticket-card">
                     <h3>Get Your Tickets</h3>
+                    
+                    ${(event.vip_price || event.vvip_price) ? `
+                    <div class="ticket-tier-selector mb-3" style="margin-bottom: 1rem;">
+                        <label class="form-label" style="font-weight:600; font-size:0.875rem; color:#475569; display:block; margin-bottom:0.5rem;">Ticket Tier</label>
+                        <select id="ticketTier" class="form-select" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; color: #1e293b; background-color: #fff;">
+                            <option value="Regular" data-price="${event.price}">Regular (KES ${event.price.toLocaleString()})</option>
+                            ${event.vip_price ? `<option value="VIP" data-price="${event.vip_price}">VIP (KES ${event.vip_price.toLocaleString()})</option>` : ''}
+                            ${event.vvip_price ? `<option value="VVIP" data-price="${event.vvip_price}">VVIP (KES ${event.vvip_price.toLocaleString()})</option>` : ''}
+                        </select>
+                    </div>
+                    ` : ''}
+
                     <div class="ticket-price-info">
-                        <span class="current-price">KES ${event.price.toLocaleString()}</span>
+                        <span class="current-price" id="displayPrice">KES ${event.price.toLocaleString()}</span>
                         ${event.original_price ? `<span class="original-price">KES ${event.original_price.toLocaleString()}</span>` : ''}
                     </div>
                     <div class="ticket-availability">
@@ -418,12 +430,37 @@ function renderEventDetails(event) {
     const bookBtn = document.getElementById('bookNowBtn');
     const wishlistBtn = document.getElementById('wishlistBtn');
     
-    const price = parseFloat(event.price) || 0;
+    function getSelectedPrice() {
+        const tierSelect = document.getElementById('ticketTier');
+        if (tierSelect) {
+            const selectedOpt = tierSelect.options[tierSelect.selectedIndex];
+            return parseFloat(selectedOpt.dataset.price) || 0;
+        }
+        return parseFloat(event.price) || 0;
+    }
+    
+    function getSelectedTier() {
+        const tierSelect = document.getElementById('ticketTier');
+        return tierSelect ? tierSelect.value : 'Regular';
+    }
+
     const availableTickets = parseInt(event.available_tickets) || parseInt(event.available_seats) || 100;
     
     function updateTotal() {
-        const total = quantity * price;
+        const currentPrice = getSelectedPrice();
+        const total = quantity * currentPrice;
         totalSpan.textContent = `KES ${total.toLocaleString('en-KE')}`;
+        const displayPriceEl = document.getElementById('displayPrice');
+        if (displayPriceEl) {
+            displayPriceEl.textContent = `KES ${currentPrice.toLocaleString('en-KE')}`;
+        }
+    }
+    
+    const tierSelect = document.getElementById('ticketTier');
+    if (tierSelect) {
+        tierSelect.onchange = () => {
+            updateTotal();
+        };
     }
     
     if (decreaseBtn) {
@@ -458,25 +495,32 @@ function renderEventDetails(event) {
     
     // Book button
     if (bookBtn) {
-    bookBtn.onclick = () => {
-        const token = localStorage.getItem('attendee_access_token');
-        if (!token) {
-            showToast('Please login to book tickets', 'info');
-            setTimeout(() => window.location.href = '/login/', 1500);
-            return;
-        }
-        if (event.available_tickets <= 0) {
-            showToast('Sorry, this event is sold out!', 'error');
-            return;
-        }
-        const total = quantity * (event.price || 0);
-        document.getElementById('mpesaAmount').textContent = `KES ${total.toLocaleString()}`;
-        document.getElementById('mpesaEventId').value = event.id;
-        document.getElementById('mpesaQuantity').value = quantity;
-        document.getElementById('mpesaTotal').value = total;
-        document.getElementById('mpesaModal').style.display = 'flex';
-    };
-}
+        bookBtn.onclick = () => {
+            const token = localStorage.getItem('attendee_access_token');
+            if (!token) {
+                showToast('Please login to book tickets', 'info');
+                setTimeout(() => window.location.href = '/login/', 1500);
+                return;
+            }
+            if (event.available_tickets <= 0) {
+                showToast('Sorry, this event is sold out!', 'error');
+                return;
+            }
+            const currentPrice = getSelectedPrice();
+            const total = quantity * currentPrice;
+            const tierName = getSelectedTier();
+            
+            document.getElementById('mpesaAmount').textContent = `KES ${total.toLocaleString()}`;
+            document.getElementById('mpesaEventId').value = event.id;
+            document.getElementById('mpesaQuantity').value = quantity;
+            document.getElementById('mpesaTotal').value = total;
+            
+            window.currentBookingTicketTier = tierName;
+            window.currentBookingTicketPrice = currentPrice;
+            
+            document.getElementById('mpesaModal').style.display = 'flex';
+        };
+    }
 
 const mpesaClose = document.getElementById('mpesaClose');
 if (mpesaClose) {
@@ -629,6 +673,55 @@ function pollPaymentStatus(checkoutId) {
             if (data.status === 'completed') {
                 clearInterval(interval);
                 document.getElementById('mpesaModal').style.display = 'none';
+                
+                try {
+                    const bookingId = 'BK' + Date.now();
+                    const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
+                    const phone = document.getElementById('mpesaPhone').value.trim();
+                    const qty = parseInt(document.getElementById('mpesaQuantity').value) || 1;
+                    const amount = parseFloat(document.getElementById('mpesaTotal').value) || 0;
+                    
+                    const ticketPrice = window.currentBookingTicketPrice || parseFloat(event.price) || 0;
+                    const ticketTier = window.currentBookingTicketTier || 'Regular';
+                    
+                    const newBooking = {
+                        id: bookingId,
+                        booking_date: new Date().toISOString(),
+                        status: 'confirmed',
+                        payment_method: 'M-Pesa',
+                        receipt_number: data.receipt || ('MPESA' + Math.floor(Math.random() * 10000000)),
+                        total_amount: amount,
+                        subtotal: qty * ticketPrice,
+                        booking_fee: Math.ceil(qty * ticketPrice * 0.05),
+                        discount: 0,
+                        billing_info: {
+                            name: user.name || 'Attendee',
+                            email: user.email || '',
+                            phone: phone
+                        },
+                        items: [{
+                            id: event.id,
+                            title: event.title,
+                            category: event.category_name || event.category || 'Event',
+                            date: event.start_date || event.date,
+                            location: event.location || event.venue || '',
+                            price: ticketPrice,
+                            quantity: qty,
+                            image: event.image || event.banner_image || '',
+                            ticket_status: 'active',
+                            ticket_type: ticketTier,
+                            ticket_code: 'TKT' + Math.floor(Math.random() * 1000000),
+                            ticket_codes: Array.from({length: qty}, () => 'TKT' + Math.floor(Math.random() * 1000000))
+                        }]
+                    };
+                    
+                    const existingBookings = JSON.parse(localStorage.getItem('eventhub_bookings') || '[]');
+                    existingBookings.unshift(newBooking);
+                    localStorage.setItem('eventhub_bookings', JSON.stringify(existingBookings));
+                } catch (saveErr) {
+                    console.error('Failed to save booking to storage:', saveErr);
+                }
+                
                 showToast('Payment successful! Your ticket is confirmed.', 'success');
                 setTimeout(() => window.location.href = '/tickets/', 2000);
             } else if (data.status === 'failed' || data.status === 'cancelled') {
