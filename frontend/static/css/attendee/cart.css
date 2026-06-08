@@ -715,3 +715,24 @@
         padding: 1rem;
     }
 }
+
+/* ============================================
+   AUTOFILL HINT — Account Profile Prefill
+   ============================================ */
+
+/* Highlight prefilled inputs with a subtle indigo left border */
+.form-control:not(:placeholder-shown) {
+    border-left: 3px solid #6366f1;
+    padding-left: calc(1rem - 2px);
+    transition: border-left 0.25s ease, background 0.25s ease;
+}
+
+.form-control:focus {
+    border-left-color: #f59e0b;
+}
+
+/* Chip styling for the hint injected by AccountProfile.prefill() */
+[id^="__autofill_hint_"] {
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}

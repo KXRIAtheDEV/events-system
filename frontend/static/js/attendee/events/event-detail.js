@@ -519,6 +519,11 @@ function renderEventDetails(event) {
             window.currentBookingTicketPrice = currentPrice;
             
             document.getElementById('mpesaModal').style.display = 'flex';
+
+            // Prefill phone from stored account profile
+            if (window.AccountProfile) {
+                AccountProfile.prefill({ mpesaPhone: 'phone' });
+            }
         };
     }
 

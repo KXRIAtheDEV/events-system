@@ -89,8 +89,12 @@ async function loadProfile() {
             const profile = await window.AttendeeAPIEndpoints.profile.getProfile();
             currentUser = profile;
             displayProfile(profile);
-            // Update localStorage
-            localStorage.setItem('attendee_user', JSON.stringify(profile));
+            // Sync through AccountProfile for consistent format
+            if (window.AccountProfile) {
+                AccountProfile.save(profile);
+            } else {
+                localStorage.setItem('attendee_user', JSON.stringify(profile));
+            }
         } else {
             // Fallback to localStorage
             const userData = localStorage.getItem('attendee_user');
@@ -108,7 +112,11 @@ async function loadProfile() {
                         const profile = await response.json();
                         currentUser = profile;
                         displayProfile(profile);
-                        localStorage.setItem('attendee_user', JSON.stringify(profile));
+                        if (window.AccountProfile) {
+                            AccountProfile.save(profile);
+                        } else {
+                            localStorage.setItem('attendee_user', JSON.stringify(profile));
+                        }
                     } else {
                         throw new Error('Failed to fetch profile');
                     }
@@ -241,15 +249,20 @@ async function saveEdit() {
             });
         }
         
-        // Update localStorage
-        const userData = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-        if (field === 'name') {
-            userData.full_name = newValue;
-            userData.name = newValue;
+        if (window.AccountProfile) {
+            const update = {};
+            if (field === 'name') { update.full_name = newValue; update.name = newValue; }
+            if (field === 'email') update.email = newValue;
+            if (field === 'phone') update.phone = newValue;
+            AccountProfile.save(update);
+        } else {
+            // Fallback
+            const userData = JSON.parse(localStorage.getItem('attendee_user') || '{}');
+            if (field === 'name') { userData.full_name = newValue; userData.name = newValue; }
+            if (field === 'email') userData.email = newValue;
+            if (field === 'phone') userData.phone = newValue;
+            localStorage.setItem('attendee_user', JSON.stringify(userData));
         }
-        if (field === 'email') userData.email = newValue;
-        if (field === 'phone') userData.phone = newValue;
-        localStorage.setItem('attendee_user', JSON.stringify(userData));
         
         showToast(`${field} updated successfully`, 'success');
         await loadProfile();

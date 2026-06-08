@@ -122,12 +122,23 @@ async function handleProfileUpdate(e) {
         return;
     }
     
-    const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-    user.name = fullName;
-    user.email = email;
-    user.phone = phone;
-    
-    localStorage.setItem('attendee_user', JSON.stringify(user));
+    if (window.AccountProfile) {
+        // Save through the profile module for consistent format and event dispatch
+        AccountProfile.save({
+            name: fullName,
+            full_name: fullName,
+            email: email,
+            phone: phone
+        });
+    } else {
+        // Fallback: direct localStorage write
+        const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
+        user.name = fullName;
+        user.full_name = fullName;
+        user.email = email;
+        user.phone = phone;
+        localStorage.setItem('attendee_user', JSON.stringify(user));
+    }
     showMessage('Profile updated successfully!', 'success');
     
     // Update navbar
