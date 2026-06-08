@@ -40,14 +40,24 @@ function formatDate(dateString) {
 
 async function loadEventsFromAPI() {
     try {
-        let url = API.events;
+        const params = new URLSearchParams();
+
+        // Pass category filter server-side
         if (currentCategory !== 'all') {
-            url += `?category=${currentCategory}`;
+            params.set('category', currentCategory);
         }
-        
+
+        // Pass search term server-side so the API filters by title/description/venue
+        if (currentSearch) {
+            params.set('search', currentSearch);
+            // Return up to 200 results when searching so pagination never hides a match
+            params.set('limit', '200');
+        }
+
+        const url = API.events + (params.toString() ? '?' + params.toString() : '');
         const response = await fetch(url);
         const data = await response.json();
-        
+
         if (data.success) {
             eventsCatalog = data.events || [];
         } else {
@@ -121,18 +131,11 @@ async function addFilters() {
 
 async function filterEvents() {
     await loadEventsFromAPI();
-    
-    // The API already applies the category filter server-side (?category=slug).
-    // We only apply the search text filter client-side here.
-    let filtered = [...eventsCatalog];
-    if (currentSearch) {
-        filtered = filtered.filter(e =>
-            e.title.toLowerCase().includes(currentSearch) ||
-            (e.category_name && e.category_name.toLowerCase().includes(currentSearch)) ||
-            (e.location && e.location.toLowerCase().includes(currentSearch))
-        );
-    }
-    filteredEvents = filtered;
+
+    // Both category and search are now filtered server-side by the API.
+    // No additional client-side filtering is needed; just use what the API returned.
+    filteredEvents = [...eventsCatalog];
+
     const stats = document.getElementById('searchStats');
     if (stats) {
         stats.innerHTML = currentSearch || currentCategory !== 'all'

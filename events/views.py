@@ -293,8 +293,8 @@ def api_event_list(request):
     # Simple pagination
     page = int(request.GET.get('page', 1))
     limit = int(request.GET.get('limit', 6))
-    if 'limit' not in request.GET and 'q' in request.GET:
-        limit = 12  # match search.js default limit if searching
+    if 'limit' not in request.GET and ('q' in request.GET or 'search' in request.GET):
+        limit = 200  # return all matches when searching so no result is hidden by pagination
         
     start = (page - 1) * limit
     end = page * limit
