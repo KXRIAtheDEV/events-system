@@ -38,7 +38,7 @@ def serialize_organizer_event(event):
         'revenue': revenue,
         'status': event.status,
         'image_url': event.banner_image or '',
-        'images': [{'id': img.id, 'url': img.image.url} for img in event.images.all()]
+        'images': [{'id': img.id, 'url': img.url} for img in event.images.all()]
     }
 
 def organizer_required(view_func):
@@ -610,6 +610,15 @@ def api_organizer_event_analytics(request, event_id):
 
 ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif'}
 
+MIME_TYPES = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+}
+
 def validate_uploaded_file(file):
     if not file or not getattr(file, 'name', None):
         return False, "Invalid file object."
@@ -625,11 +634,27 @@ def validate_uploaded_file(file):
     return True, None
 
 
+def _file_to_base64_uri(file, ext):
+    """Read an uploaded file and return a base64-encoded data URI string."""
+    import base64
+    mime = MIME_TYPES.get(ext, 'application/octet-stream')
+    file.seek(0)
+    encoded = base64.b64encode(file.read()).decode('utf-8')
+    return f"data:{mime};base64,{encoded}"
+
+
 @csrf_exempt
 @organizer_required
 @require_http_methods(["POST"])
 def api_organizer_upload_image(request, event_id):
-    """Upload a banner image for the event."""
+    """Upload a banner image for the event.
+    
+    Strategy:
+      1. Try to save the file to the local/cloud filesystem via default_storage.
+      2. If that fails (e.g. Vercel read-only filesystem), encode the file as a
+         base64 data URI and store it directly in the TextField. This keeps the
+         image accessible without any external storage dependency.
+    """
     try:
         event = Event.objects.get(id=event_id, organizer=request.user)
         if 'image' not in request.FILES:
@@ -644,34 +669,31 @@ def api_organizer_upload_image(request, event_id):
         from django.core.files.storage import default_storage
         from django.core.files.base import ContentFile
         import uuid
-        import random
         
         ext = os.path.splitext(file.name)[1].lower()
         filename = f"banner_{event_id}_{uuid.uuid4().hex[:8]}{ext}"
         filepath = os.path.join('events', 'banners', filename)
         
-        # Save to media folder with fallback for read-only serverless filesystems (Vercel)
+        # Try filesystem save first; fall back to base64 data URI on read-only environments
+        image_value = None  # what gets stored in the DB
+        url = None          # what gets returned to the browser
         try:
+            file.seek(0)
             saved_path = default_storage.save(filepath, ContentFile(file.read()))
             url = settings.MEDIA_URL + saved_path.replace('\\', '/')
+            image_value = saved_path  # relative path – url property will prepend MEDIA_URL
         except Exception as storage_err:
-            print("Storage save failed, falling back to unsplash image:", storage_err)
-            placeholders = [
-                "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=800",
-                "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800",
-                "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800",
-                "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&q=80&w=800",
-                "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=800"
-            ]
-            url = random.choice(placeholders)
-            saved_path = "events/banners/placeholder.png"
-            
+            print("Storage save failed, using base64 fallback:", storage_err)
+            data_uri = _file_to_base64_uri(file, ext)
+            url = data_uri
+            image_value = data_uri  # store the full data URI directly
+
         event.banner_image = url
         event.save()
-        
-        # Save to events_eventimage table (wrap in try-except to prevent blocking if remote migration not run yet)
+
+        # Also record in EventImage table (best-effort – won't block on failure)
         try:
-            EventImage.objects.create(event=event, image=saved_path)
+            EventImage.objects.create(event=event, image=image_value)
         except Exception as db_err:
             print("Failed to save to EventImage table:", db_err)
         
@@ -686,7 +708,10 @@ def api_organizer_upload_image(request, event_id):
 @organizer_required
 @require_http_methods(["POST"])
 def api_organizer_upload_gallery(request, event_id):
-    """Upload multiple gallery images for the event."""
+    """Upload multiple gallery images for the event.
+    
+    Falls back to base64 data URIs when the filesystem is read-only.
+    """
     try:
         event = Event.objects.get(id=event_id, organizer=request.user)
         
@@ -700,19 +725,31 @@ def api_organizer_upload_gallery(request, event_id):
         if not files:
             return JsonResponse({'success': False, 'message': 'No gallery images uploaded.'}, status=400)
             
-        # First validate all files
+        # Validate all files first
         for file in files:
             is_valid, err_msg = validate_uploaded_file(file)
             if not is_valid:
                 return JsonResponse({'success': False, 'message': f"File '{file.name}': {err_msg}"}, status=400)
-                
+
+        from django.conf import settings
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import uuid
+
         saved_images = []
         for file in files:
-            img_obj = EventImage.objects.create(event=event, image=file)
-            saved_images.append({
-                'id': img_obj.id,
-                'url': img_obj.image.url
-            })
+            ext = os.path.splitext(file.name)[1].lower()
+            filename = f"gallery_{event_id}_{uuid.uuid4().hex[:8]}{ext}"
+            filepath = os.path.join('events', 'gallery', filename)
+            try:
+                file.seek(0)
+                saved_path = default_storage.save(filepath, ContentFile(file.read()))
+                image_value = saved_path
+            except Exception:
+                image_value = _file_to_base64_uri(file, ext)
+
+            img_obj = EventImage.objects.create(event=event, image=image_value)
+            saved_images.append({'id': img_obj.id, 'url': img_obj.url})
             
         return JsonResponse({'success': True, 'images': saved_images})
     except Event.DoesNotExist:
@@ -730,10 +767,17 @@ def api_organizer_delete_gallery_image(request, event_id, image_id):
         event = Event.objects.get(id=event_id, organizer=request.user)
         img_obj = EventImage.objects.get(id=image_id, event=event)
         
-        # Delete file from storage
-        if img_obj.image:
-            img_obj.image.delete(save=False)
-            
+        # If the stored value is a filesystem path (not a data URI or external URL),
+        # attempt to remove the physical file from storage.
+        img_val = img_obj.image or ''
+        if img_val and not img_val.startswith('data:') and not img_val.startswith('http'):
+            try:
+                from django.core.files.storage import default_storage
+                if default_storage.exists(img_val):
+                    default_storage.delete(img_val)
+            except Exception as del_err:
+                print("Could not delete image file from storage:", del_err)
+
         img_obj.delete()
         return JsonResponse({'success': True, 'message': 'Gallery image deleted successfully.'})
     except Event.DoesNotExist:

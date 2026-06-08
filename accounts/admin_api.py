@@ -389,7 +389,7 @@ def api_event_detail(request, event_id):
             'banner_image': e.banner_image or '',
             'created_at': e.created_at.isoformat(),
             'is_featured': e.is_featured,
-            'images': [img.image.url for img in e.images.all()],
+            'images': [img.url for img in e.images.all()],
         }
         return JsonResponse({'success': True, 'event': data})
     except Exception as e:

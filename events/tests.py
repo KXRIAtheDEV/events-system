@@ -83,8 +83,13 @@ class EventImageUploadTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertTrue(data['success'])
-        self.assertIn('/media/events/banners/banner_', data['image_url'])
-        
+        # Image URL should be either a /media/ path (local FS) or a data: URI (serverless fallback)
+        image_url = data['image_url']
+        self.assertTrue(
+            image_url.startswith('/media/events/banners/banner_') or image_url.startswith('data:image/'),
+            f"Unexpected image_url format: {image_url[:60]}"
+        )
+
         # Verify db updated
         self.event.refresh_from_db()
         self.assertEqual(self.event.banner_image, data['image_url'])
@@ -121,8 +126,8 @@ class EventImageUploadTests(TestCase):
         self.assertEqual(self.event.images.count(), 2)
 
     def test_delete_gallery_image(self):
-        img_file = SimpleUploadedFile('pic.png', b'pngdata', content_type='image/png')
-        img_obj = EventImage.objects.create(event=self.event, image=img_file)
+        # image is now a TextField – store a plain path string
+        img_obj = EventImage.objects.create(event=self.event, image='events/gallery/pic.png')
         
         response = self.client.delete(
             f'/api/organizer/events/{self.event.id}/gallery/{img_obj.id}/delete/'
