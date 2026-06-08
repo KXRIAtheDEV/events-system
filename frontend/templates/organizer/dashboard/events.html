@@ -26,7 +26,6 @@
                     <li class="nav-item"><button class="tab-button active" data-bs-toggle="tab" data-bs-target="#basicTab">Basic Info</button></li>
                     <li class="nav-item"><button class="tab-button" data-bs-toggle="tab" data-bs-target="#ticketsTab">Tickets</button></li>
                     <li class="nav-item"><button class="tab-button" data-bs-toggle="tab" data-bs-target="#scheduleTab">Schedule</button></li>
-                    <li class="nav-item"><button class="tab-button" data-bs-toggle="tab" data-bs-target="#mediaTab">Media</button></li>
                     <li class="nav-item"><button class="tab-button" data-bs-toggle="tab" data-bs-target="#analyticsTab">Analytics</button></li>
                 </ul>
                 <div class="tab-content">
@@ -41,7 +40,12 @@
                                 <div class="col-md-6 mb-3"><label>End Date & Time</label><input type="datetime-local" id="eventEndDate" class="form-control"></div>
                                 <div class="col-md-6 mb-3"><label>Venue</label><input type="text" id="eventVenue" class="form-control" placeholder="e.g. Alchemist Bar, Westlands"></div>
                                 <div class="col-md-6 mb-3"><label>Capacity</label><input type="number" id="eventCapacity" class="form-control" placeholder="e.g. 500"></div>
-                                <div class="col-md-6 mb-3"><label>Status</label><select id="eventStatus" class="form-select"><option value="draft">Draft</option><option value="published">Published</option><option value="cancelled">Cancelled</option></select></div>
+                                <div class="col-md-6 mb-3"><label>Status</label><select id="eventStatus" class="form-select"><option value="draft">Draft</option><option value="approved">Approved</option><option value="published">Published</option><option value="cancelled">Cancelled</option></select></div>
+                                <div class="col-md-6 mb-3">
+                                    <label>Event Banner Image</label>
+                                    <input type="file" id="eventBannerFile" class="form-control" accept="image/*">
+                                    <div id="bannerPreview" class="mt-2"></div>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -52,10 +56,6 @@
                     <div class="tab-pane fade" id="scheduleTab">
                         <div class="d-flex justify-content-end mb-3"><button class="btn btn-sm btn-outline-primary" onclick="showScheduleItemModal()"><i class="fas fa-plus"></i> Add Schedule Item</button></div>
                         <div id="scheduleList">Loading schedule...</div>
-                    </div>
-                    <div class="tab-pane fade" id="mediaTab">
-                        <div class="mb-3"><label>Banner Image</label><input type="file" id="bannerImage" class="form-control" accept="image/*"><button class="btn btn-sm btn-primary mt-2" onclick="uploadBanner()">Upload Banner</button><div id="bannerPreview" class="mt-2"></div></div>
-                        <div><label>Gallery Images</label><input type="file" id="galleryImages" class="form-control" accept="image/*" multiple><button class="btn btn-sm btn-primary mt-2" onclick="uploadGallery()">Upload Gallery</button><div id="galleryPreview" class="mt-2 d-flex flex-wrap"></div></div>
                     </div>
                     <div class="tab-pane fade" id="analyticsTab">
                         <div class="row">

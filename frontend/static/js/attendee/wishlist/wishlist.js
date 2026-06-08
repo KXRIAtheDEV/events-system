@@ -1,12 +1,13 @@
 // ============================================
-// ATTENDEE WISHLIST - Complete Functionality
+// WISHLIST JS - Works with event IDs from localStorage
+// Fetches full event data from API
 // ============================================
 
+let wishlistIds = [];
 let wishlistItems = [];
 let currentSearch = '';
 let currentCategory = '';
 
-// DOM Elements
 const wishlistGrid = document.getElementById('wishlistGrid');
 const emptyWishlist = document.getElementById('emptyWishlist');
 const wishlistInfo = document.getElementById('wishlistInfo');
@@ -18,8 +19,31 @@ const modal = document.getElementById('shareModal');
 const shareLink = document.getElementById('shareLink');
 let currentShareEvent = null;
 
-// Initialize
+// API endpoints
+const API = {
+    events: '/api/attendee/events/',
+    cart: '/api/attendee/cart/',
+    wishlist: '/api/attendee/wishlist/'
+};
+
+// Fetch event by ID from API
+async function getEventById(eventId) {
+    try {
+        const response = await fetch(`${API.events}${eventId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.event) {
+            return data.event;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching event:', error);
+        return null;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Wishlist page loaded');
     loadWishlist();
     setupEventListeners();
     setupModalClose();
@@ -27,16 +51,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupEventListeners() {
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(function() {
+        searchInput.addEventListener('input', function() {
             currentSearch = this.value.toLowerCase();
-            filterAndDisplayWishlist();
-        }, 300));
+            filterAndDisplay();
+        });
     }
     
     if (categoryFilter) {
         categoryFilter.addEventListener('change', function() {
             currentCategory = this.value;
-            filterAndDisplayWishlist();
+            filterAndDisplay();
         });
     }
     
@@ -47,98 +71,83 @@ function setupEventListeners() {
 
 function setupModalClose() {
     const closeBtn = document.querySelector('.modal-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => closeModal());
-    }
-    
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
+    if (closeBtn) closeBtn.addEventListener('click', () => closeModal());
+    window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
 async function loadWishlist() {
-    showLoading();
-    
     try {
-        // Load wishlist from localStorage
-        const savedWishlist = localStorage.getItem('event_wishlist');
-        const wishlistIds = savedWishlist ? JSON.parse(savedWishlist) : [];
+        const saved = localStorage.getItem('event_wishlist');
+        console.log('Raw wishlist IDs:', saved);
         
-        if (wishlistIds.length === 0) {
-            wishlistItems = [];
-            updateEmptyState();
-            return;
+        if (saved) {
+            wishlistIds = JSON.parse(saved);
+        } else {
+            wishlistIds = [];
         }
         
-        // Fetch events from API
-        const events = await fetchEventsByIds(wishlistIds);
-        wishlistItems = events;
+        wishlistItems = [];
         
-        filterAndDisplayWishlist();
+        for (const id of wishlistIds) {
+            const event = await getEventById(id);
+            if (event) {
+                wishlistItems.push({
+                    id: event.id,
+                    title: event.title,
+                    price: event.price,
+                    image: event.image,
+                    location: event.location,
+                    date: event.date,
+                    category: event.category_name || event.category,
+                    original_price: event.original_price,
+                    added_at: new Date().toISOString()
+                });
+            }
+        }
+        
+        console.log('Loaded wishlist items:', wishlistItems.length);
+        
+        filterAndDisplay();
         updateEmptyState();
+        updateWishlistBadge();
         
     } catch (error) {
         console.error('Error loading wishlist:', error);
-        showError('Failed to load wishlist');
-    } finally {
-        hideLoading();
+        wishlistItems = [];
+        updateEmptyState();
     }
 }
 
-async function fetchEventsByIds(ids) {
-    if (!ids.length) return [];
-    
-    try {
-        // Replace with your actual API endpoint
-        const response = await fetch(`/api/events/?ids=${ids.join(',')}`);
-        if (response.ok) {
-            const data = await response.json();
-            return data.events || [];
-        }
-    } catch (error) {
-        console.warn('API fetch failed, using localStorage events');
-    }
-    
-    // Fallback: return empty array
-    return [];
-}
-
-function filterAndDisplayWishlist() {
+function filterAndDisplay() {
     let filtered = [...wishlistItems];
     
-    // Filter by search
     if (currentSearch) {
         filtered = filtered.filter(item => 
             (item.title || '').toLowerCase().includes(currentSearch) ||
-            (item.location || '').toLowerCase().includes(currentSearch)
+            (item.location || '').toLowerCase().includes(currentSearch) ||
+            (item.category || '').toLowerCase().includes(currentSearch)
         );
     }
     
-    // Filter by category
     if (currentCategory) {
         filtered = filtered.filter(item => (item.category || '').toLowerCase() === currentCategory);
     }
     
     displayWishlist(filtered);
-    updateWishlistCount(filtered.length);
+    if (wishlistCountSpan) wishlistCountSpan.textContent = filtered.length;
+    if (wishlistInfo) wishlistInfo.style.display = filtered.length > 0 ? 'block' : 'none';
 }
 
 function displayWishlist(items) {
     if (!wishlistGrid) return;
     
     if (!items || items.length === 0) {
-        wishlistGrid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1/-1;">
-                <i class="fas fa-search"></i>
-                <h3>No matching events</h3>
-                <p>Try adjusting your search or filter</p>
-            </div>
-        `;
+        wishlistGrid.innerHTML = '';
         return;
     }
     
     wishlistGrid.innerHTML = items.map(item => `
-        <div class="wishlist-card" data-event-id="${item.id}">
+        <div class="wishlist-card" data-event-id="${item.id}" onclick="viewEvent(${item.id})">
             <div class="card-image-container">
                 <img src="${item.image || '/static/images/placeholder.jpg'}" alt="${escapeHtml(item.title)}" class="card-image" onerror="this.src='/static/images/placeholder.jpg'">
                 <div class="card-gradient-overlay"></div>
@@ -146,25 +155,23 @@ function displayWishlist(items) {
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
-            <div class="card-content" onclick="viewEvent(${item.id})">
-                <span class="card-category">${escapeHtml(item.category_name || item.category || 'Event')}</span>
+            <div class="card-content">
+                <span class="card-category">${escapeHtml(item.category || 'Event')}</span>
                 <h3 class="card-title">${escapeHtml(item.title)}</h3>
                 <div class="card-meta">
                     <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.location || 'TBD')}</span>
+                    <span><i class="fas fa-calendar"></i> ${formatDate(item.date)}</span>
                 </div>
-                <div class="card-price">
-                    KES ${(item.price || 0).toLocaleString()}
-                    ${item.original_price && item.original_price > item.price ? `<span class="original-price">KES ${item.original_price.toLocaleString()}</span>` : ''}
-                </div>
+                <div class="card-price">KES ${(item.price || 0).toLocaleString()}</div>
             </div>
             <div class="card-actions">
-                <button class="card-action-btn view-details-btn" onclick="viewEvent(${item.id})">
+                <button class="card-action-btn view-details-btn" onclick="event.stopPropagation(); viewEvent(${item.id})">
                     <i class="fas fa-info-circle"></i> Details
                 </button>
                 <button class="card-action-btn add-to-cart-btn" onclick="event.stopPropagation(); addToCart(${item.id})">
-                    <i class="fas fa-cart-plus"></i> Add to Cart
+                    <i class="fas fa-cart-plus"></i> Book Now
                 </button>
-                <button class="share-btn-icon" onclick="event.stopPropagation(); openShareModal(${item.id})" title="Share">
+                <button class="share-btn-icon" onclick="event.stopPropagation(); openShareModal(${item.id})">
                     <i class="fas fa-share-alt"></i>
                 </button>
             </div>
@@ -173,114 +180,72 @@ function displayWishlist(items) {
 }
 
 async function removeFromWishlist(eventId) {
-    showLoader('Removing from wishlist...');
+    wishlistIds = wishlistIds.filter(id => id != eventId);
+    localStorage.setItem('event_wishlist', JSON.stringify(wishlistIds));
     
-    try {
-        // Update localStorage
-        const savedWishlist = localStorage.getItem('event_wishlist');
-        let wishlistIds = savedWishlist ? JSON.parse(savedWishlist) : [];
-        wishlistIds = wishlistIds.filter(id => id != eventId);
-        localStorage.setItem('event_wishlist', JSON.stringify(wishlistIds));
-        
-        // Remove from current items
-        wishlistItems = wishlistItems.filter(item => item.id != eventId);
-        
-        filterAndDisplayWishlist();
-        updateEmptyState();
-        updateWishlistBadge();
-        
-        // Dispatch event for other components
-        window.dispatchEvent(new CustomEvent('wishlist-updated'));
-        
-        showToast('Removed from wishlist', 'success');
-        
-    } catch (error) {
-        console.error('Error removing from wishlist:', error);
-        showToast('Failed to remove from wishlist', 'error');
-    } finally {
-        hideLoader();
-    }
+    wishlistItems = wishlistItems.filter(item => item.id != eventId);
+    
+    filterAndDisplay();
+    updateEmptyState();
+    updateWishlistBadge();
+    showToast('Removed from wishlist', 'success');
+    window.dispatchEvent(new CustomEvent('wishlist-updated'));
 }
 
 async function clearAllWishlist() {
     if (wishlistItems.length === 0) return;
+    if (!confirm('Clear your entire wishlist?')) return;
     
-    const confirmed = confirm('Are you sure you want to clear your entire wishlist?');
-    if (!confirmed) return;
+    wishlistIds = [];
+    wishlistItems = [];
+    localStorage.setItem('event_wishlist', JSON.stringify([]));
     
-    showLoader('Clearing wishlist...');
-    
-    try {
-        localStorage.setItem('event_wishlist', JSON.stringify([]));
-        wishlistItems = [];
-        
-        filterAndDisplayWishlist();
-        updateEmptyState();
-        updateWishlistBadge();
-        
-        window.dispatchEvent(new CustomEvent('wishlist-updated'));
-        
-        showToast('Wishlist cleared', 'success');
-        
-    } catch (error) {
-        console.error('Error clearing wishlist:', error);
-        showToast('Failed to clear wishlist', 'error');
-    } finally {
-        hideLoader();
-    }
+    filterAndDisplay();
+    updateEmptyState();
+    updateWishlistBadge();
+    showToast('Wishlist cleared', 'success');
+    window.dispatchEvent(new CustomEvent('wishlist-updated'));
 }
 
 async function addToCart(eventId) {
     const token = localStorage.getItem('attendee_access_token');
-    
     if (!token) {
-        showToast('Please login to add to cart', 'info');
-        setTimeout(() => {
-            localStorage.setItem('redirect_after_login', '/cart/');
-            window.location.href = '/login/';
-        }, 1500);
+        showToast('Please login to book tickets', 'info');
+        setTimeout(() => window.location.href = '/login/', 1500);
         return;
     }
     
-    const event = wishlistItems.find(e => e.id === eventId);
-    if (!event) return;
-    
-    showLoader('Adding to cart...');
-    
-    try {
-        let cart = localStorage.getItem('eventhub_cart');
-        cart = cart ? JSON.parse(cart) : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
-        
-        const existingItem = cart.items.find(i => i.id === eventId);
-        if (existingItem) {
-            showToast('This event is already in your cart!', 'info');
-            return;
-        } else {
-            cart.items.push({
-                id: event.id,
-                title: event.title,
-                price: event.price,
-                quantity: 1,
-                image: event.image,
-                location: event.location
-            });
-        }
-        
-        cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
-        cart.total = cart.subtotal + cart.platform_fee;
-        
-        localStorage.setItem('eventhub_cart', JSON.stringify(cart));
-        
-        showToast('Added to cart!', 'success');
-        updateCartCount();
-        window.dispatchEvent(new Event('cart-updated'));
-    } catch (error) {
-        console.error('Error adding to cart:', error);
-        showToast('Failed to add to cart', 'error');
-    } finally {
-        hideLoader();
+    const event = wishlistItems.find(e => e.id == eventId);
+    if (!event) {
+        showToast('Event not found', 'error');
+        return;
     }
+    
+    let cart = localStorage.getItem('eventhub_cart');
+    cart = cart ? JSON.parse(cart) : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+    
+    if (cart.items.find(i => i.id == eventId)) {
+        showToast('Already in cart!', 'info');
+        return;
+    }
+    
+    cart.items.push({
+        id: event.id,
+        title: event.title,
+        price: event.price,
+        quantity: 1,
+        image: event.image,
+        location: event.location,
+        date: event.date
+    });
+    
+    cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
+    cart.total = cart.subtotal + cart.platform_fee;
+    
+    localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+    showToast('Added to cart!', 'success');
+    window.dispatchEvent(new Event('cart-updated'));
 }
 
 function viewEvent(eventId) {
@@ -288,13 +253,10 @@ function viewEvent(eventId) {
 }
 
 function openShareModal(eventId) {
-    const event = wishlistItems.find(e => e.id === eventId);
+    const event = wishlistItems.find(e => e.id == eventId);
     if (!event) return;
-    
     currentShareEvent = event;
-    const eventUrl = `${window.location.origin}/events/detail/?id=${event.id}`;
-    
-    if (shareLink) shareLink.value = eventUrl;
+    if (shareLink) shareLink.value = `${window.location.origin}/events/detail/?id=${event.id}`;
     if (modal) modal.classList.add('show');
 }
 
@@ -305,89 +267,69 @@ function closeModal() {
 
 function shareOnFacebook() {
     if (!currentShareEvent) return;
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${window.location.origin}/events/detail/?id=${currentShareEvent.id}`)}`;
-    window.open(url, '_blank', 'width=600,height=400');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${window.location.origin}/events/detail/?id=${currentShareEvent.id}`)}`, '_blank');
 }
 
 function shareOnTwitter() {
     if (!currentShareEvent) return;
-    const text = `Check out ${currentShareEvent.title} on EventHub!`;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`${window.location.origin}/events/detail/?id=${currentShareEvent.id}`)}`;
-    window.open(url, '_blank', 'width=600,height=400');
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${currentShareEvent.title}`)}&url=${encodeURIComponent(`${window.location.origin}/events/detail/?id=${currentShareEvent.id}`)}`, '_blank');
 }
 
 function shareOnWhatsApp() {
     if (!currentShareEvent) return;
-    const text = `Check out ${currentShareEvent.title} on EventHub! ${window.location.origin}/events/detail/?id=${currentShareEvent.id}`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${currentShareEvent.title} - ${window.location.origin}/events/detail/?id=${currentShareEvent.id}`)}`, '_blank');
 }
 
 function shareViaEmail() {
     if (!currentShareEvent) return;
-    const subject = `Check out ${currentShareEvent.title}`;
-    const body = `I thought you might be interested in ${currentShareEvent.title}. Check it out: ${window.location.origin}/events/detail/?id=${currentShareEvent.id}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(`Check out ${currentShareEvent.title}`)}&body=${encodeURIComponent(`${window.location.origin}/events/detail/?id=${currentShareEvent.id}`)}`;
 }
 
 function copyShareLink() {
     if (!shareLink) return;
     shareLink.select();
     document.execCommand('copy');
-    showToast('Link copied to clipboard!', 'success');
-}
-
-function updateWishlistCount(count) {
-    if (wishlistCountSpan) {
-        wishlistCountSpan.textContent = count;
-    }
-    if (wishlistInfo) {
-        wishlistInfo.style.display = count > 0 ? 'block' : 'none';
-    }
+    showToast('Link copied!', 'success');
 }
 
 function updateEmptyState() {
     const hasItems = wishlistItems.length > 0;
-    
     if (wishlistGrid) wishlistGrid.style.display = hasItems ? 'grid' : 'none';
     if (emptyWishlist) emptyWishlist.style.display = hasItems ? 'none' : 'flex';
     if (wishlistInfo) wishlistInfo.style.display = hasItems ? 'block' : 'none';
 }
 
 function updateWishlistBadge() {
-    const wishlistCount = wishlistItems.length;
+    const count = wishlistItems.length;
     const badge = document.getElementById('wishlistBadgeDropdown');
     const mobileBadge = document.getElementById('mobileWishlistBadge');
-    
     if (badge) {
-        badge.textContent = wishlistCount;
-        badge.style.display = wishlistCount > 0 ? 'inline-block' : 'none';
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
     }
     if (mobileBadge) {
-        mobileBadge.textContent = wishlistCount;
-        mobileBadge.style.display = wishlistCount > 0 ? 'inline-block' : 'none';
+        if (count > 0) {
+            mobileBadge.textContent = count;
+            mobileBadge.style.display = 'inline-block';
+        } else {
+            mobileBadge.style.display = 'none';
+        }
     }
 }
 
-function updateCartCount() {
-    const cart = localStorage.getItem('eventhub_cart');
-    const items = cart ? JSON.parse(cart).items : [];
-    const count = items.reduce((sum, item) => sum + item.quantity, 0);
-    
-    const badge = document.getElementById('cartBadgeDropdown');
-    const mobileBadge = document.getElementById('mobileCartBadge');
-    
-    if (badge) {
-        badge.textContent = count;
-        badge.style.display = count > 0 ? 'inline-block' : 'none';
-    }
-    if (mobileBadge) {
-        mobileBadge.textContent = count;
-        mobileBadge.style.display = count > 0 ? 'inline-block' : 'none';
-    }
+function formatDate(dateString) {
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch(e) { return 'TBA'; }
 }
 
-// Helper Functions
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -395,68 +337,30 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-
-function showLoading() {
-    if (wishlistGrid) {
-        wishlistGrid.innerHTML = `
-            <div class="loading-state" style="grid-column: 1/-1;">
-                <div class="loading-spinner"></div>
-                <p>Loading your wishlist...</p>
-            </div>
-        `;
-    }
-}
-
-function hideLoading() {
-    // Handled by display functions
-}
-
-function showError(message) {
-    if (wishlistGrid) {
-        wishlistGrid.innerHTML = `
-            <div class="empty-state" style="grid-column: 1/-1;">
-                <i class="fas fa-exclamation-circle"></i>
-                <h3>Something went wrong</h3>
-                <p>${escapeHtml(message)}</p>
-                <button class="btn-browse" onclick="location.reload()">Try Again</button>
-            </div>
-        `;
-    }
-}
-
-function showToast(message, type = 'success') {
+function showToast(message, type) {
     const existingToast = document.querySelector('.toast-notification');
     if (existingToast) existingToast.remove();
     
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-size: 0.85rem;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        animation: slideInRight 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 5000);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-function showLoader(message) {
-    const loader = document.getElementById('globalLoader');
-    if (loader) {
-        const textEl = loader.querySelector('.loader-text');
-        if (textEl) textEl.textContent = message || 'Loading...';
-        loader.style.display = 'flex';
-    }
-}
-
-function hideLoader() {
-    const loader = document.getElementById('globalLoader');
-    if (loader) loader.style.display = 'none';
-}
-
-// Make functions global
 window.removeFromWishlist = removeFromWishlist;
 window.addToCart = addToCart;
 window.viewEvent = viewEvent;

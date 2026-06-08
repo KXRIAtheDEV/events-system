@@ -1,126 +1,78 @@
 // ============================================
-// ATTENDEE DASHBOARD - Complete Functionality
+// DASHBOARD MODULE - Dynamically fetches database data
 // ============================================
 
 let refreshInterval = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    setCurrentDate();
-    loadUserName();
-    loadDashboard();
+    loadDashboardData();
+    displayCurrentDate();
+    displayGreeting();
+    displayUserName();
     setupAutoRefresh();
 });
 
-function setCurrentDate() {
-    const dateSpan = document.getElementById('currentDate');
-    if (dateSpan) {
-        dateSpan.textContent = new Date().toLocaleDateString('en-KE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+function displayGreeting() {
+    const greetingTextEl = document.getElementById('greetingText');
+    if (greetingTextEl) {
+        const hour = new Date().getHours();
+        let greeting = "Good Evening";
+        if (hour >= 3 && hour < 12) {
+            greeting = "Good Morning";
+        } else if (hour >= 12 && hour < 18) {
+            greeting = "Good Afternoon";
+        }
+        greetingTextEl.textContent = greeting;
     }
 }
 
-function loadUserName() {
+function displayCurrentDate() {
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateElement.textContent = now.toLocaleDateString('en-US', options);
+    }
+}
+
+function displayUserName() {
     const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
     const userNameSpan = document.getElementById('userName');
-    if (userNameSpan && user.name) {
-        userNameSpan.textContent = user.name.split(' ')[0];
-    } else if (userNameSpan) {
-        userNameSpan.textContent = 'Attendee';
+    if (userNameSpan) {
+        const name = user.name || user.first_name || user.username || 'Attendee';
+        userNameSpan.textContent = name;
     }
 }
 
-async function loadDashboard() {
-    showLoader('Loading dashboard...');
-    
-    try {
-        await Promise.all([
-            loadStats(),
-            loadUpcomingTickets(),
-            loadRecentActivity(),
-            loadRecommendations(),
-            loadStatsOverview()
-        ]);
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        showToast('Failed to load dashboard data', 'error');
-    } finally {
-        hideLoader();
-    }
+function loadDashboardData() {
+    loadStats();
+    loadUpcomingTickets();
+    loadRecentActivity();
+    loadRecommendations();
+    loadStatsOverview();
 }
 
 async function loadStats() {
     try {
-        // Try API first, fallback to mock data
         let stats;
         if (window.AttendeeAPIEndpoints?.dashboard?.getStats) {
             stats = await window.AttendeeAPIEndpoints.dashboard.getStats();
-        } else {
-            stats = getMockStats();
         }
         
-        const totalTickets = document.getElementById('totalTickets');
-        const totalSpent = document.getElementById('totalSpent');
-        const upcomingEvents = document.getElementById('upcomingEvents');
-        const reviewsWritten = document.getElementById('reviewsWritten');
-        
-        if (totalTickets) totalTickets.textContent = formatNumber(stats.total_tickets || 0);
-        if (totalSpent) totalSpent.textContent = formatCurrency(stats.total_spent || 0);
-        if (upcomingEvents) upcomingEvents.textContent = formatNumber(stats.upcoming_events || 0);
-        if (reviewsWritten) reviewsWritten.textContent = formatNumber(stats.reviews_written || 0);
-        
-        updateTrend('ticketsTrend', stats.tickets_trend);
-        updateTrend('spentTrend', stats.spent_trend);
-        updateTrend('upcomingTrend', stats.upcoming_trend);
-        updateTrend('reviewsTrend', stats.reviews_trend);
-        
+        if (stats) {
+            const totalTicketsEl = document.getElementById('totalTickets');
+            const totalSpentEl = document.getElementById('totalSpent');
+            const upcomingEventsEl = document.getElementById('upcomingEvents');
+            const reviewsWrittenEl = document.getElementById('reviewsWritten');
+            
+            if (totalTicketsEl) totalTicketsEl.textContent = formatNumber(stats.total_tickets || 0);
+            if (totalSpentEl) totalSpentEl.textContent = formatCurrency(stats.total_spent || 0);
+            if (upcomingEventsEl) upcomingEventsEl.textContent = formatNumber(stats.upcoming_events || 0);
+            if (reviewsWrittenEl) reviewsWrittenEl.textContent = formatNumber(stats.reviews_written || 0);
+        }
     } catch (error) {
         console.error('Error loading stats:', error);
-        setDefaultStats();
     }
-}
-
-function getMockStats() {
-    return {
-        total_tickets: 8,
-        total_spent: 24500,
-        upcoming_events: 3,
-        reviews_written: 2,
-        tickets_trend: { percentage: 12, direction: 'up' },
-        spent_trend: { percentage: 8, direction: 'up' },
-        upcoming_trend: { percentage: 0, direction: 'flat' },
-        reviews_trend: { percentage: 100, direction: 'up' }
-    };
-}
-
-function setDefaultStats() {
-    const totalTickets = document.getElementById('totalTickets');
-    const totalSpent = document.getElementById('totalSpent');
-    const upcomingEvents = document.getElementById('upcomingEvents');
-    const reviewsWritten = document.getElementById('reviewsWritten');
-    
-    if (totalTickets) totalTickets.textContent = '0';
-    if (totalSpent) totalSpent.textContent = 'Kes 0';
-    if (upcomingEvents) upcomingEvents.textContent = '0';
-    if (reviewsWritten) reviewsWritten.textContent = '0';
-}
-
-function updateTrend(elementId, trend) {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    
-    if (!trend || trend.percentage === undefined) {
-        element.style.display = 'none';
-        return;
-    }
-    
-    element.style.display = 'inline-block';
-    const isPositive = trend.percentage >= 0;
-    element.className = `stat-trend ${isPositive ? 'up' : 'down'}`;
-    element.innerHTML = `${isPositive ? 'â†‘' : 'â†“'} ${Math.abs(trend.percentage)}%`;
 }
 
 async function loadUpcomingTickets() {
@@ -128,56 +80,31 @@ async function loadUpcomingTickets() {
     if (!container) return;
     
     try {
-        let tickets;
+        let tickets = [];
         if (window.AttendeeAPIEndpoints?.tickets?.getUpcoming) {
             const result = await window.AttendeeAPIEndpoints.tickets.getUpcoming();
             tickets = result.results || result;
-        } else {
-            tickets = getMockUpcomingTickets();
         }
         
         if (!tickets || tickets.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-ticket-alt"></i>
-                    <h4>No Upcoming Tickets</h4>
-                    <p>You don't have any upcoming events.</p>
-                    <a href="/events/" class="btn-sm btn-primary">Browse Events</a>
-                </div>
-            `;
+            container.innerHTML = '<div class="empty-state">No upcoming tickets. <a href="/events/">Browse Events</a></div>';
             return;
         }
         
         container.innerHTML = tickets.slice(0, 3).map(ticket => `
-            <div class="ticket-item" onclick="viewTicket('${ticket.id || ticket.ticket_number}')">
-                <div class="ticket-image" style="background-image: url('${ticket.event?.banner_image || ticket.image || '/static/images/placeholder.jpg'}')"></div>
-                <div class="ticket-info">
-                    <h4>${escapeHtml(ticket.event?.title || ticket.title || 'Event')}</h4>
-                    <p><i class="fas fa-calendar"></i> ${formatDate(ticket.event?.start_date || ticket.date)}</p>
-                    <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(ticket.event?.venue_name || ticket.location || 'TBD')}</p>
-                    <span class="ticket-status ${ticket.status || 'confirmed'}">${ticket.status || 'Confirmed'}</span>
+            <div class="ticket-item" onclick="viewTicket('${ticket.ticket_number || ticket.id}')">
+                <div class="ticket-item-image" style="background-image: url('${ticket.event?.banner_image || ticket.image || '/static/images/placeholder.jpg'}')"></div>
+                <div class="ticket-item-info">
+                    <div class="ticket-item-title">${escapeHtml(ticket.event?.title || ticket.title || 'Event')}</div>
+                    <div class="ticket-item-date">${formatDate(ticket.event?.start_date || ticket.date)}</div>
                 </div>
+                <div class="ticket-item-price">${formatCurrency(ticket.price)}</div>
             </div>
         `).join('');
-        
     } catch (error) {
         console.error('Error loading upcoming tickets:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h4>Unable to Load Tickets</h4>
-                <button class="btn-sm btn-outline" onclick="loadUpcomingTickets()">Retry</button>
-            </div>
-        `;
+        container.innerHTML = '<div class="empty-state">Error loading tickets.</div>';
     }
-}
-
-function getMockUpcomingTickets() {
-    return [
-        { id: 1, ticket_number: 'TKT-001', title: 'Summer Music Festival', date: '2026-06-15', location: 'Nairobi, Kenya', status: 'confirmed', image: null },
-        { id: 2, ticket_number: 'TKT-002', title: 'Tech Innovation Summit', date: '2026-07-20', location: 'Mombasa, Kenya', status: 'confirmed', image: null },
-        { id: 3, ticket_number: 'TKT-003', title: 'Food & Wine Expo', date: '2026-09-05', location: 'Kisumu, Kenya', status: 'pending', image: null }
-    ];
 }
 
 async function loadRecentActivity() {
@@ -185,55 +112,35 @@ async function loadRecentActivity() {
     if (!container) return;
     
     try {
-        let activities;
+        let activities = [];
         if (window.AttendeeAPIEndpoints?.dashboard?.getRecentActivity) {
             activities = await window.AttendeeAPIEndpoints.dashboard.getRecentActivity();
-        } else {
-            activities = getMockRecentActivity();
         }
         
         if (!activities || activities.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h4>No Recent Activity</h4>
-                    <p>Your recent activity will appear here.</p>
-                </div>
-            `;
+            container.innerHTML = '<div class="empty-state">No recent activity. Start booking events!</div>';
             return;
         }
         
         container.innerHTML = activities.slice(0, 5).map(activity => `
-            <div class="activity-item" onclick="window.location.href='${activity.action_url || '#'}'">
+            <div class="activity-item activity-${activity.type || 'booking'}" onclick="window.location.href='${activity.action_url || '#'}'" style="cursor: pointer;">
                 <div class="activity-icon">
                     <i class="fas ${getActivityIcon(activity.type)}"></i>
                 </div>
-                <div class="activity-details">
+                <div class="activity-content">
                     <div class="activity-title">${escapeHtml(activity.title)}</div>
-                    <div class="activity-time">${formatRelativeTime(activity.created_at)}</div>
+                    <div class="activity-description">${escapeHtml(activity.description || '')}</div>
+                    <div class="activity-time">
+                        <i class="fas fa-clock"></i>
+                        ${formatRelativeTime(activity.created_at || activity.time)}
+                    </div>
                 </div>
             </div>
         `).join('');
-        
     } catch (error) {
         console.error('Error loading recent activity:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h4>Unable to Load Activity</h4>
-                <button class="btn-sm btn-outline" onclick="loadRecentActivity()">Retry</button>
-            </div>
-        `;
+        container.innerHTML = '<div class="empty-state">Error loading activity.</div>';
     }
-}
-
-function getMockRecentActivity() {
-    return [
-        { id: 1, type: 'booking', title: 'Booked ticket for Summer Music Festival', created_at: new Date().toISOString(), action_url: '/attendee/tickets/' },
-        { id: 2, type: 'wishlist', title: 'Added Tech Summit to wishlist', created_at: new Date(Date.now() - 86400000).toISOString(), action_url: '/wishlist/' },
-        { id: 3, type: 'review', title: 'Wrote a review for Art Exhibition', created_at: new Date(Date.now() - 172800000).toISOString(), action_url: '/attendee/reviews/' },
-        { id: 4, type: 'profile', title: 'Updated profile information', created_at: new Date(Date.now() - 345600000).toISOString(), action_url: '/attendee/profile/' }
-    ];
 }
 
 async function loadRecommendations() {
@@ -241,55 +148,34 @@ async function loadRecommendations() {
     if (!container) return;
     
     try {
-        let recommendations;
+        let recommendations = [];
         if (window.AttendeeAPIEndpoints?.dashboard?.getRecommendations) {
             recommendations = await window.AttendeeAPIEndpoints.dashboard.getRecommendations();
-        } else {
-            recommendations = getMockRecommendations();
         }
         
         if (!recommendations || recommendations.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-lightbulb"></i>
-                    <h4>No Recommendations</h4>
-                    <p>Start browsing events to get personalized recommendations.</p>
-                    <a href="/events/" class="btn-sm btn-primary">Browse Events</a>
-                </div>
-            `;
+            container.innerHTML = '<div class="empty-state">No recommended events. <a href="/events/">Browse Events</a></div>';
             return;
         }
         
         container.innerHTML = recommendations.slice(0, 3).map(event => `
             <div class="recommendation-item" onclick="viewEvent(${event.id})">
-                <div class="recommendation-image" style="background-image: url('${event.image || '/static/images/placeholder.jpg'}')"></div>
+                <div class="recommendation-image" style="background-image: url('${event.image || event.banner_image || '/static/images/placeholder.jpg'}')"></div>
                 <div class="recommendation-info">
-                    <h4>${escapeHtml(event.title)}</h4>
-                    <p><i class="fas fa-calendar"></i> ${formatDate(event.date)}</p>
-                    <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location)}</p>
+                    <div class="recommendation-category">${escapeHtml(event.category_name || event.category || 'General')}</div>
+                    <div class="recommendation-title">${escapeHtml(event.title)}</div>
+                    <div class="recommendation-meta">
+                        <span><i class="fas fa-calendar"></i> ${formatDate(event.date || event.start_date)}</span>
+                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location || event.venue || 'TBD')}</span>
+                    </div>
                     <div class="recommendation-price">${formatCurrency(event.price)}</div>
                 </div>
             </div>
         `).join('');
-        
     } catch (error) {
         console.error('Error loading recommendations:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-circle"></i>
-                <h4>Unable to Load Recommendations</h4>
-                <button class="btn-sm btn-outline" onclick="loadRecommendations()">Retry</button>
-            </div>
-        `;
+        container.innerHTML = '<div class="empty-state">Error loading recommendations.</div>';
     }
-}
-
-function getMockRecommendations() {
-    return [
-        { id: 4, title: 'Marathon Kenya 2026', date: '2026-08-10', location: 'Eldoret, Kenya', price: 1500, image: null },
-        { id: 5, title: 'Entrepreneurship Forum', date: '2026-10-12', location: 'Nairobi, Kenya', price: 4500, image: null },
-        { id: 6, title: 'Art Exhibition', date: '2026-11-18', location: 'Nakuru, Kenya', price: 1000, image: null }
-    ];
 }
 
 async function loadStatsOverview() {
@@ -300,10 +186,18 @@ async function loadStatsOverview() {
         const favoriteCategory = document.getElementById('favoriteCategory');
         const eventsAttended = document.getElementById('eventsAttended');
         
-        if (memberSince) memberSince.textContent = user.date_joined ? formatDate(user.date_joined) : '2024';
-        if (favoriteCategory) favoriteCategory.textContent = user.favorite_category || 'Music';
-        if (eventsAttended) eventsAttended.textContent = '5';
+        if (memberSince) {
+            memberSince.textContent = user.date_joined ? formatDate(user.date_joined) : '2026';
+        }
         
+        // Fetch stats from backend profile stats endpoint
+        if (window.AttendeeAPIEndpoints?.profile?.getStats) {
+            const stats = await window.AttendeeAPIEndpoints.profile.getStats();
+            if (stats) {
+                if (favoriteCategory) favoriteCategory.textContent = stats.favorite_category || 'General';
+                if (eventsAttended) eventsAttended.textContent = formatNumber(stats.total_events || 0);
+            }
+        }
     } catch (error) {
         console.error('Error loading stats overview:', error);
     }
@@ -311,7 +205,7 @@ async function loadStatsOverview() {
 
 function refreshActivity() {
     loadRecentActivity();
-    showToast('Activity refreshed', 'success');
+    showToast('Activity refreshed!', 'success');
 }
 
 function setupAutoRefresh() {
@@ -337,7 +231,7 @@ function getActivityIcon(type) {
 }
 
 function viewTicket(ticketId) {
-    window.location.href = `/attendee/tickets/detail/?ticket=${ticketId}`;
+    window.location.href = `/tickets/detail/?ticket=${ticketId}`;
 }
 
 function viewEvent(eventId) {
@@ -348,35 +242,40 @@ function formatNumber(num) {
     return Number(num).toLocaleString('en-KE');
 }
 
-function formatCurrency(amount) {
-    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
-}
-
 function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-KE', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return 'TBA';
+    }
 }
 
 function formatRelativeTime(dateString) {
-    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     const now = new Date();
-    const diffSeconds = Math.floor((now - date) / 1000);
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    if (diffSeconds < 60) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays === 1) return 'Yesterday';
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
     if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
+    return formatDate(dateString);
+}
+
+function formatCurrency(amount) {
+    try {
+        const val = Number(amount);
+        if (isNaN(val)) return 'KES 0';
+        return `KES ${val.toLocaleString('en-KE')}`;
+    } catch (e) {
+        return 'KES 0';
+    }
 }
 
 function escapeHtml(text) {
@@ -386,37 +285,23 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showLoader(message) {
-    const loader = document.getElementById('globalLoader');
-    if (loader) {
-        const loaderText = loader.querySelector('.loader-text');
-        if (loaderText) loaderText.textContent = message || 'Loading...';
-        loader.style.display = 'flex';
-    }
-}
-
-function hideLoader() {
-    const loader = document.getElementById('globalLoader');
-    if (loader) {
-        loader.style.display = 'none';
-    }
-}
-
-function showToast(message, type = 'success') {
-    const existingToast = document.querySelector('.toast-notification');
+function showToast(message, type) {
+    const existingToast = document.querySelector('.custom-toast');
     if (existingToast) existingToast.remove();
     
     const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    toast.className = 'custom-toast';
+    toast.style.cssText = `
+        position: fixed; bottom: 20px; right: 20px; z-index: 10000;
+        padding: 12px 20px; border-radius: 12px; color: white;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        animation: slideInRight 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    `;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> ${message}`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 5000);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-// Make functions global for onclick handlers
 window.refreshActivity = refreshActivity;
 window.viewTicket = viewTicket;
 window.viewEvent = viewEvent;
-window.loadUpcomingTickets = loadUpcomingTickets;
-window.loadRecentActivity = loadRecentActivity;
-window.loadRecommendations = loadRecommendations;

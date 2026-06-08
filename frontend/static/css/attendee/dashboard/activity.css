@@ -1,33 +1,32 @@
 /* ============================================
-   ACTIVITY CSS - Dashboard Recent Activity
+   ACTIVITY CSS - Recent Activity Timeline
    ============================================ */
 
 .activity-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.8rem;
 }
 
 .activity-item {
     display: flex;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 0.75rem;
+    gap: 0.8rem;
+    align-items: flex-start;
+    padding: 0.8rem;
+    background: #f8fafc;
+    border-radius: 12px;
     transition: all 0.2s ease;
-    cursor: pointer;
-    border: 1px solid transparent;
 }
 
 .activity-item:hover {
-    background: #f8fafc;
-    border-color: #e2e8f0;
-    transform: translateX(5px);
+    background: #fef3c7;
+    transform: translateX(3px);
 }
 
 .activity-icon {
-    width: 36px;
-    height: 36px;
-    background: rgba(245, 158, 11, 0.1);
+    width: 35px;
+    height: 35px;
+    background: #fef3c7;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -36,136 +35,78 @@
 }
 
 .activity-icon i {
-    font-size: 0.9rem;
     color: #f59e0b;
+    font-size: 0.8rem;
 }
 
-.activity-details {
+.activity-content {
     flex: 1;
 }
 
 .activity-title {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #1e293b;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
+}
+
+.activity-description {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-bottom: 0.2rem;
 }
 
 .activity-time {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #94a3b8;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
 }
 
 .activity-time i {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
 }
 
-.activity-badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 20px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    margin-left: 0.5rem;
+/* Activity Type Variations */
+.activity-booking {
+    border-left: 3px solid #10b981;
 }
 
-.activity-badge.new {
-    background: #dbeafe;
-    color: #3b82f6;
+.activity-ticket {
+    border-left: 3px solid #f59e0b;
 }
 
-.activity-badge.completed {
-    background: #d1fae5;
-    color: #10b981;
+.activity-review {
+    border-left: 3px solid #8b5cf6;
 }
 
-/* Activity Detail View */
-.activity-detail {
-    background: #f8fafc;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    margin-top: 0.5rem;
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
-/* No Activity State */
-.no-activity {
-    text-align: center;
-    padding: 2rem;
-}
-
-.no-activity i {
-    font-size: 2rem;
-    color: #cbd5e1;
-    margin-bottom: 0.5rem;
-}
-
-.no-activity p {
-    color: #64748b;
-    font-size: 0.8rem;
-}
-
-/* Loading Activity */
-.activity-skeleton {
-    display: flex;
-    gap: 0.75rem;
-    padding: 0.75rem;
-}
-
-.skeleton-icon {
-    width: 36px;
-    height: 36px;
-    background: #e2e8f0;
-    border-radius: 50%;
-    animation: pulse 1.5s infinite;
-}
-
-.skeleton-content {
-    flex: 1;
-}
-
-.skeleton-title {
-    width: 60%;
-    height: 12px;
-    background: #e2e8f0;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    animation: pulse 1.5s infinite;
-}
-
-.skeleton-time {
-    width: 30%;
-    height: 10px;
-    background: #e2e8f0;
-    border-radius: 4px;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+.activity-wishlist {
+    border-left: 3px solid #ef4444;
 }
 
 /* Responsive */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .activity-item {
-        padding: 0.5rem;
+        padding: 0.6rem;
     }
     
     .activity-icon {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
     }
     
     .activity-icon i {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
     }
     
     .activity-title {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .activity-item {
+        flex-wrap: wrap;
     }
 }

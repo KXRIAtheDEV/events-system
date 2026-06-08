@@ -1,5 +1,6 @@
 {% extends "organizer/base.html" %}
 {% load static %}
+
 {% block title %}Dashboard | EventHub Organizer{% endblock %}
 
 {% block extra_css %}
@@ -7,13 +8,17 @@
 {% endblock %}
 
 {% block content %}
+<div class="main-content-header">
+    <h1><span id="greetingText">Welcome back</span>, <span id="organizerName">{{ user.email|default:"Organizer" }}</span>!</h1>
+    <p>Here's what's happening with your events.</p>
+</div>
 <div>
     <!-- Metric Cards -->
     <div class="metrics-grid">
+        <!-- Total Events -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Events</span>
-                <div class="metric-icon bg-primary-soft"><i class="fas fa-calendar-alt text-primary"></i></div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalEvents">--</span>
@@ -21,10 +26,11 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-primary" style="width:0%"></div></div>
         </div>
+
+        <!-- Tickets Sold -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Tickets Sold</span>
-                <div class="metric-icon bg-success-soft"><i class="fas fa-ticket-alt text-success"></i></div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalTicketsSold">--</span>
@@ -32,10 +38,11 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-success" style="width:0%"></div></div>
         </div>
+
+        <!-- Total Revenue -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Total Revenue</span>
-                <div class="metric-icon bg-warning-soft"><span class="text-warning fw-bold" style="font-size:0.85rem;letter-spacing:0.5px;">KES</span></div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalRevenue">Kes --</span>
@@ -43,10 +50,11 @@
             </div>
             <div class="progress-bar-container"><div class="progress-bar bg-warning" style="width:0%"></div></div>
         </div>
+
+        <!-- Attendees -->
         <div class="metric-card">
             <div class="metric-header">
                 <span class="metric-title">Attendees</span>
-                <div class="metric-icon bg-info-soft"><i class="fas fa-users text-info"></i></div>
             </div>
             <div class="metric-value-wrapper">
                 <span class="metric-value" id="totalAttendees">--</span>
@@ -62,9 +70,10 @@
             <div class="chart-header">
                 <h3>Revenue Overview</h3>
                 <select id="revenuePeriod" class="filter-select">
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly" selected>Monthly</option>
-                    <option value="yearly">Yearly</option>
+                    <option value="7days">Last 7 Days</option>
+                    <option value="4weeks">Last 4 Weeks</option>
+                    <option value="12months" selected>12 Months</option>
+                    <option value="ytd">Year-to-Date</option>
                 </select>
             </div>
             <div class="chart-body"><canvas id="revenueChart"></canvas></div>
@@ -100,8 +109,6 @@
             <div class="chart-header"><h3>Quick Actions</h3></div>
             <div class="row g-2">
                 <div class="col-6"><button class="btn btn-primary w-100" onclick="location.href='/organizer/events/create/'"><i class="fas fa-plus me-2"></i>Create Event</button></div>
-                <div class="col-6"><button class="btn btn-outline w-100" onclick="location.href='/organizer/checkin/'"><i class="fas fa-qrcode me-2"></i>Check‑in</button></div>
-                <div class="col-6"><button class="btn btn-outline w-100" onclick="location.href='/organizer/reports/'"><i class="fas fa-chart-line me-2"></i>Reports</button></div>
                 <div class="col-6"><button class="btn btn-outline w-100" onclick="location.href='/organizer/promotions/'"><i class="fas fa-tags me-2"></i>Promotions</button></div>
             </div>
         </div>
@@ -113,9 +120,12 @@
 <script src="/static/js/organizer/dashboard.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        if (typeof displayGreeting === 'function') {
+            displayGreeting();
+        }
         if (typeof OrganizerAPI !== 'undefined') {
             loadDashboardStats();
-            loadRevenueChart('monthly');
+            loadRevenueChart('12months');
             loadUpcomingEvents();
             loadRecentBookings();
             loadPerformance();

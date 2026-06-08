@@ -24,7 +24,7 @@ async function loadEvents(page = 1) {
             const ticketsSold = event.tickets_sold ?? event.sold ?? 0;
             const capacity = event.capacity || 0;
             const status = event.status || 'draft';
-            const badgeClass = status === 'published' || status === 'active' ? 'bg-success' : status === 'draft' ? 'bg-secondary' : 'bg-danger';
+            const badgeClass = status === 'published' || status === 'active' ? 'bg-success' : status === 'draft' ? 'bg-secondary' : status === 'approved' ? 'bg-info' : 'bg-danger';
             return `
             <div class="col-md-4 col-lg-3">
                 <div class="event-card" onclick="editEvent(${event.id})">
@@ -73,7 +73,10 @@ async function editEvent(eventId = null) {
             await loadTicketTypes(eventId);
             await loadScheduleItems(eventId);
             await loadAnalytics(eventId);
-            if (event.image_url) document.getElementById('bannerPreview').innerHTML = `<img src="${event.image_url}" class="image-preview">`;
+            if (event.image_url) {
+                const bannerPreview = document.getElementById('bannerPreview');
+                if (bannerPreview) bannerPreview.innerHTML = `<img src="${event.image_url}" class="image-preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">`;
+            }
         } catch(e) {
             console.error(e);
             if(window.showToast) window.showToast('Error loading event', 'error');
@@ -106,13 +109,28 @@ async function saveEvent() {
     };
     const eventId = document.getElementById('eventId').value;
     try {
+        let targetId = eventId;
         if (eventId) {
             await OrganizerAPI.events.update(eventId, data);
-            if(window.showToast) window.showToast('Event updated', 'success');
+            if(window.showToast) window.showToast('Event updated successfully', 'success');
         } else {
-            await OrganizerAPI.events.create(data);
-            if(window.showToast) window.showToast('Event created', 'success');
+            const result = await OrganizerAPI.events.create(data);
+            targetId = result.id;
+            if(window.showToast) window.showToast('Event created successfully', 'success');
         }
+
+        // Upload banner file if one was selected
+        const bannerFile = document.getElementById('eventBannerFile').files[0];
+        if (bannerFile && targetId) {
+            try {
+                await OrganizerAPI.events.uploadImage(targetId, bannerFile);
+                if(window.showToast) window.showToast('Banner uploaded successfully', 'success');
+            } catch(uploadErr) {
+                console.error('Banner upload failed:', uploadErr);
+                if(window.showToast) window.showToast('Event details saved, but banner image upload failed.', 'warning');
+            }
+        }
+
         bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
         loadEvents(currentPage);
     } catch(e) {
@@ -288,30 +306,7 @@ async function deleteScheduleItem(itemId) {
     } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
 }
 
-// Media uploads
-async function uploadBanner() {
-    const eventId = ensureSavedEvent('uploading banner');
-    if (!eventId) return;
-    const file = document.getElementById('bannerImage').files[0];
-    if (!file) return;
-    try {
-        const result = await OrganizerAPI.events.uploadImage(eventId, file);
-        if(window.showToast) window.showToast('Banner uploaded', 'success');
-        document.getElementById('bannerPreview').innerHTML = `<img src="${result.image_url || result.image || ''}" class="image-preview">`;
-    } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
-}
-
-async function uploadGallery() {
-    const eventId = ensureSavedEvent('uploading gallery images');
-    if (!eventId) return;
-    const files = document.getElementById('galleryImages').files;
-    if (!files.length) return;
-    try {
-        await OrganizerAPI.events.uploadGallery(eventId, Array.from(files));
-        if(window.showToast) window.showToast('Gallery uploaded', 'success');
-        document.getElementById('galleryPreview').innerHTML = '<p class="text-muted">Images uploaded successfully</p>';
-    } catch(e) { if(window.showToast) window.showToast(e.message, 'error'); }
-}
+// Media uploads helper placeholders removed (handled in saveEvent flow)
 
 // Analytics
 async function loadAnalytics(eventId) {
@@ -377,8 +372,16 @@ function resetEventForm() {
     document.getElementById('eventModalTitle').innerText = 'Create New Event';
     document.getElementById('saveEventBtn').innerText = 'Create Event';
     document.getElementById('eventStatus').value = 'draft';
-    document.getElementById('bannerPreview').innerHTML = '';
-    document.getElementById('galleryPreview').innerHTML = '';
+    
+    const bannerPreview = document.getElementById('bannerPreview');
+    if (bannerPreview) bannerPreview.innerHTML = '';
+    
+    const bannerFile = document.getElementById('eventBannerFile');
+    if (bannerFile) bannerFile.value = '';
+    
+    const galleryPreview = document.getElementById('galleryPreview');
+    if (galleryPreview) galleryPreview.innerHTML = '';
+    
     document.getElementById('ticketTypesList').innerHTML = '<p class="text-muted">No ticket types</p>';
     document.getElementById('scheduleList').innerHTML = '<p class="text-muted">No schedule items</p>';
     document.getElementById('analyticsTotalTickets').innerText = '--';
@@ -396,4 +399,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveEventBtn')?.addEventListener('click', saveEvent);
     document.getElementById('saveTicketTypeBtn')?.addEventListener('click', saveTicketType);
     document.getElementById('saveScheduleItemBtn')?.addEventListener('click', saveScheduleItem);
+    
+    // Live local preview for event banner selection
+    document.getElementById('eventBannerFile')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const previewContainer = document.getElementById('bannerPreview');
+            if (previewContainer) {
+                previewContainer.innerHTML = `<img src="${URL.createObjectURL(file)}" class="image-preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">`;
+            }
+        } else {
+            const previewContainer = document.getElementById('bannerPreview');
+            if (previewContainer) previewContainer.innerHTML = '';
+        }
+    });
 });

@@ -1,9 +1,10 @@
 import json
+import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from .models import Event, Category
+from .models import Event, Category, EventImage
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage
 from datetime import timedelta
@@ -36,7 +37,8 @@ def serialize_organizer_event(event):
         'tickets_sold': sold,
         'revenue': revenue,
         'status': event.status,
-        'image_url': event.banner_image or ''
+        'image_url': event.banner_image or '',
+        'images': [{'id': img.id, 'url': img.url} for img in event.images.all()]
     }
 
 def organizer_required(view_func):
@@ -116,11 +118,7 @@ def api_organizer_events_create(request):
         status = data.get('status', 'draft')
 
         # Map frontend status to DB status
-        db_status = 'draft'
-        if status in ('published', 'active'):
-            db_status = 'published'
-        elif status == 'cancelled':
-            db_status = 'cancelled'
+        db_status = 'pending'
             
         # Parse date and times
         try:
@@ -160,6 +158,17 @@ def api_organizer_events_create(request):
             banner_image=image,
             status=db_status
         )
+
+        try:
+            from accounts.admin_store import add_notification
+            add_notification(
+                title="Event Pending Approval",
+                message=f"Event '{event.title}' created by '{request.user.username}' is waiting for approval.",
+                n_type="warning",
+                redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+            )
+        except Exception as notif_err:
+            print("Failed to dispatch admin notification:", notif_err)
 
         try:
             details_str = f"{event.start_date.strftime('%B %d, %Y')} at {event.venue}"
@@ -249,9 +258,34 @@ def api_organizer_events_update(request, event_id):
         if 'status' in data:
             status = data['status']
             if status in ('published', 'active'):
-                event.status = 'published'
+                if event.status in ('approved', 'published'):
+                    event.status = 'published'
+                else:
+                    event.status = 'pending'
+                    try:
+                        from accounts.admin_store import add_notification
+                        add_notification(
+                            title="Event Pending Approval",
+                            message=f"Event '{event.title}' updated by '{request.user.username}' is waiting for approval.",
+                            n_type="warning",
+                            redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                        )
+                    except Exception as notif_err:
+                        print("Failed to dispatch admin notification:", notif_err)
             elif status == 'cancelled':
                 event.status = 'cancelled'
+            elif status == 'pending':
+                event.status = 'pending'
+                try:
+                    from accounts.admin_store import add_notification
+                    add_notification(
+                        title="Event Pending Approval",
+                        message=f"Event '{event.title}' is waiting for approval.",
+                        n_type="warning",
+                        redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                    )
+                except Exception as notif_err:
+                    print("Failed to dispatch admin notification:", notif_err)
             else:
                 event.status = 'draft'
             
@@ -508,4 +542,249 @@ def api_organizer_reviews_stats(request):
         'total_reviews': 0,
         'response_rate': 0
     })
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def api_organizer_event_analytics(request, event_id):
+    """Get analytics for a specific organizer event."""
+    try:
+        from django.utils import timezone
+        from django.db.models.functions import TruncDate
+        from django.db.models import Sum
+        
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        
+        # Pull real, factual database tickets
+        tickets = Ticket.objects.filter(event=event)
+        valid_tickets = tickets.exclude(status__in=['cancelled', 'refunded'])
+        
+        tickets_sold = sum(t.quantity for t in valid_tickets)
+        revenue = float(sum(t.quantity * t.price for t in valid_tickets))
+        attendance = tickets.filter(status='checked_in').count()
+        
+        # Calculate sales data by day
+        sales_by_day = (
+            valid_tickets
+            .annotate(date=TruncDate('purchase_date'))
+            .values('date')
+            .annotate(sold=Sum('quantity'))
+            .order_by('date')
+        )
+        
+        sales_data = []
+        for s in sales_by_day:
+            if s['date']:
+                sales_data.append({
+                    'date': s['date'].isoformat(),
+                    'sold': s['sold']
+                })
+        
+        # If sales data is empty, put a single entry for today or date of creation
+        if not sales_data:
+            sales_data.append({
+                'date': timezone.now().date().isoformat(),
+                'sold': 0
+            })
+            
+        # Calculate ticket type distribution
+        distribution = {}
+        for t in valid_tickets:
+            ttype = t.ticket_type or 'Standard'
+            distribution[ttype] = distribution.get(ttype, 0) + t.quantity
+            
+        return JsonResponse({
+            'total_tickets': event.total_seats or 100,
+            'tickets_sold': tickets_sold,
+            'attendance': attendance,
+            'revenue': revenue,
+            'sales_data': sales_data,
+            'ticket_distribution': distribution
+        })
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif'}
+
+MIME_TYPES = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+}
+
+def validate_uploaded_file(file):
+    if not file or not getattr(file, 'name', None):
+        return False, "Invalid file object."
+    # Check extension
+    ext = os.path.splitext(file.name)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return False, f"Unsupported file extension: {ext}. Allowed types: PNG, JPEG, SVG, WEBP, GIF."
+    
+    # Check size (max 5MB)
+    if file.size > 5 * 1024 * 1024:
+        return False, "File is too large. Max size is 5MB."
+        
+    return True, None
+
+
+def _file_to_base64_uri(file, ext):
+    """Read an uploaded file and return a base64-encoded data URI string."""
+    import base64
+    mime = MIME_TYPES.get(ext, 'application/octet-stream')
+    file.seek(0)
+    encoded = base64.b64encode(file.read()).decode('utf-8')
+    return f"data:{mime};base64,{encoded}"
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_upload_image(request, event_id):
+    """Upload a banner image for the event.
+    
+    Strategy:
+      1. Try to save the file to the local/cloud filesystem via default_storage.
+      2. If that fails (e.g. Vercel read-only filesystem), encode the file as a
+         base64 data URI and store it directly in the TextField. This keeps the
+         image accessible without any external storage dependency.
+    """
+    try:
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        if 'image' not in request.FILES:
+            return JsonResponse({'success': False, 'message': 'No image file uploaded.'}, status=400)
+        
+        file = request.FILES['image']
+        is_valid, err_msg = validate_uploaded_file(file)
+        if not is_valid:
+            return JsonResponse({'success': False, 'message': err_msg}, status=400)
+        
+        from django.conf import settings
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import uuid
+        
+        ext = os.path.splitext(file.name)[1].lower()
+        filename = f"banner_{event_id}_{uuid.uuid4().hex[:8]}{ext}"
+        filepath = os.path.join('events', 'banners', filename)
+        
+        # Try filesystem save first; fall back to base64 data URI on read-only environments
+        image_value = None  # what gets stored in the DB
+        url = None          # what gets returned to the browser
+        try:
+            file.seek(0)
+            saved_path = default_storage.save(filepath, ContentFile(file.read()))
+            url = settings.MEDIA_URL + saved_path.replace('\\', '/')
+            image_value = saved_path  # relative path – url property will prepend MEDIA_URL
+        except Exception as storage_err:
+            print("Storage save failed, using base64 fallback:", storage_err)
+            data_uri = _file_to_base64_uri(file, ext)
+            url = data_uri
+            image_value = data_uri  # store the full data URI directly
+
+        event.banner_image = url
+        event.save()
+
+        # Also record in EventImage table (best-effort – won't block on failure)
+        try:
+            EventImage.objects.create(event=event, image=image_value)
+        except Exception as db_err:
+            print("Failed to save to EventImage table:", db_err)
+        
+        return JsonResponse({'success': True, 'image_url': url, 'image': url})
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["POST"])
+def api_organizer_upload_gallery(request, event_id):
+    """Upload multiple gallery images for the event.
+    
+    Falls back to base64 data URIs when the filesystem is read-only.
+    """
+    try:
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        
+        files = []
+        if 'gallery' in request.FILES:
+            files = request.FILES.getlist('gallery')
+        else:
+            for key in request.FILES:
+                files.extend(request.FILES.getlist(key))
+            
+        if not files:
+            return JsonResponse({'success': False, 'message': 'No gallery images uploaded.'}, status=400)
+            
+        # Validate all files first
+        for file in files:
+            is_valid, err_msg = validate_uploaded_file(file)
+            if not is_valid:
+                return JsonResponse({'success': False, 'message': f"File '{file.name}': {err_msg}"}, status=400)
+
+        from django.conf import settings
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        import uuid
+
+        saved_images = []
+        for file in files:
+            ext = os.path.splitext(file.name)[1].lower()
+            filename = f"gallery_{event_id}_{uuid.uuid4().hex[:8]}{ext}"
+            filepath = os.path.join('events', 'gallery', filename)
+            try:
+                file.seek(0)
+                saved_path = default_storage.save(filepath, ContentFile(file.read()))
+                image_value = saved_path
+            except Exception:
+                image_value = _file_to_base64_uri(file, ext)
+
+            img_obj = EventImage.objects.create(event=event, image=image_value)
+            saved_images.append({'id': img_obj.id, 'url': img_obj.url})
+            
+        return JsonResponse({'success': True, 'images': saved_images})
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["DELETE"])
+def api_organizer_delete_gallery_image(request, event_id, image_id):
+    """Delete a specific gallery image."""
+    try:
+        event = Event.objects.get(id=event_id, organizer=request.user)
+        img_obj = EventImage.objects.get(id=image_id, event=event)
+        
+        # If the stored value is a filesystem path (not a data URI or external URL),
+        # attempt to remove the physical file from storage.
+        img_val = img_obj.image or ''
+        if img_val and not img_val.startswith('data:') and not img_val.startswith('http'):
+            try:
+                from django.core.files.storage import default_storage
+                if default_storage.exists(img_val):
+                    default_storage.delete(img_val)
+            except Exception as del_err:
+                print("Could not delete image file from storage:", del_err)
+
+        img_obj.delete()
+        return JsonResponse({'success': True, 'message': 'Gallery image deleted successfully.'})
+    except Event.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
+    except EventImage.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Gallery image not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
 

@@ -1,7 +1,10 @@
+
 {% extends 'attendee/base.html' %}
 {% load static %}
 
 {% block title %}Dashboard - EventHub{% endblock %}
+
+{% block body_class %}dashboard-page{% endblock %}
 
 {% block extra_css %}
 <!-- Dashboard CSS -->
@@ -17,7 +20,7 @@
     <!-- Welcome Section -->
     <div class="welcome-section">
         <div class="welcome-content">
-            <h1>Welcome back, <span id="userName">Attendee</span>!</h1>
+            <h1><span id="greetingText">Welcome back</span>, <span id="userName">Attendee</span>!</h1>
             <p>Here's what's happening with your events</p>
         </div>
         <div class="welcome-date">
@@ -25,6 +28,24 @@
             <span id="currentDate"></span>
         </div>
     </div>
+
+    <!-- Dashboard Center Search Section -->
+    <div class="dashboard-search-section">
+        <h2 class="search-title">Sherehe iko wapi? Search it</h2>
+        <form class="dashboard-search-form" action="/events/search/" method="GET" id="dashboardSearchForm">
+            <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" name="q" id="dashboardSearchInput" placeholder="Search for events in your city, e.g. Nairobi..." autocomplete="off">
+                <div class="detected-location-badge" id="detectedLocationBadge">
+                    <i class="fas fa-location-arrow"></i>
+                    <span id="detectedLocationText">Detecting location...</span>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Discovery Results — populated dynamically by discovery.js -->
+    <div id="discoveryResultsSection" style="display:none;"></div>
 
     <!-- Stats Cards -->
     <div class="stats-grid" id="statsContainer">
@@ -138,6 +159,10 @@
                             <i class="fas fa-heart"></i>
                             <span>Wishlist</span>
                         </button>
+                        <button class="quick-action-btn" onclick="window.location.href='/profile/'">
+                            <i class="fas fa-user-circle"></i>
+                            <span>My Profile</span>
+                        </button>
                         <button class="quick-action-btn" onclick="window.location.href='/support/'">
                             <i class="fas fa-headset"></i>
                             <span>Get Support</span>
@@ -175,4 +200,6 @@
 
 {% block extra_js %}
 <script src="{% static 'js/attendee/dashboard/dashboard.js' %}"></script>
+<script src="{% static 'js/attendee/dashboard/discovery.js' %}"></script>
 {% endblock %}
+

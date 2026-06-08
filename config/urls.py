@@ -16,9 +16,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from events.views import (
-    organizer_dashboard_stats, api_event_list, api_category_list, api_event_detail,
+    organizer_dashboard_stats, organizer_dashboard_revenue, api_event_list, api_category_list, api_event_detail,
     api_dashboard_stats, api_dashboard_recommendations, api_dashboard_recent_activity,
-    api_featured_events, api_events_check_expired
+    api_featured_events, api_events_check_expired, homepage_view,
+    api_discover_local_events, api_platform_stats,
 )
 from accounts.auth_views import register_submit, login_submit
 from bookings.views import (
@@ -46,7 +47,11 @@ from events.api_organizer_views import (
     api_organizer_settings_apikeys,
     api_organizer_settings_apikeys_create,
     api_organizer_settings_apikeys_revoke,
-    api_organizer_reviews_stats
+    api_organizer_reviews_stats,
+    api_organizer_event_analytics,
+    api_organizer_upload_image,
+    api_organizer_upload_gallery,
+    api_organizer_delete_gallery_image
 )
 import json
 
@@ -78,7 +83,7 @@ def admin_logout_view(request):
     """Admin logout"""
     logout(request)
     messages.success(request, 'You have been logged out.')
-    return redirect('/admin/login/')
+    return redirect('/login/')
 
 def user_logout_view(request):
     """User logout"""
@@ -165,7 +170,7 @@ urlpatterns = [
     path('logout/', user_logout_view, name='logout'),
     
     # Static Pages (Homepage)
-    path('', TemplateView.as_view(template_name='attendee/pages/homepage/homepage.html'), name='home'),
+    path('', homepage_view, name='home'),
     
     # API Endpoints
     path('api/', include('accounts.urls')),
@@ -187,9 +192,14 @@ urlpatterns = [
     # Organizer API Endpoints
     path('api/organizer/', include('accounts.urls')),
     path('api/organizer/dashboard/stats/', organizer_dashboard_stats, name='organizer_dashboard_stats'),
+    path('api/organizer/dashboard/revenue/', organizer_dashboard_revenue, name='organizer_dashboard_revenue'),
     path('api/organizer/events/', api_organizer_events_list, name='api_organizer_events_list'),
     path('api/organizer/events/create/', api_organizer_events_create, name='api_organizer_events_create'),
     path('api/organizer/events/<int:event_id>/', api_organizer_events_detail, name='api_organizer_events_detail'),
+    path('api/organizer/events/<int:event_id>/analytics/', api_organizer_event_analytics, name='api_organizer_event_analytics'),
+    path('api/organizer/events/<int:event_id>/upload-image/', api_organizer_upload_image, name='api_organizer_upload_image'),
+    path('api/organizer/events/<int:event_id>/upload-gallery/', api_organizer_upload_gallery, name='api_organizer_upload_gallery'),
+    path('api/organizer/events/<int:event_id>/gallery/<int:image_id>/delete/', api_organizer_delete_gallery_image, name='api_organizer_delete_gallery_image'),
     path('api/organizer/events/<int:event_id>/update/', api_organizer_events_update, name='api_organizer_events_update'),
     path('api/organizer/events/<int:event_id>/delete/', api_organizer_events_delete, name='api_organizer_events_delete'),
     path('api/organizer/bookings/', api_organizer_bookings_list, name='api_organizer_bookings_list'),
@@ -219,6 +229,8 @@ urlpatterns = [
     path('api/events/categories/', get_categories_list, name='api_categories'),
     path('newsletter/subscribe/', newsletter_subscribe, name='newsletter_subscribe'),
     path('api/events/check-expired/', api_events_check_expired, name='api_events_check_expired'),
+    path('api/events/discover/', api_discover_local_events, name='api_events_discover'),
+    path('api/platform/stats/', api_platform_stats, name='api_platform_stats'),
     # ============ ADMIN PORTAL API ENDPOINTS ============
     # Dashboard
     path('api/admin/dashboard/stats/', admin_api.dashboard_stats, name='admin_dashboard_stats'),
@@ -268,6 +280,17 @@ urlpatterns = [
     path('api/admin/users/<int:user_id>/reset-password/', admin_api.user_reset_password, name='admin_user_reset_password'),
     path('api/admin/users/<int:user_id>/suspend/', admin_api.user_suspend, name='admin_user_suspend'),
     path('api/admin/users/<int:user_id>/activate/', admin_api.user_activate, name='admin_user_activate'),
+
+    # Organizer Management
+    path('api/admin/organizers/stats/', admin_api.organizers_stats_api, name='admin_organizers_stats'),
+    path('api/admin/organizers/verified/', admin_api.organizers_verified_api, name='admin_organizers_verified'),
+    path('api/admin/organizers/suspended/', admin_api.organizers_suspended_api, name='admin_organizers_suspended'),
+    path('api/admin/organizers/pending/', admin_api.organizers_pending_api, name='admin_organizers_pending'),
+    path('api/admin/organizers/create/', admin_api.organizer_create_api, name='admin_organizers_create'),
+    path('api/admin/organizers/<int:organizer_id>/', admin_api.organizer_detail_api, name='admin_organizer_detail'),
+    path('api/admin/organizers/<int:organizer_id>/suspend/', admin_api.organizer_suspend_api, name='admin_organizer_suspend'),
+    path('api/admin/organizers/<int:organizer_id>/reactivate/', admin_api.organizer_reactivate_api, name='admin_organizer_reactivate'),
+    path('api/admin/organizers/<int:organizer_id>/delete/', admin_api.organizer_delete_api, name='admin_organizer_delete'),
 
     # Tickets Management
     path('api/admin/tickets/', admin_api.tickets_list_api, name='admin_tickets_list'),
@@ -328,6 +351,8 @@ urlpatterns = [
     path('api/admin/settings/', admin_api.settings_api, name='admin_settings_api'),
     path('api/admin/broadcast/', admin_api.api_admin_broadcast, name='admin_settings_broadcast'),
 
+    # Payments - M-Pesa
+    path('payments/', include('payments.urls')),
     
     # Portal URLs
     path('', include('config.attendee_urls')),

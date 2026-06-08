@@ -3,8 +3,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}EventHub - Attendee Portal{% endblock %}</title>
+    
+    <!-- Meta Tags for Search Engine Optimization (SEO) -->
+    <meta name="description" content="{% block meta_description %}Discover and book tickets for the best events in Kenya. From music concerts to technology conferences, find your next experience on EventHub.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}events, tickets, booking, concerts, conferences, sports, events in Kenya, EventHub{% endblock %}">
+    <meta name="author" content="EventHub Team">
+    
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}EventHub - Discover Amazing Events{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'images/favicon.png' %}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}EventHub - Discover Amazing Events{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'images/favicon.png' %}{% endblock %}">
+    
+    <!-- Favicon - Multiple formats for all browsers -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon/favicon.svg' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon/favicon-16x16.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon/favicon-32x32.png' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon/favicon.ico' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/favicon/apple-touch-icon.png' %}">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Kaushan+Script&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,12 +49,15 @@
     <link rel="stylesheet" href="{% static 'css/attendee/components/navbar.css' %}">
     <link rel="stylesheet" href="{% static 'css/attendee/components/footer.css' %}">
     
+    <!-- Loader CSS -->
+    <link rel="stylesheet" href="{% static 'css/attendee/components/loading-spinner.css' %}">
+    
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     {% include 'attendee/components/navbar.html' %}
     
-    <main>
+    <main id="main-content">
         {% block content %}
             {% block attendee_content %}{% endblock %}
         {% endblock %}
@@ -37,18 +65,60 @@
     
     {% include 'attendee/components/footer.html' %}
     
+    <!-- Loader Component -->
+    {% include 'attendee/components/loader.html' %}
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{% static 'js/shared/context-framework.js' %}"></script>
     <script src="{% static 'js/attendee/api.config.js' %}"></script>
     <script src="{% static 'js/attendee/api.service.js' %}"></script>
     <script src="{% static 'js/attendee/api.endpoints.js' %}"></script>
+    
+    <!-- Auth Guard -->
+    <script src="{% static 'js/attendee/auth-guard.js' %}"></script>
+    
+    <!-- Loader JavaScript -->
+    <script src="{% static 'js/attendee/components/loading-spinner.js' %}"></script>
+    
+    <!-- Universal Keyboard Navigation - Works on all pages -->
+    <script src="{% static 'js/shared/universal-keyboard-nav.js' %}"></script>
+    
+    <!-- Auth Module -->
+    
     {% block extra_js %}{% endblock %}
     
     <script>
-        function logout() {
-            localStorage.clear();
+        // Global logout function
+        window.logout = function() {
+            localStorage.removeItem('attendee_access_token');
+            localStorage.removeItem('attendee_refresh_token');
+            localStorage.removeItem('attendee_user');
+            // Preserve user data (cart, wishlist, bookings, tickets)
+            window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+                detail: { isLoggedIn: false, user: null } 
+            }));
             window.location.href = '/login/';
-        }
+        };
+        
+        // Initialize loader with custom settings
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.PageLoader) {
+                window.PageLoader.setMinDisplayTime(800);
+                console.log('Loader initialized');
+            }
+        });
+        
+        // Manual control functions
+        window.showLoader = function(message) {
+            if (window.PageLoader) window.PageLoader.show(message);
+        };
+        
+        window.hideLoader = function() {
+            if (window.PageLoader) window.PageLoader.hide();
+        };
+        
+        // Check auth status
+        console.log('Auth Guard Status:', window.AuthGuard ? 'Loaded' : 'Not loaded');
     </script>
 </body>
 </html>

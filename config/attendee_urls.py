@@ -6,9 +6,11 @@ All attendee-related URLs
 from django.urls import path
 from django.views.generic import TemplateView
 
+from events.views import homepage_view
+
 urlpatterns = [
     # Homepage
-    path('', TemplateView.as_view(template_name='attendee/pages/homepage/homepage.html'), name='attendee_home'),
+    path('', homepage_view, name='attendee_home'),
     
     # Auth
     path('login/', TemplateView.as_view(template_name='shared/auth/login.html'), name='attendee_login'),

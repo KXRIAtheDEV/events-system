@@ -42,10 +42,13 @@
             </div>
 
             <!-- Google Sign In -->
-            <button class="social-login-btn" id="googleSignInBtn">
-                <i class="fab fa-google social-login-icon"></i>
-                Continue with Google
-            </button>
+            <div style="position: relative; width: 100%; margin-bottom: 0.875rem;">
+                <button class="social-login-btn" id="googleSignInBtn" style="margin-bottom: 0; pointer-events: none;">
+                    <i class="fab fa-google social-login-icon"></i>
+                    Continue with Google
+                </button>
+                <div id="googleSignInBtnContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;"></div>
+            </div>
 
             <div class="auth-divider">
                 <div class="auth-divider-line"><span></span></div>
@@ -91,6 +94,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
     const roleRadios = document.querySelectorAll('input[name="role_select"]');
     const roleInput = document.getElementById('roleInput');
@@ -110,21 +114,88 @@
         });
     });
     
-    // Google Sign In
-    const googleBtn = document.getElementById('googleSignInBtn');
-    if (googleBtn) {
-        googleBtn.addEventListener('click', function() {
-            const selectedRole = roleInput.value;
-            localStorage.setItem('pending_google_role', selectedRole);
-            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
-            googleBtn.disabled = true;
-            showToast('Google Sign In is being configured. Please use email/password for now.', 'info');
-            setTimeout(() => {
+    // Google Sign In Callback
+    function handleCredentialResponse(response) {
+        const selectedRole = roleInput.value;
+        const googleBtn = document.getElementById('googleSignInBtn');
+        if (googleBtn) {
+            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+        }
+        
+        fetch('/api/auth/google/', {
+            method: 'POST',
+            body: JSON.stringify({
+                credential: response.credential,
+                role: selectedRole
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json().then(data => ({status: res.status, body: data})))
+        .then(({status, body}) => {
+            if (status === 200 || status === 201) {
+                const userRole = body.user.role;
+                const prefix = userRole === 'organizer' ? 'organizer' : (userRole === 'admin' ? 'admin' : 'attendee');
+                
+                localStorage.setItem(`${prefix}_access_token`, body.access);
+                localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
+                localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
+                
+                if (userRole === 'admin') {
+                    showToast('Welcome back Admin! Redirecting to admin portal...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin-portal/dashboard/';
+                    }, 1000);
+                } else if (selectedRole === 'organizer' && userRole === 'attendee') {
+                    showToast('You are not an organizer and cannot login as one. Redirecting to attendee dashboard...', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard/';
+                    }, 3000);
+                } else if (selectedRole === 'attendee' && userRole === 'organizer') {
+                    showToast('You are an organizer. Redirecting to organizer dashboard...', 'info');
+                    setTimeout(() => {
+                        window.location.href = '/organizer/dashboard/';
+                    }, 2000);
+                } else {
+                    showToast('Welcome back! Redirecting...', 'success');
+                    setTimeout(() => {
+                        if (userRole === 'organizer') {
+                            window.location.href = '/organizer/dashboard/';
+                        } else {
+                            window.location.href = '/dashboard/';
+                        }
+                    }, 1000);
+                }
+            } else {
+                showToast(body.error || 'Google Sign-in failed', 'error');
                 googleBtn.innerHTML = '<i class="fab fa-google social-login-icon"></i> Continue with Google';
-                googleBtn.disabled = false;
-            }, 2000);
+            }
+        })
+        .catch(error => {
+            showToast('Network error during Google Sign-in.', 'error');
+            googleBtn.innerHTML = '<i class="fab fa-google social-login-icon"></i> Continue with Google';
         });
     }
+
+    // Initialize GIS Client
+    function initGoogleSignIn() {
+        if (typeof google !== 'undefined') {
+            google.accounts.id.initialize({
+                client_id: '{{ GOOGLE_OAUTH_CLIENT_ID }}',
+                callback: handleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("googleSignInBtnContainer"),
+                { theme: "outline", size: "large", width: "360" }
+            );
+        } else {
+            setTimeout(initGoogleSignIn, 100);
+        }
+    }
+
+    initGoogleSignIn();
     
     function validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -215,13 +286,18 @@
             if (status === 200 || status === 201) {
                 const userRole = body.user.role;
                 const selectedRole = data.role;
-                const prefix = userRole === 'organizer' ? 'organizer' : 'attendee';
+                const prefix = userRole === 'organizer' ? 'organizer' : (userRole === 'admin' ? 'admin' : 'attendee');
                 
                 localStorage.setItem(`${prefix}_access_token`, body.access);
                 localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
                 localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
                 
-                if (selectedRole === 'organizer' && userRole === 'attendee') {
+                if (userRole === 'admin') {
+                    showToast('Welcome back Admin! Redirecting to admin portal...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin-portal/dashboard/';
+                    }, 1000);
+                } else if (selectedRole === 'organizer' && userRole === 'attendee') {
                     showToast('You are not an organizer and cannot login as one. Redirecting to attendee dashboard...', 'error');
                     setTimeout(() => {
                         window.location.href = '/dashboard/';

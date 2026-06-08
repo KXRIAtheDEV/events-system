@@ -1,0 +1,118 @@
+{
+    "notifications": [
+        {
+            "id": 7,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-08T10:28:37.834315+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
+            "id": 6,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-08T09:47:34.490807+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
+            "id": 5,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-08T09:03:24.264774+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
+            "id": 4,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-08T08:59:17.857472+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
+            "id": 1,
+            "title": "New Event Submitted",
+            "message": "Organizer  has submitted a new event 'Nairobi Food Festival' for approval.",
+            "type": "warning",
+            "is_read": false,
+            "created_at": "2026-06-08T06:59:17.853604+00:00"
+        },
+        {
+            "id": 2,
+            "title": "Refund Request Pending",
+            "message": "Attendee  has requested a refund for booking TICK-9E28B.",
+            "type": "info",
+            "is_read": false,
+            "created_at": "2026-06-07T08:59:17.853620+00:00"
+        },
+        {
+            "id": 3,
+            "title": "New Organizer Registration",
+            "message": "A new organizer 'Tech Innovations' is awaiting verification.",
+            "type": "warning",
+            "is_read": true,
+            "created_at": "2026-06-07T08:59:17.853620+00:00"
+        }
+    ],
+    "support_tickets": [
+        {
+            "id": 1,
+            "customer_name": "",
+            "customer_email": "admin@example.com",
+            "customer_phone": "0712345678",
+            "subject": "Unable to download ticket PDF",
+            "message": "Hello, I recently booked a seat for the Music Festival but when I click download ticket, the PDF returns an error. Please assist.",
+            "status": "open",
+            "created_at": "2026-06-08T06:59:17.853604+00:00",
+            "replies": []
+        },
+        {
+            "id": 2,
+            "customer_name": "",
+            "customer_email": "org@example.com",
+            "customer_phone": "0722345678",
+            "subject": "Payout processing timeline question",
+            "message": "Hi Admin, my event 'Summer Music Fest' ended yesterday. When will the payout be processed to my bank account?",
+            "status": "pending",
+            "created_at": "2026-06-07T08:59:17.853620+00:00",
+            "replies": [
+                {
+                    "sender": "admin",
+                    "message": "Hello, payouts are processed within 2-3 business days after the event completes. We are reviewing your event sales now.",
+                    "created_at": "2026-06-07T20:59:17.853636+00:00"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "customer_name": "Alice Njeri",
+            "customer_email": "alice.njeri@outlook.com",
+            "customer_phone": "0733456789",
+            "subject": "Change attendee details on booking",
+            "message": "Hello, I bought two tickets but put the same name on both. Can I change one of them to my friend's name?",
+            "status": "resolved",
+            "created_at": "2026-06-06T08:59:17.853644+00:00",
+            "replies": [
+                {
+                    "sender": "admin",
+                    "message": "Hello Alice, yes you can change details from your profile dashboard under tickets or let us know the name and we will update it for you.",
+                    "created_at": "2026-06-07T08:59:17.853649+00:00"
+                },
+                {
+                    "sender": "user",
+                    "message": "Thank you, I was able to edit it from the profile page. Resolved!",
+                    "created_at": "2026-06-07T14:59:17.853656+00:00"
+                }
+            ]
+        }
+    ],
+    "next_notification_id": 8,
+    "next_support_ticket_id": 4
+}

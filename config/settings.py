@@ -7,6 +7,16 @@ import os
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env file manually if exists
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    with open(env_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, val = line.split('=', 1)
+                os.environ.setdefault(key.strip(), val.strip())
 # SECURITY: override with environment variable in production
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-j&#8z0n2)9txjmpi6=8i2h=d8ks8gt4gar#!kb0u0z6jd)im+#')
 # Allow controlling debug via env var; default True for local development
@@ -34,6 +44,7 @@ INSTALLED_APPS = [
     'events',
     'bookings',
     'reviews',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -84,7 +95,6 @@ TEMPLATES = [
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'attendees'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'payouts'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'promotions'),
-            os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'reports'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'profile'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'settings'),
             os.path.join(BASE_DIR, 'frontend', 'templates', 'organizer', 'support'),
@@ -110,6 +120,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.google_oauth',
             ],
         },
     },
@@ -231,3 +242,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ],
 }
+
+# Google OAuth Config
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '229812600705-ih8rqfhe2jrv0lhb3vc4b7gt858p42fd.apps.googleusercontent.com')
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

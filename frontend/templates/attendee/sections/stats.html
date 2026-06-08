@@ -8,34 +8,22 @@
         <div class="analytics-grid" id="statsSection">
             <div class="analytics-card">
                 <div class="card-accent"></div>
-                <div class="analytics-icon-wrapper">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="analytics-number" id="countEvents" data-target="248">0<span class="suffix">+</span></div>
+                <div class="analytics-number" id="countEvents" data-target="{{ events_count|default:248 }}">0<span class="suffix">+</span></div>
                 <p>Events Hosted</p>
             </div>
             <div class="analytics-card">
                 <div class="card-accent"></div>
-                <div class="analytics-icon-wrapper">
-                    <i class="fas fa-ticket-alt"></i>
-                </div>
-                <div class="analytics-number" id="countTickets" data-target="5842">0<span class="suffix">+</span></div>
+                <div class="analytics-number" id="countTickets" data-target="{{ tickets_count|default:5842 }}">0<span class="suffix">+</span></div>
                 <p>Tickets Sold</p>
             </div>
             <div class="analytics-card">
                 <div class="card-accent"></div>
-                <div class="analytics-icon-wrapper">
-                    <i class="fas fa-chalkboard-user"></i>
-                </div>
-                <div class="analytics-number" id="countOrganizers" data-target="126">0<span class="suffix">+</span></div>
+                <div class="analytics-number" id="countOrganizers" data-target="{{ organizers_count|default:126 }}">0<span class="suffix">+</span></div>
                 <p>Active Organizers</p>
             </div>
             <div class="analytics-card">
                 <div class="card-accent"></div>
-                <div class="analytics-icon-wrapper">
-                    <i class="fas fa-smile-beam"></i>
-                </div>
-                <div class="analytics-number" id="countSatisfaction" data-target="98">0<span class="suffix">%</span></div>
+                <div class="analytics-number" id="countSatisfaction" data-target="{{ satisfaction_rate|default:98 }}">0<span class="suffix">%</span></div>
                 <p>Satisfaction Rate</p>
             </div>
         </div>

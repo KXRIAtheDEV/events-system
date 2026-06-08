@@ -10,8 +10,10 @@
                 <i class="fas fa-chevron-left"></i>
             </button>
             <div class="categories-carousel" id="categoryCarousel">
-                <!-- Categories will be loaded dynamically -->
-                <div class="loading-state">Loading categories...</div>
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Loading categories...</p>
+                </div>
             </div>
             <button class="carousel-nav next" id="catNextBtn">
                 <i class="fas fa-chevron-right"></i>
@@ -21,58 +23,74 @@
 </section>
 
 <script>
-document.addEventListener('DOMContentLoaded', async function() {
-    await loadCategories();
+let categoriesData = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
     setupCarousel();
 });
 
-async function loadCategories() {
+function loadCategories() {
     const carousel = document.getElementById('categoryCarousel');
     
-    try {
-        // API endpoint to get categories with event counts
-        const response = await fetch('/api/attendee/categories/');
-        const data = await response.json();
-        
-        const categories = data.categories || [];
-        
-        if (categories.length === 0) {
-            carousel.innerHTML = '<div class="empty-state">No categories available</div>';
-            return;
-        }
-        
-        carousel.innerHTML = categories.map(cat => `
-            <div class="category-card" data-category-id="${cat.id}" data-category-name="${cat.name}">
-                <div class="category-icon-wrapper">
-                    <i class="fas ${getCategoryIcon(cat.name)}"></i>
-                </div>
-                <div class="category-card-content">
-                    <h3>${escapeHtml(cat.name)}</h3>
-                    <p>${escapeHtml(cat.description || getCategoryDescription(cat.name))}</p>
-                    <div class="category-stats">
-                        <span><i class="fas fa-calendar-week"></i> ${cat.event_count || 0} events</span>
-                        <span><i class="fas fa-users"></i> ${formatNumber(cat.total_attendees || 0)} attendees</span>
-                    </div>
-                    <div class="category-featured">
-                        <span>${getFeaturedText(cat.name)}</span>
-                    </div>
-                    <span class="category-count">Explore ${cat.name} â†’</span>
-                </div>
-            </div>
-        `).join('');
-        
-        // Add click handlers
-        document.querySelectorAll('.category-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const categoryName = card.dataset.categoryName;
-                window.location.href = `/events/?category=${encodeURIComponent(categoryName)}`;
-            });
-        });
-        
-    } catch (error) {
-        console.error('Error loading categories:', error);
-        carousel.innerHTML = '<div class="error-state">Failed to load categories. Please refresh.</div>';
+    let categories = [];
+    
+    if (window.MockEventsData) {
+        categories = window.MockEventsData.categories;
+    } else {
+        categories = [
+            { id: 1, name: "Music", slug: "music", event_count: 8, description: "Live concerts and music festivals" },
+            { id: 2, name: "Technology", slug: "technology", event_count: 6, description: "Tech conferences and workshops" },
+            { id: 3, name: "Sports", slug: "sports", event_count: 5, description: "Sports tournaments and events" },
+            { id: 4, name: "Food & Drink", slug: "food", event_count: 4, description: "Food festivals and tasting events" },
+            { id: 5, name: "Arts", slug: "arts", event_count: 4, description: "Art exhibitions and galleries" },
+            { id: 6, name: "Business", slug: "business", event_count: 5, description: "Networking and business events" }
+        ];
     }
+    
+    categoriesData = categories;
+    
+    if (categories.length === 0) {
+        carousel.innerHTML = '<div class="empty-state">No categories available</div>';
+        return;
+    }
+    
+    carousel.innerHTML = categories.map(cat => `
+        <div class="category-card" data-category-id="${cat.id}" data-category-name="${cat.name}" data-category-slug="${cat.slug}">
+            <div class="category-icon-wrapper">
+                <i class="fas ${getCategoryIcon(cat.name)}"></i>
+            </div>
+            <div class="category-card-content">
+                <h3>${escapeHtml(cat.name)}</h3>
+                <p>${escapeHtml(cat.description || getCategoryDescription(cat.name))}</p>
+                <div class="category-stats">
+                    <span><i class="fas fa-calendar-week"></i> ${cat.event_count || 0} events</span>
+                </div>
+                <div class="category-featured">
+                    <span>${getFeaturedText(cat.name)}</span>
+                </div>
+                <span class="category-count">Explore ${cat.name} →</span>
+            </div>
+        </div>
+    `).join('');
+    
+    // Add click handlers with loader
+    document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const categoryName = card.dataset.categoryName;
+            const categorySlug = card.dataset.categorySlug;
+            
+            // Show loader before navigation
+            if (window.PageLoader) {
+                window.PageLoader.show();
+            } else if (window.showPageLoader) {
+                window.showPageLoader();
+            }
+            
+            // Redirect to events page with category filter
+            window.location.href = `/events/?category=${encodeURIComponent(categorySlug || categoryName)}`;
+        });
+    });
 }
 
 function setupCarousel() {
@@ -100,6 +118,11 @@ function setupCarousel() {
             const amount = getScrollAmount();
             carousel.scrollBy({ left: amount, behavior: 'smooth' });
         });
+        
+        if (window.innerWidth <= 768) {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+        }
     }
 }
 
@@ -111,9 +134,7 @@ function getCategoryIcon(categoryName) {
         'Sports': 'fa-futbol',
         'Arts': 'fa-palette',
         'Food': 'fa-utensils',
-        'Education': 'fa-chalkboard-user',
-        'Health': 'fa-heartbeat',
-        'Entertainment': 'fa-film'
+        'Food & Drink': 'fa-utensils'
     };
     return icons[categoryName] || 'fa-tag';
 }
@@ -121,14 +142,12 @@ function getCategoryIcon(categoryName) {
 function getCategoryDescription(categoryName) {
     const descriptions = {
         'Music': 'Concerts, festivals, and live performances',
-        'Technology': 'Conferences, worKesops, and meetups',
+        'Technology': 'Conferences, workshops, and meetups',
         'Business': 'Networking, seminars, and forums',
         'Sports': 'Tournaments, marathons, and training',
         'Arts': 'Exhibitions, galleries, and performances',
-        'Food': 'Festivals, tastings, and worKesops',
-        'Education': 'WorKesops, courses, and training',
-        'Health': 'Wellness, fitness, and meditation',
-        'Entertainment': 'Movies, comedy, and shows'
+        'Food': 'Festivals, tastings, and workshops',
+        'Food & Drink': 'Festivals, tastings, and workshops'
     };
     return descriptions[categoryName] || 'Discover amazing events';
 }
@@ -140,16 +159,10 @@ function getFeaturedText(categoryName) {
         'Business': 'Featured: Entrepreneurship Forum',
         'Sports': 'Featured: Marathon Kenya',
         'Arts': 'Featured: Art Exhibition',
-        'Food': 'Featured: Food & Wine Expo'
+        'Food': 'Featured: Food & Wine Expo',
+        'Food & Drink': 'Featured: Food & Wine Expo'
     };
     return featured[categoryName] || `Popular ${categoryName} Events`;
-}
-
-function formatNumber(num) {
-    if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
 }
 
 function escapeHtml(text) {

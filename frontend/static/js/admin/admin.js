@@ -318,28 +318,30 @@ function displayNotifications(notifications, unreadCount) {
     } else {
         container.innerHTML = notifications.map(n => {
             // Determine dynamic redirect URL based on notification contents
-            let redirectUrl = '/admin-portal/dashboard/';
-            const title = n.title ? n.title.toLowerCase() : '';
-            const msg = n.message ? n.message.toLowerCase() : '';
+            let redirectUrl = n.redirect_url || '/admin-portal/dashboard/';
+            if (!n.redirect_url) {
+                const title = n.title ? n.title.toLowerCase() : '';
+                const msg = n.message ? n.message.toLowerCase() : '';
 
-            if (title.includes('event') || msg.includes('event')) {
-                if (title.includes('submit') || title.includes('pending') || title.includes('draft') || msg.includes('approval') || msg.includes('submit')) {
-                    redirectUrl = '/admin-portal/events/pending/';
-                } else {
-                    redirectUrl = '/admin-portal/events/all/';
+                if (title.includes('event') || msg.includes('event')) {
+                    if (title.includes('submit') || title.includes('pending') || title.includes('draft') || msg.includes('approval') || msg.includes('submit')) {
+                        redirectUrl = '/admin-portal/events/pending/';
+                    } else {
+                        redirectUrl = '/admin-portal/events/all/';
+                    }
+                } else if (title.includes('refund') || msg.includes('refund')) {
+                    redirectUrl = '/admin-portal/bookings/refunds/';
+                } else if (title.includes('organizer') || msg.includes('organizer')) {
+                    redirectUrl = '/admin-portal/users/organizers/';
+                } else if (title.includes('user') || msg.includes('user') || title.includes('registration') || msg.includes('registration')) {
+                    redirectUrl = '/admin-portal/users/';
+                } else if (title.includes('support') || title.includes('ticket') || msg.includes('support') || msg.includes('ticket')) {
+                    redirectUrl = '/admin-portal/support/';
+                } else if (title.includes('payment') || title.includes('transaction') || msg.includes('payment') || msg.includes('transaction')) {
+                    redirectUrl = '/admin-portal/payments/';
+                } else if (title.includes('payout') || msg.includes('payout')) {
+                    redirectUrl = '/admin-portal/payments/payouts/';
                 }
-            } else if (title.includes('refund') || msg.includes('refund')) {
-                redirectUrl = '/admin-portal/bookings/refunds/';
-            } else if (title.includes('organizer') || msg.includes('organizer')) {
-                redirectUrl = '/admin-portal/users/organizers/';
-            } else if (title.includes('user') || msg.includes('user') || title.includes('registration') || msg.includes('registration')) {
-                redirectUrl = '/admin-portal/users/';
-            } else if (title.includes('support') || title.includes('ticket') || msg.includes('support') || msg.includes('ticket')) {
-                redirectUrl = '/admin-portal/support/';
-            } else if (title.includes('payment') || title.includes('transaction') || msg.includes('payment') || msg.includes('transaction')) {
-                redirectUrl = '/admin-portal/payments/';
-            } else if (title.includes('payout') || msg.includes('payout')) {
-                redirectUrl = '/admin-portal/payments/payouts/';
             }
 
             return `
@@ -478,12 +480,89 @@ function formatRelativeTime(dateString) {
     return `${Math.floor(diffMins / 1440)}d ago`;
 }
 
+function showConfirm(message, callback) {
+    const modalId = 'dynamicConfirmModal';
+    let modal = document.getElementById(modalId);
+    if (modal) {
+        modal.remove();
+    }
+    
+    modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999999;
+        opacity: 1;
+        transition: opacity 0.2s ease-out;
+    `;
+    
+    const content = document.createElement('div');
+    content.className = 'modal-content';
+    content.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 400px;
+        padding: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: scale(0.95);
+        transition: transform 0.2s ease-out;
+    `;
+    
+    content.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="width: 56px; height: 56px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 24px;">
+                <i class="ri-alert-line"></i>
+            </div>
+            <h3 style="margin: 0 0 8px; font-weight: 700; color: #1e293b; font-size: 18px;">Confirm Action</h3>
+            <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.5;">${escapeHtml(message)}</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button id="confirmCancelBtn" class="btn-outline" style="flex: 1; min-height: 40px; border-radius: 8px; font-weight: 500; cursor: pointer; border: 1px solid #e2e8f0; background: transparent; color: #1e293b;">Cancel</button>
+            <button id="confirmOkBtn" class="btn-primary" style="flex: 1; min-height: 40px; border-radius: 8px; font-weight: 500; cursor: pointer; background: linear-gradient(135deg, #f59e0b, #ec6408); border: none; color: white;">Confirm</button>
+        </div>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    setTimeout(() => {
+        content.style.transform = 'scale(1)';
+    }, 10);
+    
+    const closeModal = () => {
+        content.style.transform = 'scale(0.95)';
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 200);
+    };
+    
+    modal.querySelector('#confirmCancelBtn').onclick = () => {
+        closeModal();
+    };
+    
+    modal.querySelector('#confirmOkBtn').onclick = () => {
+        closeModal();
+        if (callback) callback();
+    };
+}
+
 // Export globals
 window.apiRequest = apiRequest;
 window.showToast = showToast;
+window.showConfirm = showConfirm;
 window.formatCurrency = formatCurrency;
 window.formatDate = formatDate;
 window.formatDateTime = formatDateTime;
 window.escapeHtml = escapeHtml;
 
-console.log('âœ… Admin JS loaded');
+console.log('✅ Admin JS loaded');

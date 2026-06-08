@@ -1,5 +1,5 @@
 // ============================================
-// ATTENDEE SEARCH - Complete Functionality
+// ATTENDEE SEARCH - Live API Integration
 // ============================================
 
 let currentPage = 1;
@@ -9,6 +9,12 @@ let currentFilters = {
     category: '',
     city: '',
     sort: 'relevance'
+};
+
+// API endpoints
+const API = {
+    search: '/api/attendee/events/search/',
+    categories: '/api/attendee/categories/',
 };
 
 // DOM Elements
@@ -25,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     currentQuery = urlParams.get('q') || '';
     
     if (searchQueryInfo) {
-        searchQueryInfo.textContent = `Showing results for "${escapeHtml(currentQuery)}"`;
+        searchQueryInfo.innerHTML = `Showing results for "<strong>${escapeHtml(currentQuery)}</strong>"`;
     }
     
     loadCategories();
@@ -61,36 +67,59 @@ function setupEventListeners() {
 
 async function loadCategories() {
     try {
-        const categories = await window.AttendeeAPIEndpoints.events.getCategories();
-        if (categoryFilter && categories && categories.length) {
-            categoryFilter.innerHTML = '<option value="">All Categories</option>' + 
-                categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        const response = await fetch(API.categories);
+        const data = await response.json();
+        
+        if (data.success && data.categories) {
+            if (categoryFilter) {
+                categoryFilter.innerHTML = '<option value="">All Categories</option>' + 
+                    data.categories.map(c => `<option value="${c.slug || c.id}">${escapeHtml(c.name)}</option>`).join('');
+            }
         }
     } catch (error) {
         console.error('Error loading categories:', error);
+        if (categoryFilter) {
+            categoryFilter.innerHTML = '<option value="">All Categories</option>';
+        }
     }
 }
 
 async function loadSearchResults() {
-    if (window.Loader) window.Loader.show('Searching...');
-    
     try {
-        const result = await window.AttendeeAPIEndpoints.events.search(currentQuery, {
+        const params = new URLSearchParams({
+            q: currentQuery,
             page: currentPage,
-            category: currentFilters.category,
-            city: currentFilters.city,
-            sort: currentFilters.sort
+            limit: 12
         });
         
-        const events = result.results || result;
-        const total = result.count || events.length;
-        totalPages = result.total_pages || Math.ceil(total / 12);
+        if (currentFilters.category) {
+            params.append('category', currentFilters.category);
+        }
         
-        displayResults(events);
-        renderPagination(currentPage, totalPages);
+        if (currentFilters.city) {
+            params.append('city', currentFilters.city);
+        }
         
-        if (resultsCount) {
-            resultsCount.textContent = `Found ${total} event${total !== 1 ? 's' : ''}`;
+        if (currentFilters.sort && currentFilters.sort !== 'relevance') {
+            params.append('sort', currentFilters.sort);
+        }
+        
+        const response = await fetch(`${API.search}?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const events = data.events || [];
+            const total = data.total_count || 0;
+            totalPages = data.total_pages || Math.ceil(total / 12);
+            
+            displayResults(events);
+            renderPagination(currentPage, totalPages);
+            
+            if (resultsCount) {
+                resultsCount.textContent = `Found ${total} event${total !== 1 ? 's' : ''}`;
+            }
+        } else {
+            throw new Error(data.message || 'Search failed');
         }
         
     } catch (error) {
@@ -101,12 +130,10 @@ async function loadSearchResults() {
                     <i class="fas fa-exclamation-circle"></i>
                     <h3>Search Failed</h3>
                     <p>${error.message || 'Please try again later.'}</p>
-                    <button class="btn-primary" onclick="loadSearchResults()">Retry</button>
+                    <button class="btn-primary" onclick="location.reload()">Retry</button>
                 </div>
             `;
         }
-    } finally {
-        if (window.Loader) window.Loader.hide();
     }
 }
 
@@ -120,32 +147,35 @@ function displayResults(events) {
                 <h3>No results found</h3>
                 <p>We couldn't find any events matching "${escapeHtml(currentQuery)}".</p>
                 <p>Try adjusting your search terms or browse all events.</p>
-                <a href="/attendee/events/" class="btn-primary">Browse All Events</a>
+                <a href="/events/" class="btn-primary">Browse All Events</a>
             </div>
         `;
         return;
     }
     
     searchResultsGrid.innerHTML = events.map(event => `
-        <div class="event-card" onclick="window.location.href='/attendee/events/detail/?id=${event.id}'">
-            <div class="event-banner" style="background-image: url('${event.banner_image || '/static/images/placeholder.jpg'}')">
+        <div class="premium-card" onclick="window.location.href='/events/detail/?id=${event.id}'" style="cursor: pointer;">
+            <div class="card-image-container">
+                <img src="${event.image || '/static/images/placeholder.jpg'}" alt="${event.title}" class="card-bg-image" onerror="this.src='/static/images/placeholder.jpg'">
+                <div class="card-gradient-overlay"></div>
                 ${event.is_featured ? '<span class="featured-badge">Featured</span>' : ''}
-                <span class="event-category">${escapeHtml(event.category_name || 'Event')}</span>
+                <span class="event-category">${escapeHtml(event.category_name || event.category || 'Event')}</span>
             </div>
-            <div class="event-content">
-                <h3 class="event-title">${escapeHtml(event.title)}</h3>
-                <div class="event-meta">
-                    <span><i class="fas fa-calendar"></i> ${formatDate(event.start_date)}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.city)}</span>
+            <div class="card-content">
+                <h3 class="card-title">${escapeHtml(event.title)}</h3>
+                <div class="card-meta">
+                    <span><i class="fas fa-calendar"></i> ${formatDate(event.date)}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location ? event.location.split(',')[0] : 'TBD')}</span>
                 </div>
-                <div class="event-footer">
-                    <div class="event-price">${formatCurrency(event.min_price)}</div>
-                    <div class="event-availability">
-                        ${event.available_tickets > 0 ? 
-                            `<span>${event.available_tickets} left</span>` : 
-                            '<span class="sold-out">Sold Out</span>'}
-                    </div>
-                </div>
+                <div class="card-price">KES ${(event.price || 0).toLocaleString()}</div>
+            </div>
+            <div class="card-actions">
+                <button class="card-action-btn view-details-btn" onclick="event.stopPropagation(); window.location.href='/events/detail/?id=${event.id}'">
+                    <i class="fas fa-info-circle"></i> Details
+                </button>
+                <button class="card-action-btn add-to-cart-btn" onclick="event.stopPropagation(); addToCart(${event.id}, '${escapeHtml(event.title)}', ${event.price || 0}, '${event.image || ''}')">
+                    <i class="fas fa-cart-plus"></i> Book Now
+                </button>
             </div>
         </div>
     `).join('');
@@ -158,17 +188,18 @@ function renderPagination(current, total) {
         return;
     }
     
-    let html = '';
-    html += `<button ${current === 1 ? 'disabled' : ''} onclick="changePage(${current - 1})">&laquo; Prev</button>`;
+    let html = '<div class="pagination-wrapper">';
+    html += `<button class="page-btn" ${current === 1 ? 'disabled' : ''} onclick="changePage(${current - 1})">&laquo; Prev</button>`;
     
     let startPage = Math.max(1, current - 2);
     let endPage = Math.min(total, current + 2);
     
     for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+        html += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
     }
     
-    html += `<button ${current === total ? 'disabled' : ''} onclick="changePage(${current + 1})">Next &raquo;</button>`;
+    html += `<button class="page-btn" ${current === total ? 'disabled' : ''} onclick="changePage(${current + 1})">Next &raquo;</button>`;
+    html += '</div>';
     container.innerHTML = html;
 }
 
@@ -182,11 +213,7 @@ function changePage(page) {
 
 function formatDate(dateString) {
     if (!dateString) return 'TBD';
-    return new Date(dateString).toLocaleDateString('en-KE');
-}
-
-function formatCurrency(amount) {
-    return `Kes ${Number(amount).toLocaleString('en-KE')}`;
+    return new Date(dateString).toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function escapeHtml(text) {
@@ -196,5 +223,79 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Make functions global
+function showToast(message, type) {
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        padding: 12px 20px;
+        border-radius: 12px;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        animation: slideInRight 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function addToCart(eventId, title, price, image) {
+    const token = localStorage.getItem('attendee_access_token');
+    
+    if (!token) {
+        showToast('Please login to book tickets', 'info');
+        setTimeout(() => {
+            localStorage.setItem('redirect_after_login', window.location.pathname);
+            window.location.href = '/login/';
+        }, 1500);
+        return;
+    }
+    
+    let cart = localStorage.getItem('eventhub_cart');
+    if (cart) {
+        try {
+            cart = JSON.parse(cart);
+        } catch(e) {
+            cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+        }
+    } else {
+        cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+    }
+    
+    const existingItem = cart.items.find(i => i.id == eventId);
+    if (existingItem) {
+        showToast(`${title} is already in your cart!`, 'info');
+        return;
+    }
+    
+    cart.items.push({
+        id: eventId,
+        title: title,
+        price: price,
+        quantity: 1,
+        image: image,
+        location: 'Event Venue',
+        date: new Date().toISOString()
+    });
+    
+    cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
+    cart.total = cart.subtotal + cart.platform_fee;
+    
+    localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cart-updated'));
+    
+    showToast(`${title} added to cart!`, 'success');
+}
+
 window.changePage = changePage;
+window.addToCart = addToCart;

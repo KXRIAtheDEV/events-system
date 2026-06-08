@@ -6,35 +6,159 @@
 
 {% block extra_css %}
 <style>
-    .ledger-card {
-        background: rgba(17, 24, 39, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 1.5rem;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    /* Clean, premium dark background */
+    body {
+        background-color: #000000 !important;
     }
+
+    .ledger-card {
+        background: #080808 !important; /* Softer solid black for cards */
+        border: 1px solid #141414 !important; /* Subtle divider-like borders */
+        border-radius: 16px;
+        padding: 2rem !important; /* Generous breathing space */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    /* Minimal table styling */
+    .table {
+        background-color: transparent !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .table thead th {
+        background-color: #000000 !important;
+        color: #ffffff !important; /* Bold white */
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        border-bottom: 2px solid #1a1a1a !important;
+        padding: 18px 16px !important;
+        text-align: left;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #111111 !important; /* Subtle dividers */
+        background: transparent !important;
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(255, 106, 0, 0.02) !important;
+    }
+
+    .table tbody td {
+        padding: 16px 16px !important; /* Cell padding 12-16px */
+        color: #ffffff !important; /* Regular white text */
+        background: transparent !important;
+        border: none !important;
+        vertical-align: middle;
+        text-align: left;
+    }
+
+    /* Search & Filter inputs in minimal dark theme */
+    .form-control, .form-select {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+        padding: 10px 14px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #ff6a00 !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 106, 0, 0.15) !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
+    }
+
+    .form-control::placeholder {
+        color: #64748b !important;
+    }
+
+    .form-select option {
+        background-color: #080808;
+        color: #ffffff;
+    }
+
+    .input-group-text {
+        background-color: #000000 !important;
+        border: 1px solid #222222 !important;
+        color: #64748b !important;
+        border-radius: 10px 0 0 10px !important;
+    }
+
+    .input-group > .form-control {
+        border-radius: 0 10px 10px 0 !important;
+    }
+
+    /* Custom pagination pill buttons */
+    .pagination {
+        gap: 6px;
+    }
+
+    .page-link {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 30px !important;
+        padding: 6px 16px !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .page-item.active .page-link {
+        background-color: #ff6a00 !important;
+        border-color: #ff6a00 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 12px rgba(255, 106, 0, 0.35) !important;
+    }
+
+    .page-link:hover {
+        border-color: #ff6a00 !important;
+        color: #ff6a00 !important;
+        box-shadow: 0 0 8px rgba(255, 106, 0, 0.15) !important;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        background-color: #080808 !important;
+        border: 1px solid #1a1a1a !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+    }
+
+    /* Status badges */
     .status-badge {
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
+        display: inline-block;
     }
+    
     .status-valid {
         background: rgba(16, 185, 129, 0.2);
         color: #10b981;
         border: 1px solid rgba(16, 185, 129, 0.3);
     }
+    
     .status-checked_in {
         background: rgba(59, 130, 246, 0.2);
         color: #3b82f6;
         border: 1px solid rgba(59, 130, 246, 0.3);
     }
+    
     .status-cancelled {
         background: rgba(239, 68, 68, 0.2);
         color: #ef4444;
         border: 1px solid rgba(239, 68, 68, 0.3);
     }
+    
     .table-container {
         overflow-x: auto;
     }
