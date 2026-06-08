@@ -122,13 +122,22 @@ async function addFilters() {
 async function filterEvents() {
     await loadEventsFromAPI();
     
+    // The API already applies the category filter server-side (?category=slug).
+    // We only apply the search text filter client-side here.
     let filtered = [...eventsCatalog];
-    if (currentCategory !== 'all') filtered = filtered.filter(e => e.category === currentCategory);
-    if (currentSearch) filtered = filtered.filter(e => e.title.toLowerCase().includes(currentSearch) || (e.category_name && e.category_name.toLowerCase().includes(currentSearch)) || (e.location && e.location.toLowerCase().includes(currentSearch)));
+    if (currentSearch) {
+        filtered = filtered.filter(e =>
+            e.title.toLowerCase().includes(currentSearch) ||
+            (e.category_name && e.category_name.toLowerCase().includes(currentSearch)) ||
+            (e.location && e.location.toLowerCase().includes(currentSearch))
+        );
+    }
     filteredEvents = filtered;
     const stats = document.getElementById('searchStats');
     if (stats) {
-        stats.innerHTML = currentSearch || currentCategory !== 'all' ? `Found ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}` : `Showing ${filteredEvents.length} upcoming events`;
+        stats.innerHTML = currentSearch || currentCategory !== 'all'
+            ? `Found ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
+            : `Showing ${filteredEvents.length} upcoming events`;
     }
     renderEvents();
 }

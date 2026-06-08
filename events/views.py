@@ -265,7 +265,11 @@ def api_event_list(request):
         )
         
     if category_id:
-        events = events.filter(category_id=category_id)
+        # Support both numeric id and slug (front-end sends slug)
+        if category_id.isdigit():
+            events = events.filter(category_id=category_id)
+        else:
+            events = events.filter(category__slug=category_id)
         
     if city:
         events = events.filter(Q(address__icontains=city) | Q(venue__icontains=city))
