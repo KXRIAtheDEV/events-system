@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login as django_login
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
@@ -128,6 +128,8 @@ def login(request):
         return json_error('This account is inactive.', status=403)
     if request.path.startswith('/api/organizer/') and user.role != 'organizer' and not user.is_superuser:
         return json_error('Only organizer accounts can access the organizer portal.', status=403)
+
+    django_login(request, user)
 
     return JsonResponse({
         'message': 'Login successful.',

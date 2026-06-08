@@ -29,7 +29,10 @@ def login_submit(request):
         
         login(request, user)
         
-        redirect_url = '/attendee/dashboard/' if role != 'organizer' else '/organizer/dashboard/'
+        if user.role == 'admin' or user.is_staff or user.is_superuser:
+            redirect_url = '/admin-portal/dashboard/'
+        else:
+            redirect_url = '/attendee/dashboard/' if role != 'organizer' else '/organizer/dashboard/'
         
         return JsonResponse({
             'success': True,

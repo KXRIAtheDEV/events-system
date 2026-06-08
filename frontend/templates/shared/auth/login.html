@@ -137,13 +137,18 @@
         .then(({status, body}) => {
             if (status === 200 || status === 201) {
                 const userRole = body.user.role;
-                const prefix = userRole === 'organizer' ? 'organizer' : 'attendee';
+                const prefix = userRole === 'organizer' ? 'organizer' : (userRole === 'admin' ? 'admin' : 'attendee');
                 
                 localStorage.setItem(`${prefix}_access_token`, body.access);
                 localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
                 localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
                 
-                if (selectedRole === 'organizer' && userRole === 'attendee') {
+                if (userRole === 'admin') {
+                    showToast('Welcome back Admin! Redirecting to admin portal...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin-portal/dashboard/';
+                    }, 1000);
+                } else if (selectedRole === 'organizer' && userRole === 'attendee') {
                     showToast('You are not an organizer and cannot login as one. Redirecting to attendee dashboard...', 'error');
                     setTimeout(() => {
                         window.location.href = '/dashboard/';
@@ -281,13 +286,18 @@
             if (status === 200 || status === 201) {
                 const userRole = body.user.role;
                 const selectedRole = data.role;
-                const prefix = userRole === 'organizer' ? 'organizer' : 'attendee';
+                const prefix = userRole === 'organizer' ? 'organizer' : (userRole === 'admin' ? 'admin' : 'attendee');
                 
                 localStorage.setItem(`${prefix}_access_token`, body.access);
                 localStorage.setItem(`${prefix}_refresh_token`, body.refresh);
                 localStorage.setItem(`${prefix}_user`, JSON.stringify(body.user));
                 
-                if (selectedRole === 'organizer' && userRole === 'attendee') {
+                if (userRole === 'admin') {
+                    showToast('Welcome back Admin! Redirecting to admin portal...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin-portal/dashboard/';
+                    }, 1000);
+                } else if (selectedRole === 'organizer' && userRole === 'attendee') {
                     showToast('You are not an organizer and cannot login as one. Redirecting to attendee dashboard...', 'error');
                     setTimeout(() => {
                         window.location.href = '/dashboard/';
