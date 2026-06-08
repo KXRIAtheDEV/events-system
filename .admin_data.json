@@ -1,6 +1,15 @@
 {
     "notifications": [
         {
+            "id": 8,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-08T10:40:16.308864+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
             "id": 7,
             "title": "Event Approved",
             "message": "Event 'Draft Event' has been approved successfully.",
@@ -113,6 +122,6 @@
             ]
         }
     ],
-    "next_notification_id": 8,
+    "next_notification_id": 9,
     "next_support_ticket_id": 4
 }
