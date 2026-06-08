@@ -29,8 +29,31 @@ function updateSalesChart(data) {
     const ctx = document.getElementById('salesChart').getContext('2d');
     salesChart = new Chart(ctx, {
         type: 'line',
-        data: { labels: data.map(d => d.date), datasets: [{ label: 'Tickets Sold', data: data.map(d => d.sold), borderColor: '#ff6b00', fill: false }] },
-        options: { responsive: true, maintainAspectRatio: true }
+        data: {
+            labels: data.map(d => d.date),
+            datasets: [{
+                label: 'Tickets Sold',
+                data: data.map(d => d.sold),
+                borderColor: '#ff6b00',
+                backgroundColor: 'rgba(255,107,0,0.18)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: '#ff6b00'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Date' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { beginAtZero: true, title: { display: true, text: 'Tickets Sold' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+            }
+        }
     });
 }
 
@@ -39,7 +62,20 @@ function updateDistributionChart(data) {
     const ctx = document.getElementById('distributionChart').getContext('2d');
     distributionChart = new Chart(ctx, {
         type: 'pie',
-        data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#ff6b00', '#10b981', '#3b82f6', '#8b5cf6'] }] }
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                data: Object.values(data),
+                backgroundColor: ['#ff6b00', '#10b981', '#3b82f6', '#8b5cf6']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
     });
 }
 

@@ -330,7 +330,28 @@ async function loadAnalytics(eventId) {
             type: 'line',
             data: {
                 labels: Array.isArray(stats.sales_data) ? stats.sales_data.map(d => d.date) : [],
-                datasets: [{ label: 'Tickets Sold', data: Array.isArray(stats.sales_data) ? stats.sales_data.map(d => d.sold) : [], borderColor: '#ff6b00' }]
+                datasets: [{
+                    label: 'Tickets Sold',
+                    data: Array.isArray(stats.sales_data) ? stats.sales_data.map(d => d.sold) : [],
+                    borderColor: '#ff6b00',
+                    backgroundColor: 'rgba(255,107,0,0.2)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ff6b00'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Date' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                    y: { beginAtZero: true, title: { display: true, text: 'Tickets Sold' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+                }
             }
         });
     } catch(e) {
