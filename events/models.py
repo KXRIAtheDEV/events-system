@@ -20,6 +20,8 @@ class Category(models.Model):
 class Event(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
         ('published', 'Published'),
         ('cancelled', 'Cancelled'),
         ('sold_out', 'Sold Out'),

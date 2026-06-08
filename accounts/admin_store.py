@@ -156,7 +156,7 @@ def mark_all_notifications_read():
     save_store(store)
     return True
 
-def add_notification(title, message, n_type="info"):
+def add_notification(title, message, n_type="info", redirect_url=None):
     store = load_store()
     notifications = store.get("notifications", [])
     next_id = store.get("next_notification_id", len(notifications) + 1)
@@ -169,6 +169,9 @@ def add_notification(title, message, n_type="info"):
         "is_read": False,
         "created_at": timezone.now().isoformat()
     }
+    if redirect_url:
+        new_notif["redirect_url"] = redirect_url
+        
     notifications.insert(0, new_notif)
     store["notifications"] = notifications
     store["next_notification_id"] = next_id + 1

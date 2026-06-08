@@ -318,28 +318,30 @@ function displayNotifications(notifications, unreadCount) {
     } else {
         container.innerHTML = notifications.map(n => {
             // Determine dynamic redirect URL based on notification contents
-            let redirectUrl = '/admin-portal/dashboard/';
-            const title = n.title ? n.title.toLowerCase() : '';
-            const msg = n.message ? n.message.toLowerCase() : '';
+            let redirectUrl = n.redirect_url || '/admin-portal/dashboard/';
+            if (!n.redirect_url) {
+                const title = n.title ? n.title.toLowerCase() : '';
+                const msg = n.message ? n.message.toLowerCase() : '';
 
-            if (title.includes('event') || msg.includes('event')) {
-                if (title.includes('submit') || title.includes('pending') || title.includes('draft') || msg.includes('approval') || msg.includes('submit')) {
-                    redirectUrl = '/admin-portal/events/pending/';
-                } else {
-                    redirectUrl = '/admin-portal/events/all/';
+                if (title.includes('event') || msg.includes('event')) {
+                    if (title.includes('submit') || title.includes('pending') || title.includes('draft') || msg.includes('approval') || msg.includes('submit')) {
+                        redirectUrl = '/admin-portal/events/pending/';
+                    } else {
+                        redirectUrl = '/admin-portal/events/all/';
+                    }
+                } else if (title.includes('refund') || msg.includes('refund')) {
+                    redirectUrl = '/admin-portal/bookings/refunds/';
+                } else if (title.includes('organizer') || msg.includes('organizer')) {
+                    redirectUrl = '/admin-portal/users/organizers/';
+                } else if (title.includes('user') || msg.includes('user') || title.includes('registration') || msg.includes('registration')) {
+                    redirectUrl = '/admin-portal/users/';
+                } else if (title.includes('support') || title.includes('ticket') || msg.includes('support') || msg.includes('ticket')) {
+                    redirectUrl = '/admin-portal/support/';
+                } else if (title.includes('payment') || title.includes('transaction') || msg.includes('payment') || msg.includes('transaction')) {
+                    redirectUrl = '/admin-portal/payments/';
+                } else if (title.includes('payout') || msg.includes('payout')) {
+                    redirectUrl = '/admin-portal/payments/payouts/';
                 }
-            } else if (title.includes('refund') || msg.includes('refund')) {
-                redirectUrl = '/admin-portal/bookings/refunds/';
-            } else if (title.includes('organizer') || msg.includes('organizer')) {
-                redirectUrl = '/admin-portal/users/organizers/';
-            } else if (title.includes('user') || msg.includes('user') || title.includes('registration') || msg.includes('registration')) {
-                redirectUrl = '/admin-portal/users/';
-            } else if (title.includes('support') || title.includes('ticket') || msg.includes('support') || msg.includes('ticket')) {
-                redirectUrl = '/admin-portal/support/';
-            } else if (title.includes('payment') || title.includes('transaction') || msg.includes('payment') || msg.includes('transaction')) {
-                redirectUrl = '/admin-portal/payments/';
-            } else if (title.includes('payout') || msg.includes('payout')) {
-                redirectUrl = '/admin-portal/payments/payouts/';
             }
 
             return `

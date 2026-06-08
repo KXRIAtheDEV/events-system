@@ -275,6 +275,17 @@ urlpatterns = [
     path('api/admin/users/<int:user_id>/suspend/', admin_api.user_suspend, name='admin_user_suspend'),
     path('api/admin/users/<int:user_id>/activate/', admin_api.user_activate, name='admin_user_activate'),
 
+    # Organizer Management
+    path('api/admin/organizers/stats/', admin_api.organizers_stats_api, name='admin_organizers_stats'),
+    path('api/admin/organizers/verified/', admin_api.organizers_verified_api, name='admin_organizers_verified'),
+    path('api/admin/organizers/suspended/', admin_api.organizers_suspended_api, name='admin_organizers_suspended'),
+    path('api/admin/organizers/pending/', admin_api.organizers_pending_api, name='admin_organizers_pending'),
+    path('api/admin/organizers/create/', admin_api.organizer_create_api, name='admin_organizers_create'),
+    path('api/admin/organizers/<int:organizer_id>/', admin_api.organizer_detail_api, name='admin_organizer_detail'),
+    path('api/admin/organizers/<int:organizer_id>/suspend/', admin_api.organizer_suspend_api, name='admin_organizer_suspend'),
+    path('api/admin/organizers/<int:organizer_id>/reactivate/', admin_api.organizer_reactivate_api, name='admin_organizer_reactivate'),
+    path('api/admin/organizers/<int:organizer_id>/delete/', admin_api.organizer_delete_api, name='admin_organizer_delete'),
+
     # Tickets Management
     path('api/admin/tickets/', admin_api.tickets_list_api, name='admin_tickets_list'),
     path('api/admin/tickets/export/', admin_api.tickets_export, name='admin_tickets_export'),

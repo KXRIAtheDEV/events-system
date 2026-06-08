@@ -82,7 +82,7 @@ def google_oauth_callback(request):
             email=email,
             first_name=first_name,
             last_name=last_name,
-            role=role,
+            role='attendee',
             google_id=google_id
         )
         user.set_unusable_password()

@@ -116,11 +116,7 @@ def api_organizer_events_create(request):
         status = data.get('status', 'draft')
 
         # Map frontend status to DB status
-        db_status = 'draft'
-        if status in ('published', 'active'):
-            db_status = 'published'
-        elif status == 'cancelled':
-            db_status = 'cancelled'
+        db_status = 'pending'
             
         # Parse date and times
         try:
@@ -160,6 +156,17 @@ def api_organizer_events_create(request):
             banner_image=image,
             status=db_status
         )
+
+        try:
+            from accounts.admin_store import add_notification
+            add_notification(
+                title="Event Pending Approval",
+                message=f"Event '{event.title}' created by '{request.user.username}' is waiting for approval.",
+                n_type="warning",
+                redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+            )
+        except Exception as notif_err:
+            print("Failed to dispatch admin notification:", notif_err)
 
         try:
             details_str = f"{event.start_date.strftime('%B %d, %Y')} at {event.venue}"
@@ -249,9 +256,34 @@ def api_organizer_events_update(request, event_id):
         if 'status' in data:
             status = data['status']
             if status in ('published', 'active'):
-                event.status = 'published'
+                if event.status == 'approved':
+                    event.status = 'published'
+                else:
+                    event.status = 'pending'
+                    try:
+                        from accounts.admin_store import add_notification
+                        add_notification(
+                            title="Event Pending Approval",
+                            message=f"Event '{event.title}' updated by '{request.user.username}' is waiting for approval.",
+                            n_type="warning",
+                            redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                        )
+                    except Exception as notif_err:
+                        print("Failed to dispatch admin notification:", notif_err)
             elif status == 'cancelled':
                 event.status = 'cancelled'
+            elif status == 'pending':
+                event.status = 'pending'
+                try:
+                    from accounts.admin_store import add_notification
+                    add_notification(
+                        title="Event Pending Approval",
+                        message=f"Event '{event.title}' is waiting for approval.",
+                        n_type="warning",
+                        redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                    )
+                except Exception as notif_err:
+                    print("Failed to dispatch admin notification:", notif_err)
             else:
                 event.status = 'draft'
             
