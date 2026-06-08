@@ -50,13 +50,7 @@ urlpatterns = [
          TemplateView.as_view(template_name='organizer/dashboard/booking_detail.html'),
          name='organizer_booking_detail'),
 
-    # Payouts
-    path('payouts/',
-         TemplateView.as_view(template_name='organizer/dashboard/payouts.html'),
-         name='organizer_payouts'),
-    path('payouts/settings/',
-         TemplateView.as_view(template_name='organizer/dashboard/payouts.html'),
-         name='organizer_payouts_settings'),
+
 
     # Promotions
     path('promotions/',
