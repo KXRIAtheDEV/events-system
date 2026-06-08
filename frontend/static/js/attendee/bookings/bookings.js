@@ -297,7 +297,6 @@ function renderBookingDetail(booking) {
             <div class="booking-total-section">
                 <div class="breakdown">
                     <div>Subtotal: ${formatCurrency(booking.subtotal)}</div>
-                    <div>Booking Fee: ${formatCurrency(booking.booking_fee || 0)}</div>
                     ${booking.discount ? `<div>Discount: -${formatCurrency(booking.discount)}</div>` : ''}
                 </div>
                 <div class="total-amount">Total Paid: ${formatCurrency(booking.total_amount)}</div>

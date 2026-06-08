@@ -185,8 +185,8 @@ async function clearCart() {
 
 function recalculateCartTotals() {
     cartData.subtotal = cartData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    cartData.platform_fee = Math.ceil(cartData.subtotal * 0.05);
-    cartData.total = cartData.subtotal + cartData.platform_fee - (cartData.discount_amount || 0);
+    cartData.platform_fee = 0;
+    cartData.total = cartData.subtotal - (cartData.discount_amount || 0);
 }
 
 function saveCartToLocalStorage() {
@@ -254,7 +254,6 @@ function proceedToCheckout() {
     if (checkoutOrderSummary) {
         checkoutOrderSummary.innerHTML = `
             <div class="summary-row"><span>Subtotal (${cartData.items.length} items):</span><span>${formatCurrency(cartData.subtotal)}</span></div>
-            <div class="summary-row"><span>Booking Fee (5%):</span><span>${formatCurrency(cartData.platform_fee || 0)}</span></div>
             ${cartData.discount_amount ? `<div class="summary-row discount"><span>Discount:</span><span>-${formatCurrency(cartData.discount_amount)}</span></div>` : ''}
             <div class="summary-row total"><span>Total Amount:</span><span>${formatCurrency(cartData.total)}</span></div>
         `;
@@ -365,7 +364,6 @@ async function completePayment(bookingId, billingInfo) {
             receipt_number: 'MPESA' + Math.floor(Math.random() * 10000000),
             total_amount: cartData.total,
             subtotal: cartData.subtotal,
-            booking_fee: cartData.platform_fee,
             discount: cartData.discount_amount || 0,
             billing_info: {
                 name: billingInfo.full_name,

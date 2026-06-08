@@ -288,8 +288,8 @@ function addToCart(eventId, title, price, image) {
     });
     
     cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-    cart.platform_fee = Math.ceil(cart.subtotal * 0.05);
-    cart.total = cart.subtotal + cart.platform_fee;
+    cart.platform_fee = 0;
+    cart.total = cart.subtotal;
     
     localStorage.setItem('eventhub_cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cart-updated'));
