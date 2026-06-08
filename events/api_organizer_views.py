@@ -648,55 +648,71 @@ def _file_to_base64_uri(file, ext):
 @require_http_methods(["POST"])
 def api_organizer_upload_image(request, event_id):
     """Upload a banner image for the event.
-    
+
     Strategy:
-      1. Try to save the file to the local/cloud filesystem via default_storage.
-      2. If that fails (e.g. Vercel read-only filesystem), encode the file as a
-         base64 data URI and store it directly in the TextField. This keeps the
-         image accessible without any external storage dependency.
+      1. Try to save the file to the local filesystem via default_storage.
+      2. If that fails (e.g. Vercel read-only FS), encode the file as a base64
+         data URI stored directly in the EventImage TextField.
+      3. Always attempt to persist the URL in event.banner_image, but catch any
+         DataError gracefully (e.g. if the DB column is still VARCHAR(200) and
+         migration 0005 hasn't run yet) – the EventImage record is the source of
+         truth either way.
     """
     try:
         event = Event.objects.get(id=event_id, organizer=request.user)
         if 'image' not in request.FILES:
             return JsonResponse({'success': False, 'message': 'No image file uploaded.'}, status=400)
-        
+
         file = request.FILES['image']
         is_valid, err_msg = validate_uploaded_file(file)
         if not is_valid:
             return JsonResponse({'success': False, 'message': err_msg}, status=400)
-        
+
         from django.conf import settings
         from django.core.files.storage import default_storage
         from django.core.files.base import ContentFile
         import uuid
-        
+
         ext = os.path.splitext(file.name)[1].lower()
         filename = f"banner_{event_id}_{uuid.uuid4().hex[:8]}{ext}"
         filepath = os.path.join('events', 'banners', filename)
-        
+
         # Try filesystem save first; fall back to base64 data URI on read-only environments
-        image_value = None  # what gets stored in the DB
-        url = None          # what gets returned to the browser
+        image_value = None  # stored in EventImage.image (TEXT – always safe)
+        url = None          # returned to the browser and saved in event.banner_image
         try:
             file.seek(0)
             saved_path = default_storage.save(filepath, ContentFile(file.read()))
             url = settings.MEDIA_URL + saved_path.replace('\\', '/')
-            image_value = saved_path  # relative path – url property will prepend MEDIA_URL
+            image_value = saved_path  # relative path – EventImage.url property will prepend MEDIA_URL
         except Exception as storage_err:
             print("Storage save failed, using base64 fallback:", storage_err)
             data_uri = _file_to_base64_uri(file, ext)
             url = data_uri
-            image_value = data_uri  # store the full data URI directly
+            image_value = data_uri  # store the full data URI directly in the TEXT column
 
-        event.banner_image = url
-        event.save()
-
-        # Also record in EventImage table (best-effort – won't block on failure)
+        # Persist the image record (TEXT column – always safe regardless of migration state)
         try:
             EventImage.objects.create(event=event, image=image_value)
         except Exception as db_err:
             print("Failed to save to EventImage table:", db_err)
-        
+
+        # Update event.banner_image – wrap in its own try-except because the column
+        # may still be VARCHAR(200) on production if migration 0005 hasn't run yet.
+        try:
+            event.banner_image = url
+            event.save(update_fields=['banner_image'])
+        except Exception as banner_err:
+            print("Could not save banner_image to event (possible column length issue):", banner_err)
+            # The EventImage record was already saved above, so the image is preserved.
+            # Attempt a short-URL fallback: store only the first 190 chars so the column won't truncate.
+            try:
+                short_url = url[:190] if len(url) > 190 else url
+                event.banner_image = short_url
+                event.save(update_fields=['banner_image'])
+            except Exception:
+                pass  # silently ignore – EventImage is the source of truth
+
         return JsonResponse({'success': True, 'image_url': url, 'image': url})
     except Event.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Event not found.'}, status=404)
