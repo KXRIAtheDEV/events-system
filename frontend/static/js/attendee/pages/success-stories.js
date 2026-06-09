@@ -1,9 +1,37 @@
 // ============================================
-// SUCCESS STORIES PAGE - WORKING VERSION
+// SUCCESS STORIES PAGE - FIXED STARS, PAGINATION, NO EMPTY SPACE
 // ============================================
 
 (function() {
     'use strict';
+    
+    // Strong function to remove ALL loaders from the page
+    function removeAllLoaders() {
+        const loaderSelectors = [
+            '.loader', '#loader', '.loading', '.spinner', '.page-loader', 
+            '.loader-spinner', '.loading-spinner', '.overlay-loader',
+            '.global-loader', '.main-loader', '.content-loader',
+            '[class*="loader"]', '[class*="spinner"]', '[id*="loader"]', '[id*="spinner"]'
+        ];
+        
+        loaderSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                if (el) {
+                    el.style.display = 'none';
+                    el.style.opacity = '0';
+                    el.style.visibility = 'hidden';
+                }
+            });
+        });
+        
+        const overlays = document.querySelectorAll('.loader-overlay, .loading-overlay, .page-overlay');
+        overlays.forEach(overlay => {
+            if (overlay && overlay.parentNode) {
+                overlay.remove();
+            }
+        });
+    }
     
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
@@ -13,9 +41,14 @@
     }
     
     function initialize() {
-        console.log('Success Stories initializing...');
+        // Remove all loaders immediately
+        removeAllLoaders();
+        const loaderInterval = setInterval(removeAllLoaders, 50);
+        setTimeout(() => clearInterval(loaderInterval), 5000);
         
-        // Default stories data
+        console.log('Success Stories initializing - Loaders blocked');
+        
+        // Default stories data with different ratings
         const DEFAULT_STORIES = [
             {
                 id: 1,
@@ -107,8 +140,17 @@
             return div.innerHTML;
         }
         
-        function generateStars() {
-            return '<i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>';
+        // Generate stars based on rating (FIXED)
+        function generateStars(rating) {
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    starsHtml += '<i class="fas fa-star"></i>';
+                } else {
+                    starsHtml += '<i class="far fa-star"></i>';
+                }
+            }
+            return starsHtml;
         }
         
         function getCurrentUserEmail() {
@@ -140,7 +182,6 @@
                 submittedEmails = new Set(JSON.parse(savedEmails));
             }
             
-            // Add default story emails to submitted set
             DEFAULT_STORIES.forEach(story => {
                 if (story.email) {
                     submittedEmails.add(story.email.toLowerCase());
@@ -177,10 +218,13 @@
                     <i class="fas fa-trash-alt"></i> Delete
                 </button>` : '';
             
+            // Use the rating from the story to generate stars
+            const starsHtml = generateStars(story.rating);
+            
             card.innerHTML = `
                 <div class="testimonial-header">
                     <i class="fas fa-quote-left quote-icon"></i>
-                    <div class="rating">${generateStars()}</div>
+                    <div class="rating">${starsHtml}</div>
                 </div>
                 <p class="testimonial-text">${escapeHtml(story.message)}</p>
                 <div class="testimonial-author">
@@ -199,7 +243,6 @@
                 </div>
             `;
             
-            // Add delete event listener
             if (isOwnStory) {
                 const deleteBtn = card.querySelector('.delete-story-btn');
                 if (deleteBtn) {
@@ -233,14 +276,12 @@
                 return;
             }
             
-            // Remove story
             allStories = allStories.filter(s => s.id !== storyId);
             submittedEmails.delete(storyEmail.toLowerCase());
             
             saveData();
             saveEmails();
             
-            // Update pagination
             const totalPages = Math.ceil(allStories.length / STORIES_PER_PAGE);
             if (currentPage > totalPages && totalPages > 0) {
                 currentPage = totalPages;
@@ -249,7 +290,12 @@
             
             renderStories();
             updateShareButtonState();
-            showToast('Your story has been deleted!', 'success');
+            showToast('Your story has been deleted! You can now submit a new story.', 'success');
+        }
+        
+        // Get total pages
+        function getTotalPages() {
+            return Math.ceil(allStories.length / STORIES_PER_PAGE);
         }
         
         // Render stories
@@ -258,15 +304,17 @@
             
             storiesGrid.innerHTML = '';
             
+            if (allStories.length === 0) {
+                storiesGrid.innerHTML = '<div class="empty-message"><i class="fas fa-comment-dots"></i> No stories yet. Be the first to share!</div>';
+                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+                return;
+            }
+            
+            if (loadMoreBtn) loadMoreBtn.style.display = 'inline-flex';
+            
             const start = (currentPage - 1) * STORIES_PER_PAGE;
             const end = start + STORIES_PER_PAGE;
             const pageStories = allStories.slice(start, end);
-            
-            if (pageStories.length === 0) {
-                storiesGrid.innerHTML = '<div class="empty-message"><i class="fas fa-comment-dots"></i> No stories yet. Be the first to share!</div>';
-                updatePaginationButton();
-                return;
-            }
             
             pageStories.forEach(story => {
                 storiesGrid.appendChild(createStoryCard(story));
@@ -279,43 +327,71 @@
         function updatePaginationButton() {
             if (!loadMoreBtn) return;
             
-            const totalPages = Math.ceil(allStories.length / STORIES_PER_PAGE);
-            if (currentPage < totalPages) {
+            const totalPages = getTotalPages();
+            
+            if (totalPages <= 1) {
+                loadMoreBtn.innerHTML = `<i class="fas fa-book-open"></i> Load More`;
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.style.opacity = '0.5';
+                loadMoreBtn.style.cursor = 'not-allowed';
+            } else if (currentPage < totalPages) {
                 loadMoreBtn.innerHTML = `<i class="fas fa-book-open"></i> Load More (${currentPage + 1}/${totalPages})`;
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.style.opacity = '1';
+                loadMoreBtn.style.cursor = 'pointer';
             } else {
-                loadMoreBtn.innerHTML = `<i class="fas fa-redo-alt"></i> Start Over`;
+                loadMoreBtn.innerHTML = `<i class="fas fa-redo-alt"></i> Start Over (Page 1)`;
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.style.opacity = '1';
+                loadMoreBtn.style.cursor = 'pointer';
             }
         }
         
         function updatePaginationInfo(start, end) {
             let info = document.querySelector('.pagination-info');
-            if (!info) {
+            if (!info && storiesGrid && storiesGrid.parentNode) {
                 info = document.createElement('div');
                 info.className = 'pagination-info';
                 storiesGrid.parentNode.insertBefore(info, storiesGrid.nextSibling);
             }
-            info.innerHTML = `Showing ${start + 1}-${Math.min(end, allStories.length)} of ${allStories.length} stories`;
+            if (info) {
+                const userStoriesCount = allStories.filter(s => !s.isDefault).length;
+                info.innerHTML = `Showing ${Math.min(start + 1, allStories.length)}-${Math.min(end, allStories.length)} of ${allStories.length} stories (${userStoriesCount} by users)`;
+            }
         }
         
         function nextPage() {
-            const totalPages = Math.ceil(allStories.length / STORIES_PER_PAGE);
+            const totalPages = getTotalPages();
+            
+            if (totalPages <= 1) {
+                showToast('No more stories to load', 'info');
+                return;
+            }
+            
             if (currentPage < totalPages) {
                 currentPage++;
                 renderStories();
-                storiesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (storiesGrid) {
+                    storiesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             } else {
                 currentPage = 1;
                 renderStories();
-                storiesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (storiesGrid) {
+                    storiesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                showToast('Showing first page of stories', 'info');
             }
         }
         
         // Add new story
         function addNewStory(storyData) {
+            console.log('addNewStory called with:', storyData);
+            
             const email = storyData.email.toLowerCase().trim();
             
             if (submittedEmails.has(email)) {
-                showToast('You have already shared a story! One story per user is allowed.', 'error');
+                showToast('You have already shared a story! Delete your existing story first to submit a new one.', 'error');
                 return false;
             }
             
@@ -341,16 +417,17 @@
             currentPage = 1;
             renderStories();
             
-            // Scroll to the new story
             setTimeout(() => {
-                storiesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                const firstCard = document.querySelector('.testimonial-card');
-                if (firstCard) {
-                    firstCard.style.transition = 'all 0.3s ease';
-                    firstCard.style.boxShadow = '0 0 0 3px #f59e0b';
-                    setTimeout(() => {
-                        if (firstCard) firstCard.style.boxShadow = '';
-                    }, 2000);
+                if (storiesGrid) {
+                    storiesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const firstCard = document.querySelector('.testimonial-card');
+                    if (firstCard) {
+                        firstCard.style.transition = 'all 0.3s ease';
+                        firstCard.style.boxShadow = '0 0 0 3px #f59e0b';
+                        setTimeout(() => {
+                            if (firstCard) firstCard.style.boxShadow = '';
+                        }, 2000);
+                    }
                 }
             }, 100);
             
@@ -375,10 +452,12 @@
                 shareBtn.disabled = true;
                 shareBtn.style.opacity = '0.5';
                 shareBtn.style.cursor = 'not-allowed';
+                shareBtn.title = 'You have already shared a story. Delete it first to submit a new one.';
             } else {
                 shareBtn.disabled = false;
                 shareBtn.style.opacity = '1';
                 shareBtn.style.cursor = 'pointer';
+                shareBtn.title = 'Share your story';
             }
         }
         
@@ -392,7 +471,7 @@
             }
             
             if (submittedEmails.has(currentUserEmail)) {
-                showToast('You have already shared a story!', 'error');
+                showToast('You have already shared a story! Delete your existing story first to submit a new one.', 'error');
                 return;
             }
             
@@ -400,22 +479,35 @@
                 modal.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
                 
-                // Auto-fill form
                 const emailInput = document.getElementById('storyEmail');
                 if (emailInput) {
                     emailInput.value = currentUserEmail;
                     emailInput.readOnly = true;
                 }
                 
-                // Try to auto-fill name
+                const nameInput = document.getElementById('storyName');
+                if (nameInput) nameInput.value = '';
+                
+                const eventInput = document.getElementById('storyEvent');
+                if (eventInput) eventInput.value = '';
+                
+                const messageInput = document.getElementById('storyMessage');
+                if (messageInput) messageInput.value = '';
+                
+                const ratingInput = document.getElementById('storyRating');
+                if (ratingInput) ratingInput.value = '0';
+                
+                const stars = document.querySelectorAll('.rating-input i');
+                stars.forEach(star => {
+                    star.classList.remove('fas');
+                    star.classList.add('far');
+                });
+                
                 try {
                     const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-                    if (user.first_name) {
-                        const nameInput = document.getElementById('storyName');
-                        if (nameInput) {
-                            const fullName = user.first_name + (user.last_name ? ' ' + user.last_name : '');
-                            nameInput.value = fullName;
-                        }
+                    if (user.first_name && nameInput) {
+                        const fullName = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+                        nameInput.value = fullName;
                     }
                 } catch(e) {}
             }
@@ -445,7 +537,7 @@
             
             const toast = document.createElement('div');
             toast.className = `toast-notification ${type}`;
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            const icon = type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle');
             toast.innerHTML = `<i class="fas ${icon}"></i> <span>${escapeHtml(message)}</span>`;
             document.body.appendChild(toast);
             
@@ -454,10 +546,12 @@
             }, 3000);
         }
         
-        // Rating stars setup
+        // Rating stars setup for form
         function setupRatingStars() {
             const stars = document.querySelectorAll('.rating-input i');
             const ratingInput = document.getElementById('storyRating');
+            
+            if (!stars.length) return;
             
             stars.forEach(star => {
                 star.addEventListener('click', function() {
@@ -499,12 +593,19 @@
         if (storyForm) {
             storyForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 
-                const name = document.getElementById('storyName')?.value.trim();
-                const email = document.getElementById('storyEmail')?.value.trim();
-                const eventName = document.getElementById('storyEvent')?.value.trim();
-                const rating = document.getElementById('storyRating')?.value;
-                const message = document.getElementById('storyMessage')?.value.trim();
+                const nameInput = document.getElementById('storyName');
+                const emailInput = document.getElementById('storyEmail');
+                const eventInput = document.getElementById('storyEvent');
+                const ratingInput = document.getElementById('storyRating');
+                const messageInput = document.getElementById('storyMessage');
+                
+                const name = nameInput?.value.trim();
+                const email = emailInput?.value.trim();
+                const eventName = eventInput?.value.trim();
+                const rating = ratingInput?.value;
+                const message = messageInput?.value.trim();
                 
                 if (!name) {
                     showToast('Please enter your name', 'error');
@@ -557,7 +658,6 @@
             });
         }
         
-        // Listen for auth changes
         window.addEventListener('auth-state-changed', function() {
             updateShareButtonState();
             renderStories();
