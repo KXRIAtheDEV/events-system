@@ -15,22 +15,18 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="{% block og_title %}EventHub - Discover Amazing Events{% endblock %}">
     <meta property="og:description" content="{% block og_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}{% static 'icons/apple-touch-icon.png' %}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'icons/favicon.svg' %}{% endblock %}">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{% block twitter_title %}EventHub - Discover Amazing Events{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
-    <meta name="twitter:image" content="{% block twitter_image %}{% static 'icons/apple-touch-icon.png' %}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'icons/favicon.svg' %}{% endblock %}">
     
-    <!-- Favicon - Complete package for all browsers -->
+    <!-- Favicon - Single SVG file for all modern browsers -->
     <link rel="icon" type="image/svg+xml" href="{% static 'icons/favicon.svg' %}">
-    <link rel="icon" type="image/x-icon" href="{% static 'icons/favicon.ico' %}">
-    <link rel="shortcut icon" type="image/x-icon" href="{% static 'icons/favicon.ico' %}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'icons/favicon-16.png' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon-32.png' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'icons/apple-touch-icon.png' %}">
+    <link rel="shortcut icon" type="image/svg+xml" href="{% static 'icons/favicon.svg' %}">
     
     <!-- Theme Colors -->
     <meta name="theme-color" content="#f59e0b">
