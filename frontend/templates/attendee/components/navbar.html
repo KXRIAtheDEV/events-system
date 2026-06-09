@@ -214,29 +214,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.nav-links .dropdown-arrow, .nav-links a[href="#"], .nav-links a[href="#"] span').forEach(trigger => {
         trigger.addEventListener('click', function(e) {
             if (window.innerWidth <= 1024) {
+                // Disabled: submenus are statically shown in mobile view
                 e.preventDefault();
                 e.stopPropagation();
-                
-                const parent = this.closest('.nav-item-dropdown');
-                const submenu = parent.querySelector('.dropdown-submenu');
-                const arrow = parent.querySelector('.dropdown-arrow');
-                
-                const isOpen = submenu.classList.contains('show-mobile');
-                
-                // Close other submenus
-                document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
-                    sub.classList.remove('show-mobile');
-                });
-                document.querySelectorAll('.nav-links .dropdown-arrow').forEach(arr => {
-                    arr.style.transform = '';
-                });
-                
-                if (!isOpen) {
-                    submenu.classList.add('show-mobile');
-                    if (arrow) {
-                        arrow.style.transform = 'rotate(180deg)';
-                    }
-                }
             }
         });
     });

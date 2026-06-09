@@ -1119,27 +1119,15 @@ body.dashboard-page .mobile-search {
     }
     
     .nav-item-dropdown .dropdown-submenu {
-        display: none;
-        background: #f8fafc;
-        border-radius: 10px;
-        margin: 0.25rem 0 0.5rem 0.5rem;
-        padding: 6px;
-        border-left: 2px solid #f59e0b;
-    }
-    
-    .nav-item-dropdown .dropdown-submenu.show-mobile {
-        display: block;
-        animation: fadeIn 0.2s ease;
-    }
-    
-    /* Support hover in mobile view */
-    .nav-item-dropdown:hover .dropdown-submenu {
-        display: block;
-    }
-    
-    .nav-item-dropdown:hover .dropdown-arrow {
-        transform: rotate(180deg);
-        color: #f59e0b;
+        display: block !important;
+        position: static !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+        padding: 4px 0 4px 16px !important;
+        margin: 4px 0 8px 8px !important;
     }
     
     .submenu-item {
@@ -1160,15 +1148,7 @@ body.dashboard-page .mobile-search {
     }
     
     .dropdown-arrow {
-        margin-left: auto;
-        font-size: 0.8rem;
-        transition: transform 0.2s ease;
-        color: #475569;
-        padding: 0.75rem 1.5rem;
-        margin-right: -1.5rem;
-        cursor: pointer;
-        display: inline-block;
-        z-index: 10;
+        display: none !important;
     }
     
     .mobile-cart-badge,
