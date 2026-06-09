@@ -116,12 +116,7 @@
         </div>
 
         <div class="nav-actions">
-            <form class="search-form-desktop" action="/events/search/" method="GET" id="desktopSearchForm">
-                <i class="fas fa-search"></i>
-                <input type="text" name="q" id="desktopSearchInput" placeholder="Search events..." autocomplete="off">
-                <div class="search-validation" id="desktopSearchValidation"></div>
-                <button type="submit" id="desktopSearchBtn">Search</button>
-            </form>
+
 
             <div class="notifications-dropdown">
                 <button class="notifications-btn" id="notificationsBtn">
@@ -477,24 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateProfileNotificationBadge();
     }
     
-    const desktopSearchInput = document.getElementById('desktopSearchInput');
-    const desktopSearchValidation = document.getElementById('desktopSearchValidation');
-    if (desktopSearchInput) {
-        desktopSearchInput.addEventListener('input', function() {
-            const value = this.value.trim();
-            if (value.length > 0 && value.length < 2) {
-                desktopSearchValidation.innerHTML = '<i class="fas fa-info-circle"></i> Please enter at least 2 characters';
-                desktopSearchValidation.classList.add('show', 'error');
-                desktopSearchValidation.classList.remove('success');
-            } else if (value.length >= 2) {
-                desktopSearchValidation.innerHTML = '<i class="fas fa-check-circle"></i> Press Enter or click Search';
-                desktopSearchValidation.classList.add('show', 'success');
-                desktopSearchValidation.classList.remove('error');
-            } else {
-                desktopSearchValidation.classList.remove('show');
-            }
-        });
-    }
+
     
     const mobileToggle = document.getElementById('mobileToggle');
     const mobileOverlay = document.getElementById('mobileOverlay');
