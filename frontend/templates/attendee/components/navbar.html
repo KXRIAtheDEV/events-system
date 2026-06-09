@@ -106,11 +106,12 @@
                 </div>
             </div>
 
-            <!-- My Tickets Dropdown (Logged In Users) -->
+            <!-- My Tickets Dropdown (Logged In Users) - WITH BADGE ON THE LABEL -->
             <div class="nav-item-dropdown auth-only" style="display: none;">
                 <a href="#" class="nav-link dropdown-trigger" onclick="return false;">
                     <i class="fas fa-ticket-alt"></i>
                     <span>My Tickets</span>
+                    <span class="my-tickets-badge" id="myTicketsBadge" style="display: none;">0</span>
                     <i class="fas fa-chevron-down dropdown-arrow"></i>
                 </a>
                 <div class="dropdown-submenu">
@@ -167,13 +168,12 @@
                 </div>
             </div>
 
-            <!-- Account Dropdown (Desktop only) -->
+            <!-- Account Dropdown (Desktop only) - NO BADGE HERE -->
             <div class="profile-dropdown">
                 <button class="profile-btn" id="profileBtn">
                     <i class="fas fa-user-circle"></i>
                     <span id="profileUserName">Account</span>
                     <i class="fas fa-chevron-down"></i>
-                    <span class="profile-notification-badge" id="profileNotificationBadge" style="display: none;"></span>
                 </button>
                 
                 <div class="dropdown-menu" id="dropdownMenu">
@@ -266,36 +266,45 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
     
-    function updateCartBadge() {
+    // Update My Tickets badge (combined cart + wishlist count)
+    function updateMyTicketsBadge() {
         if (!isLoggedIn) return;
         try {
+            // Get cart count
             const savedCart = localStorage.getItem('eventhub_cart');
             let cart = { items: [] };
             if (savedCart) cart = JSON.parse(savedCart);
-            const count = cart.items ? cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
-            const navBadge = document.getElementById('navCartBadge');
-            if (navBadge) {
-                navBadge.textContent = count;
-                navBadge.style.display = count > 0 ? 'inline-block' : 'none';
-            }
-        } catch (error) {
-            console.error("Error loading cart count:", error);
-        }
-    }
-    
-    function updateWishlistBadge() {
-        if (!isLoggedIn) return;
-        try {
+            const cartCount = cart.items ? cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+            
+            // Get wishlist count
             const savedWishlist = localStorage.getItem('event_wishlist');
             const wishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
-            const count = wishlist.length;
-            const navBadge = document.getElementById('navWishlistBadge');
-            if (navBadge) {
-                navBadge.textContent = count;
-                navBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            const wishlistCount = wishlist.length;
+            
+            // Combined count
+            const totalCount = cartCount + wishlistCount;
+            
+            // Update badge on My Tickets label
+            const myTicketsBadge = document.getElementById('myTicketsBadge');
+            if (myTicketsBadge) {
+                myTicketsBadge.textContent = totalCount;
+                myTicketsBadge.style.display = totalCount > 0 ? 'inline-block' : 'none';
+            }
+            
+            // Also update individual badges
+            const navCartBadge = document.getElementById('navCartBadge');
+            if (navCartBadge) {
+                navCartBadge.textContent = cartCount;
+                navCartBadge.style.display = cartCount > 0 ? 'inline-block' : 'none';
+            }
+            
+            const navWishlistBadge = document.getElementById('navWishlistBadge');
+            if (navWishlistBadge) {
+                navWishlistBadge.textContent = wishlistCount;
+                navWishlistBadge.style.display = wishlistCount > 0 ? 'inline-block' : 'none';
             }
         } catch (error) {
-            console.error("Error loading wishlist count:", error);
+            console.error("Error updating badges:", error);
         }
     }
     
@@ -327,8 +336,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (mobileUserInitial) mobileUserInitial.textContent = initialVal;
         if (mobileAccountLabel) mobileAccountLabel.textContent = nameVal.split(' ')[0];
         
-        updateCartBadge();
-        updateWishlistBadge();
+        // Update badges
+        updateMyTicketsBadge();
         
         if (navLinks) navLinks.classList.add('logged-in');
         if (navLinks) navLinks.classList.remove('logged-out');
@@ -359,15 +368,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     handleMobileAccountVisibility();
     
+    // Listen for cart and wishlist updates
     window.addEventListener('cart-updated', function() {
         if (!isLoggedIn) return;
-        updateCartBadge();
+        updateMyTicketsBadge();
         showToast('Added to cart!', 'success');
     });
     
     window.addEventListener('wishlist-updated', function() {
         if (!isLoggedIn) return;
-        updateWishlistBadge();
+        updateMyTicketsBadge();
         showToast('Saved to wishlist!', 'success');
     });
     
@@ -440,26 +450,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateProfileNotificationBadge() {
-        if (!isLoggedIn) return;
-        const cartCount = getCartCount();
-        const wishlistCount = getWishlistCount();
-        const totalItems = cartCount + wishlistCount;
-        const profileBadge = document.getElementById('profileNotificationBadge');
-        
-        if (totalItems > 0 && !dropdownOpened) {
-            profileBadge.textContent = totalItems > 99 ? '99+' : totalItems;
-            profileBadge.style.display = 'flex';
-            profileBadge.classList.add('animate-pulse');
-            setTimeout(() => {
-                if (profileBadge) profileBadge.classList.remove('animate-pulse');
-            }, 800);
-        } else {
-            profileBadge.style.display = 'none';
-            profileBadge.classList.remove('animate-pulse');
-        }
-    }
-    
     function showToast(message, type) {
         const existingToast = document.querySelector('.custom-toast');
         if (existingToast) existingToast.remove();
@@ -473,7 +463,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (isLoggedIn) {
         loadNotificationCount();
-        updateProfileNotificationBadge();
     }
     
     // Mobile search validation
@@ -558,9 +547,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (dropdownMenu.classList.contains('show')) {
                 dropdownOpened = true;
-                const profileBadge = document.getElementById('profileNotificationBadge');
-                profileBadge.style.display = 'none';
-                profileBadge.classList.remove('animate-pulse');
             }
         });
         
@@ -569,13 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 dropdownMenu.classList.remove('show');
                 setTimeout(() => {
                     if (!dropdownMenu.classList.contains('show')) {
-                        const cartCount = getCartCount();
-                        const wishlistCount = getWishlistCount();
-                        if (cartCount === 0 && wishlistCount === 0) {
-                            dropdownOpened = false;
-                        } else if (!dropdownOpened) {
-                            updateProfileNotificationBadge();
-                        }
+                        dropdownOpened = false;
                     }
                 }, 300);
             }

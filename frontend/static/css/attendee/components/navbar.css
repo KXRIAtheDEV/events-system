@@ -244,7 +244,7 @@
     color: #f59e0b;
 }
 
-/* Badge styles */
+/* Badge styles - Individual badges inside dropdown */
 .mobile-cart-badge, .mobile-wishlist-badge {
     margin-left: auto;
     background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -255,6 +255,33 @@
     border-radius: 20px;
     min-width: 24px;
     text-align: center;
+}
+
+/* My Tickets Badge - New badge on the main My Tickets label */
+.my-tickets-badge {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+}
+
+/* For mobile view - adjust badge position */
+@media (max-width: 768px) {
+    .my-tickets-badge {
+        margin-left: auto;
+        margin-right: 10px;
+    }
 }
 
 /* ========== MOBILE ACCOUNT DROPDOWN - STYLED LIKE DESKTOP ========== */
@@ -712,29 +739,7 @@
     transition: transform 0.2s;
 }
 
-.profile-notification-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-    font-size: 0.6rem;
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4px;
-    box-shadow: 0 0 0 2px #1a1a2e;
-    z-index: 1;
-}
-
-.profile-notification-badge.animate-pulse {
-    animation: badgePulse 0.8s ease-in-out;
-}
-
+/* Removed profile-notification-badge - no longer showing badge on account dropdown */
 .dropdown-menu {
     position: absolute;
     top: calc(100% + 10px);
@@ -1149,14 +1154,6 @@
     
     .logo-text small {
         font-size: 0.5rem;
-    }
-    
-    .profile-notification-badge {
-        top: -3px;
-        right: -3px;
-        min-width: 16px;
-        height: 16px;
-        font-size: 0.55rem;
     }
     
     .custom-toast {
