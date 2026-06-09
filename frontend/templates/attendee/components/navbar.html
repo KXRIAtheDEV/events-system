@@ -248,6 +248,198 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const isLoggedIn = accessToken && user && Object.keys(user).length > 0;
     
+    // Function to close all dropdowns (Desktop)
+    function closeAllDesktopDropdowns() {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        if (dropdownMenu) {
+            dropdownMenu.classList.remove('show');
+        }
+        const notifPanel = document.getElementById('notificationsPanel');
+        if (notifPanel) {
+            notifPanel.classList.remove('show');
+        }
+    }
+    
+    // Function to close all center dropdowns (Desktop - About and My Tickets)
+    function closeAllCenterDropdowns() {
+        const centerDropdowns = document.querySelectorAll('.nav-item-dropdown');
+        centerDropdowns.forEach(dropdown => {
+            const submenu = dropdown.querySelector('.dropdown-submenu');
+            if (submenu) {
+                submenu.classList.remove('show-desktop');
+            }
+            const arrow = dropdown.querySelector('.dropdown-arrow');
+            if (arrow) {
+                arrow.style.transform = '';
+            }
+        });
+    }
+    
+    // Function to close all mobile dropdowns
+    function closeAllMobileDropdowns() {
+        const mobileSubmenus = document.querySelectorAll('.nav-links .dropdown-submenu');
+        mobileSubmenus.forEach(submenu => {
+            submenu.classList.remove('show-mobile');
+        });
+        const mobileArrows = document.querySelectorAll('.nav-links .dropdown-arrow');
+        mobileArrows.forEach(arrow => {
+            arrow.style.transform = '';
+        });
+    }
+    
+    // DESKTOP: Handle center dropdowns (About and My Tickets) on hover
+    if (window.innerWidth > 768) {
+        const centerDropdowns = document.querySelectorAll('.nav-item-dropdown');
+        
+        centerDropdowns.forEach(dropdown => {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const submenu = dropdown.querySelector('.dropdown-submenu');
+            
+            if (trigger && submenu) {
+                // Mouse enter - open this dropdown, close others
+                dropdown.addEventListener('mouseenter', function() {
+                    if (window.innerWidth > 768) {
+                        // Close all other center dropdowns
+                        centerDropdowns.forEach(otherDropdown => {
+                            if (otherDropdown !== dropdown) {
+                                const otherSubmenu = otherDropdown.querySelector('.dropdown-submenu');
+                                const otherArrow = otherDropdown.querySelector('.dropdown-arrow');
+                                if (otherSubmenu) {
+                                    otherSubmenu.classList.remove('show-desktop');
+                                }
+                                if (otherArrow) {
+                                    otherArrow.style.transform = '';
+                                }
+                            }
+                        });
+                        
+                        // Open this dropdown
+                        submenu.classList.add('show-desktop');
+                        const arrow = dropdown.querySelector('.dropdown-arrow');
+                        if (arrow) {
+                            arrow.style.transform = 'rotate(180deg)';
+                        }
+                    }
+                });
+                
+                // Mouse leave - close this dropdown
+                dropdown.addEventListener('mouseleave', function() {
+                    if (window.innerWidth > 768) {
+                        submenu.classList.remove('show-desktop');
+                        const arrow = dropdown.querySelector('.dropdown-arrow');
+                        if (arrow) {
+                            arrow.style.transform = '';
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    // DESKTOP: Handle Account dropdown (right side) - separate from center dropdowns
+    let dropdownOpened = false;
+    const profileBtn = document.getElementById('profileBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    
+    if (profileBtn && dropdownMenu) {
+        profileBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Close center dropdowns when opening account dropdown
+            closeAllCenterDropdowns();
+            
+            // Close notifications panel
+            const notifPanel = document.getElementById('notificationsPanel');
+            if (notifPanel) {
+                notifPanel.classList.remove('show');
+            }
+            
+            dropdownMenu.classList.toggle('show');
+            
+            if (dropdownMenu.classList.contains('show')) {
+                dropdownOpened = true;
+            }
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!dropdownMenu.contains(e.target) && !profileBtn.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+                setTimeout(() => {
+                    if (!dropdownMenu.classList.contains('show')) {
+                        dropdownOpened = false;
+                    }
+                }, 300);
+            }
+        });
+    }
+    
+    // DESKTOP: Handle Notifications dropdown
+    const notifBtn = document.getElementById('notificationsBtn');
+    const notifPanel = document.getElementById('notificationsPanel');
+    if (notifBtn && notifPanel) {
+        notifBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Close center dropdowns when opening notifications
+            closeAllCenterDropdowns();
+            
+            // Close account dropdown
+            if (dropdownMenu) {
+                dropdownMenu.classList.remove('show');
+            }
+            
+            notifPanel.classList.toggle('show');
+            loadNotifications();
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
+                notifPanel.classList.remove('show');
+            }
+        });
+    }
+    
+    // MOBILE: Handle mobile accordion dropdowns - only one open at a time
+    const mobileTriggers = document.querySelectorAll('.nav-links .dropdown-trigger');
+    mobileTriggers.forEach(trigger => {
+        trigger.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const parent = this.closest('.nav-item-dropdown');
+                const submenu = parent.querySelector('.dropdown-submenu');
+                const arrow = this.querySelector('.dropdown-arrow');
+                
+                if (!submenu) return;
+                
+                const isOpen = submenu.classList.contains('show-mobile');
+                
+                // Close all other mobile dropdowns first
+                const allMobileSubmenus = document.querySelectorAll('.nav-links .dropdown-submenu');
+                allMobileSubmenus.forEach(sub => {
+                    if (sub !== submenu) {
+                        sub.classList.remove('show-mobile');
+                        const prevParent = sub.closest('.nav-item-dropdown');
+                        if (prevParent) {
+                            const prevArrow = prevParent.querySelector('.dropdown-arrow');
+                            if (prevArrow) prevArrow.style.transform = '';
+                        }
+                    }
+                });
+                
+                // Toggle current dropdown
+                if (!isOpen) {
+                    submenu.classList.add('show-mobile');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    submenu.classList.remove('show-mobile');
+                    if (arrow) arrow.style.transform = '';
+                }
+            }
+        });
+    });
+    
     function handleMobileAccountVisibility() {
         const mobileAccountDropdown = document.getElementById('mobileAccountDropdown');
         if (mobileAccountDropdown) {
@@ -381,44 +573,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Saved to wishlist!', 'success');
     });
     
-    let dropdownOpened = false;
-    const profileBtn = document.getElementById('profileBtn');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    
-    // Mobile accordion toggle for dropdowns
-    document.querySelectorAll('.nav-links .dropdown-trigger').forEach(trigger => {
-        trigger.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const parent = this.closest('.nav-item-dropdown');
-                const submenu = parent.querySelector('.dropdown-submenu');
-                const arrow = this.querySelector('.dropdown-arrow');
-                
-                if (!submenu) return;
-                
-                const isOpen = submenu.classList.contains('show-mobile');
-                
-                document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
-                    if (sub !== submenu) {
-                        sub.classList.remove('show-mobile');
-                        const prevArrow = sub.closest('.nav-item-dropdown')?.querySelector('.dropdown-arrow');
-                        if (prevArrow) prevArrow.style.transform = '';
-                    }
-                });
-                
-                if (!isOpen) {
-                    submenu.classList.add('show-mobile');
-                    if (arrow) arrow.style.transform = 'rotate(180deg)';
-                } else {
-                    submenu.classList.remove('show-mobile');
-                    if (arrow) arrow.style.transform = '';
-                }
-            }
-        });
-    });
-    
     function getCartCount() {
         try {
             const savedCart = localStorage.getItem('eventhub_cart');
@@ -528,54 +682,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileOverlay.classList.remove('show');
         document.body.classList.remove('menu-open');
         
-        document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
-            sub.classList.remove('show-mobile');
-        });
-        document.querySelectorAll('.nav-links .dropdown-arrow').forEach(arr => {
-            arr.style.transform = '';
-        });
+        // Close all mobile dropdowns when closing menu
+        closeAllMobileDropdowns();
     }
     
     if (mobileToggle) mobileToggle.addEventListener('click', openMobileMenu);
     if (closeMenu) closeMenu.addEventListener('click', closeMobileMenu);
     if (mobileOverlay) mobileOverlay.addEventListener('click', closeMobileMenu);
-    
-    if (profileBtn && dropdownMenu) {
-        profileBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('show');
-            
-            if (dropdownMenu.classList.contains('show')) {
-                dropdownOpened = true;
-            }
-        });
-        
-        document.addEventListener('click', function(e) {
-            if (!dropdownMenu.contains(e.target) && !profileBtn.contains(e.target)) {
-                dropdownMenu.classList.remove('show');
-                setTimeout(() => {
-                    if (!dropdownMenu.classList.contains('show')) {
-                        dropdownOpened = false;
-                    }
-                }, 300);
-            }
-        });
-    }
-    
-    const notifBtn = document.getElementById('notificationsBtn');
-    const notifPanel = document.getElementById('notificationsPanel');
-    if (notifBtn && notifPanel) {
-        notifBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            notifPanel.classList.toggle('show');
-            loadNotifications();
-        });
-        document.addEventListener('click', function(e) {
-            if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
-                notifPanel.classList.remove('show');
-            }
-        });
-    }
     
     function loadNotifications() {
         const notificationsList = document.getElementById('notificationsList');
