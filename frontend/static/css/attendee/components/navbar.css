@@ -67,6 +67,35 @@
     margin-top: -2px;
 }
 
+/* ========== AUTH-ONLY ELEMENTS ========== */
+.auth-only {
+    display: none !important;
+}
+
+.nav-links.logged-in .auth-only {
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    .nav-links.logged-in .auth-only {
+        display: block !important;
+    }
+}
+
+.guest-only {
+    display: none !important;
+}
+
+.nav-links.logged-out .guest-only {
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    .nav-links.logged-out .guest-only {
+        display: block !important;
+    }
+}
+
 /* ========== NAVIGATION LINKS ========== */
 .nav-links {
     display: flex;
@@ -105,6 +134,288 @@
 
 .nav-link:hover i {
     color: #f59e0b;
+}
+
+/* ========== DROPDOWN MENU STYLES ========== */
+.nav-item-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Desktop Dropdown */
+@media (min-width: 769px) {
+    .nav-item-dropdown .dropdown-submenu {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: #1e293b;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 12px;
+        min-width: 200px;
+        padding: 8px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1000;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .nav-item-dropdown:hover .dropdown-submenu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+    }
+    
+    .dropdown-arrow {
+        font-size: 0.7rem;
+        margin-left: 5px;
+        transition: transform 0.2s ease;
+        color: #64748b;
+    }
+    
+    .nav-item-dropdown:hover .dropdown-arrow {
+        transform: rotate(180deg);
+        color: #f59e0b;
+    }
+}
+
+/* Mobile Dropdown - Accordion style */
+@media (max-width: 768px) {
+    .nav-item-dropdown {
+        width: 100%;
+        display: block;
+    }
+    
+    .nav-item-dropdown .dropdown-submenu {
+        display: none;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
+        margin: 6px 0 8px 12px;
+        padding: 4px;
+        border-left: 2px solid rgba(245, 158, 11, 0.4);
+    }
+    
+    .nav-item-dropdown .dropdown-submenu.show-mobile {
+        display: block;
+        animation: fadeIn 0.2s ease;
+    }
+    
+    .dropdown-arrow {
+        margin-left: auto;
+        font-size: 0.8rem;
+        transition: transform 0.2s ease;
+        color: #cbd5e1;
+        cursor: pointer;
+        padding: 0 8px;
+    }
+}
+
+.submenu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 10px 14px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.submenu-item i {
+    width: 20px;
+    font-size: 0.9rem;
+    color: #64748b;
+    transition: color 0.2s ease;
+}
+
+.submenu-item:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    padding-left: 18px;
+}
+
+.submenu-item:hover i {
+    color: #f59e0b;
+}
+
+/* Badge styles */
+.mobile-cart-badge, .mobile-wishlist-badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* ========== MOBILE ACCOUNT DROPDOWN - STYLED LIKE DESKTOP ========== */
+.mobile-account-dropdown {
+    width: 100%;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+    padding-bottom: 8px;
+}
+
+.mobile-account-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.mobile-account-info i {
+    font-size: 1.3rem;
+    color: #f59e0b;
+}
+
+.mobile-account-info span {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Mobile User Info Dropdown - Card Style */
+.mobile-user-info-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(236, 100, 8, 0.08));
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.mobile-user-avatar-dropdown {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #f59e0b, #ec6408);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.mobile-user-avatar-dropdown span {
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.mobile-user-details-dropdown {
+    flex: 1;
+}
+
+.mobile-user-name-dropdown {
+    font-weight: 700;
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.mobile-user-role-dropdown {
+    font-size: 0.7rem;
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+.mobile-dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.3), transparent);
+    margin: 12px 0;
+}
+
+/* Mobile divider line before logout */
+.mobile-divider-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.3), transparent);
+    margin: 16px 0 12px 0;
+}
+
+/* Mobile logout wrapper and button */
+.mobile-logout-wrapper {
+    margin-top: 8px;
+}
+
+.mobile-logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: #ef4444;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    background: rgba(239, 68, 68, 0.08);
+    width: 100%;
+}
+
+.mobile-logout-btn i {
+    font-size: 1rem;
+    color: #ef4444;
+    width: 24px;
+}
+
+.mobile-logout-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    transform: translateX(4px);
+}
+
+/* Hide mobile account dropdown on desktop */
+@media (min-width: 769px) {
+    .mobile-account-dropdown {
+        display: none !important;
+    }
+    .mobile-divider-line {
+        display: none;
+    }
+    .mobile-logout-wrapper {
+        display: none !important;
+    }
+}
+
+/* Show mobile account dropdown only on mobile */
+@media (max-width: 768px) {
+    .mobile-account-dropdown {
+        display: block !important;
+    }
+    
+    /* Make the account dropdown trigger stand out */
+    .mobile-account-dropdown .dropdown-trigger {
+        justify-content: space-between;
+        width: 100%;
+        background: rgba(245, 158, 11, 0.08);
+        border-radius: 10px;
+        margin: 0;
+    }
+    
+    /* Style submenu items with icons on mobile like desktop */
+    .submenu-item {
+        padding: 12px 16px;
+        gap: 12px;
+    }
+    
+    .submenu-item i {
+        width: 20px;
+        font-size: 1rem;
+    }
+}
+
+/* Hide desktop profile dropdown on mobile */
+@media (max-width: 768px) {
+    .profile-dropdown {
+        display: none !important;
+    }
 }
 
 /* ========== RIGHT ACTIONS ========== */
@@ -372,7 +683,7 @@
     font-size: 0.85rem;
 }
 
-/* ========== PROFILE DROPDOWN ========== */
+/* ========== PROFILE DROPDOWN (DESKTOP) ========== */
 .profile-dropdown {
     position: relative;
 }
@@ -415,7 +726,6 @@
     transform: rotate(180deg);
 }
 
-/* Profile Notification Badge */
 .profile-notification-badge {
     position: absolute;
     top: -5px;
@@ -439,7 +749,6 @@
     animation: badgePulse 0.8s ease-in-out;
 }
 
-/* Dropdown Menu */
 .dropdown-menu {
     position: absolute;
     top: calc(100% + 10px);
@@ -488,15 +797,23 @@
     transition: all 0.2s;
 }
 
+<<<<<<< Updated upstream
 .dropdown-item:hover {
     background: #f8fafc;
     color: #f59e0b;
 }
 
+=======
+>>>>>>> Stashed changes
 .dropdown-item i {
     width: 20px;
     font-size: 0.9rem;
     color: #64748b;
+}
+
+.dropdown-item:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
 }
 
 .dropdown-item:hover i {
@@ -509,9 +826,7 @@
     margin: 10px 0;
 }
 
-/* Badges in Dropdown */
-.cart-badge-dropdown,
-.wishlist-badge-dropdown {
+.cart-badge-dropdown {
     margin-left: auto;
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
@@ -523,7 +838,6 @@
     text-align: center;
 }
 
-/* User Info in Dropdown */
 .user-info-dropdown {
     display: flex;
     align-items: center;
@@ -643,139 +957,6 @@
     display: none;
 }
 
-/* Mobile Profile Section */
-.mobile-profile-section {
-    margin-top: 0.5rem;
-}
-
-.mobile-profile-toggle {
-    display: none;
-    width: 100%;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    border-radius: 12px;
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    color: #cbd5e1;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.mobile-profile-toggle:hover {
-    background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b;
-}
-
-.mobile-profile-toggle i:first-child {
-    font-size: 1rem;
-}
-
-.mobile-profile-toggle span {
-    flex: 1;
-    text-align: left;
-}
-
-.mobile-profile-toggle i:last-child {
-    transition: transform 0.2s;
-}
-
-.mobile-profile-dropdown {
-    display: none;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    margin-top: 0.5rem;
-    padding: 12px;
-    animation: fadeIn 0.2s ease;
-}
-
-.mobile-profile-dropdown.show {
-    display: block;
-}
-
-.mobile-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 12px 18px;
-    border-radius: 8px;
-    color: #cbd5e1;
-    text-decoration: none;
-    font-size: 0.85rem;
-    transition: all 0.2s;
-    border-left: 2px solid transparent;
-}
-
-.mobile-dropdown-item:hover {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-    border-left-color: #f59e0b;
-}
-
-.mobile-dropdown-item i {
-    width: 24px;
-    font-size: 0.9rem;
-    color: #64748b;
-}
-
-.mobile-dropdown-item:hover i {
-    color: #f59e0b;
-}
-
-.mobile-cart-badge, .mobile-wishlist-badge {
-    margin-left: auto;
-    background: #ef4444;
-    color: white;
-    font-size: 0.6rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 20px;
-    min-width: 24px;
-    text-align: center;
-}
-
-.mobile-user-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 16px 24px;
-    background: rgba(245, 158, 11, 0.08);
-    border-radius: 12px;
-    margin-bottom: 8px;
-}
-
-.mobile-user-avatar {
-    width: 44px;
-    height: 44px;
-    background: linear-gradient(135deg, #f59e0b, #ec6408);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1rem;
-}
-
-.mobile-user-name {
-    font-weight: 600;
-    color: white;
-    font-size: 0.9rem;
-}
-
-.mobile-user-role {
-    font-size: 0.7rem;
-    color: #f59e0b;
-}
-
-.mobile-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 10px 0;
-}
-
 /* Custom Toast */
 .custom-toast {
     position: fixed;
@@ -862,12 +1043,23 @@
         color: #475569;
         cursor: pointer;
         font-size: 1.2rem;
+<<<<<<< Updated upstream
         transition: all 0.2s;
     }
     
     .close-menu:hover {
         background: #e2e8f0;
         color: #0f172a;
+=======
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .close-menu:hover {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+>>>>>>> Stashed changes
     }
     
     .nav-link {
@@ -888,7 +1080,7 @@
     
     .mobile-search {
         display: block;
-        margin: 0.5rem 0;
+        margin: 1rem 0;
     }
     
     .mobile-search form {
@@ -926,10 +1118,6 @@
         color: white;
         font-size: 0.7rem;
         cursor: pointer;
-    }
-    
-    .mobile-profile-toggle {
-        display: flex;
     }
     
     .navbar-container {
@@ -998,6 +1186,7 @@ a, a:hover, a:focus, a:active,
 button, button:hover, button:focus {
     text-decoration: none !important;
     outline: none;
+<<<<<<< Updated upstream
 }
 
 /* Hide navbar search forms on dashboard page */
@@ -1185,3 +1374,6 @@ body.dashboard-page .mobile-search {
     }
 }
 
+=======
+}
+>>>>>>> Stashed changes
