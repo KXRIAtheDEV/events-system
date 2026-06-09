@@ -1,25 +1,21 @@
-import json
-import sys
+import os
 
-# Reconfigure stdout to use UTF-8
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8')
+frontend_dir = r"c:\Users\bradr\OneDrive\Documents\GitHub\events-system\frontend"
 
-transcript_path = r"C:\Users\bradr\.gemini\antigravity\brain\edece405-bfee-4c4b-ba4c-fed6ca4e0e12\.system_generated\logs\transcript.jsonl"
+conflict_markers = ["<<<<<<<", ">>>>>>>"]
+found_conflicts = []
 
-user_requests = []
-with open(transcript_path, 'r', encoding='utf-8') as f:
-    for line in f:
-        try:
-            data = json.loads(line)
-            if data.get('type') == 'USER_INPUT':
-                user_requests.append(data)
-        except Exception as e:
-            pass
+for root, dirs, files in os.walk(frontend_dir):
+    for file in files:
+        if file.endswith(('.css', '.html', '.js')):
+            file_path = os.path.join(root, file)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    for i, line in enumerate(f, 1):
+                        if any(marker in line for marker in conflict_markers):
+                            found_conflicts.append((file_path, i, line.strip()))
+            except Exception as e:
+                pass
 
-# Print the last 10 requests in full, with UTF-8
-for data in user_requests[-10:]:
-    print("=" * 60)
-    print(f"Step {data.get('step_index')}:")
-    print(data.get('content'))
-    print("=" * 60)
+for path, line_no, content in found_conflicts:
+    print(f"{path}:{line_no}: {content}")

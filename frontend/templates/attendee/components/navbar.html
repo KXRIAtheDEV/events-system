@@ -383,15 +383,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const profileBtn = document.getElementById('profileBtn');
     const dropdownMenu = document.getElementById('dropdownMenu');
     
-    // Mobile accordion toggle for all dropdowns
+    // Toggle accordions in mobile view when clicking the arrow icon, or text of non-nav links like About
     document.querySelectorAll('.nav-links .dropdown-arrow, .nav-links a[href="#"], .nav-links a[href="#"] span').forEach(trigger => {
         trigger.addEventListener('click', function(e) {
             if (window.innerWidth <= 1024) {
-                // Disabled: submenus are statically shown in mobile view
                 e.preventDefault();
                 e.stopPropagation();
-<<<<<<< HEAD
-=======
                 
                 const parent = this.closest('.nav-item-dropdown');
                 const submenu = parent.querySelector('.dropdown-submenu');
@@ -423,7 +420,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         arrow.style.transform = '';
                     }
                 }
->>>>>>> 237e950d52a29d0d88fdce6f86d21bce52c9265b
             }
         });
     });

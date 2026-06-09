@@ -797,23 +797,15 @@
     transition: all 0.2s;
 }
 
-<<<<<<< Updated upstream
 .dropdown-item:hover {
     background: #f8fafc;
     color: #f59e0b;
 }
 
-=======
->>>>>>> Stashed changes
 .dropdown-item i {
     width: 20px;
     font-size: 0.9rem;
     color: #64748b;
-}
-
-.dropdown-item:hover {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
 }
 
 .dropdown-item:hover i {
@@ -915,19 +907,21 @@
 /* Mobile Elements */
 .mobile-toggle {
     display: none;
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
-    color: white;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
     font-size: 1.2rem;
     cursor: pointer;
     width: 40px;
     height: 40px;
     border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 .mobile-toggle:hover {
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.1);
     color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.2);
 }
 
 .mobile-close {
@@ -1043,23 +1037,15 @@
         color: #475569;
         cursor: pointer;
         font-size: 1.2rem;
-<<<<<<< Updated upstream
         transition: all 0.2s;
-    }
-    
-    .close-menu:hover {
-        background: #e2e8f0;
-        color: #0f172a;
-=======
         display: flex;
         align-items: center;
         justify-content: center;
     }
     
     .close-menu:hover {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
->>>>>>> Stashed changes
+        background: #e2e8f0;
+        color: #0f172a;
     }
     
     .nav-link {
@@ -1186,7 +1172,6 @@ a, a:hover, a:focus, a:active,
 button, button:hover, button:focus {
     text-decoration: none !important;
     outline: none;
-<<<<<<< Updated upstream
 }
 
 /* Hide navbar search forms on dashboard page */
@@ -1308,15 +1293,17 @@ body.dashboard-page .mobile-search {
     }
     
     .nav-item-dropdown .dropdown-submenu {
-        display: block !important;
-        position: static !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        box-shadow: none !important;
-        border: none !important;
-        background: transparent !important;
-        padding: 4px 0 4px 16px !important;
-        margin: 4px 0 8px 8px !important;
+        display: none;
+        background: #f8fafc;
+        border-radius: 10px;
+        margin: 0.25rem 0 0.5rem 0.5rem;
+        padding: 6px;
+        border-left: 2px solid #f59e0b;
+    }
+    
+    .nav-item-dropdown .dropdown-submenu.show-mobile {
+        display: block;
+        animation: fadeIn 0.2s ease;
     }
     
     .submenu-item {
@@ -1337,7 +1324,15 @@ body.dashboard-page .mobile-search {
     }
     
     .dropdown-arrow {
-        display: none !important;
+        margin-left: auto;
+        font-size: 0.8rem;
+        transition: transform 0.2s ease;
+        color: #475569;
+        padding: 0.75rem 1.5rem;
+        margin-right: -1.5rem;
+        cursor: pointer;
+        display: inline-block;
+        z-index: 10;
     }
     
     .mobile-cart-badge,
@@ -1353,7 +1348,3 @@ body.dashboard-page .mobile-search {
         text-align: center;
     }
 }
-
-=======
-}
->>>>>>> Stashed changes
