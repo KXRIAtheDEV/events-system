@@ -48,7 +48,7 @@
         
         console.log('Success Stories initializing - Loaders blocked');
         
-        // Default stories data with different ratings
+        // Default stories data - 12 stories with different ratings
         const DEFAULT_STORIES = [
             {
                 id: 1,
@@ -115,6 +115,72 @@
                 event: 'Business Forum',
                 avatar: 'https://randomuser.me/api/portraits/men/55.jpg',
                 isDefault: true
+            },
+            {
+                id: 7,
+                name: 'Stacy Naomi',
+                email: 'stacy@example.com',
+                role: 'Entrepreneur',
+                rating: 5,
+                message: 'The networking opportunities through EventHub\'s business events have been invaluable for my startup!',
+                event: 'Business Summit 2024',
+                avatar: 'https://randomuser.me/api/portraits/women/69.jpg',
+                isDefault: true
+            },
+            {
+                id: 8,
+                name: 'Frank Maina',
+                email: 'frank@example.com',
+                role: 'Sports Fan',
+                rating: 5,
+                message: 'Getting tickets for major sports events has never been easier. EventHub is a game-changer for sports fans!',
+                event: 'Marathon 2024',
+                avatar: 'https://randomuser.me/api/portraits/men/16.jpg',
+                isDefault: true
+            },
+            {
+                id: 9,
+                name: 'Dev Ndung\'u',
+                email: 'dev@example.com',
+                role: 'Foodie',
+                rating: 5,
+                message: 'The food festivals and culinary events I found on EventHub were incredible. Can\'t wait for more!',
+                event: 'Food Festival 2024',
+                avatar: 'https://randomuser.me/api/portraits/women/92.jpg',
+                isDefault: true
+            },
+            {
+                id: 10,
+                name: 'Catherine Cherop',
+                email: 'catherine@example.com',
+                role: 'Art Lover',
+                rating: 5,
+                message: 'Thanks to EventHub, I discovered amazing art exhibitions I would have otherwise missed. Great platform!',
+                event: 'Art Exhibition 2024',
+                avatar: 'https://randomuser.me/api/portraits/women/62.jpg',
+                isDefault: true
+            },
+            {
+                id: 11,
+                name: 'Brian Odhiambo',
+                email: 'brian@example.com',
+                role: 'Music Producer',
+                rating: 5,
+                message: 'EventHub has transformed how I discover local talent and music events. Absolutely love the platform!',
+                event: 'Music Concert 2024',
+                avatar: 'https://randomuser.me/api/portraits/men/25.jpg',
+                isDefault: true
+            },
+            {
+                id: 12,
+                name: 'Edwin Nyambane',
+                email: 'edwin@example.com',
+                role: 'Tech Enthusiast',
+                rating: 5,
+                message: 'The best event platform in Kenya! I\'ve discovered so many tech events and networking opportunities.',
+                event: 'Tech Summit 2024',
+                avatar: 'https://randomuser.me/api/portraits/men/54.jpg',
+                isDefault: true
             }
         ];
         
@@ -140,7 +206,7 @@
             return div.innerHTML;
         }
         
-        // Generate stars based on rating (FIXED)
+        // Generate stars based on rating
         function generateStars(rating) {
             let starsHtml = '';
             for (let i = 1; i <= 5; i++) {
@@ -218,7 +284,6 @@
                     <i class="fas fa-trash-alt"></i> Delete
                 </button>` : '';
             
-            // Use the rating from the story to generate stars
             const starsHtml = generateStars(story.rating);
             
             card.innerHTML = `
