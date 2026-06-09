@@ -143,6 +143,113 @@
     display: inline-block;
 }
 
+/* My Tickets nav item - position relative for absolute badge positioning */
+.nav-item-dropdown .dropdown-trigger {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* My Tickets Badge - Positioned on top of the nav item, above the arrow */
+.my-tickets-badge {
+    position: absolute;
+    top: -8px;
+    right: -2px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+/* When badge has count, add pulse animation */
+.my-tickets-badge:not(:empty) {
+    animation: badgeGlow 2s ease-in-out infinite;
+}
+
+/* For desktop - badge appears above the icon and arrow */
+@media (min-width: 769px) {
+    .my-tickets-badge {
+        top: -6px;
+        right: -8px;
+    }
+}
+
+/* For tablet view (icons only) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .my-tickets-badge {
+        top: -8px;
+        right: -10px;
+    }
+}
+
+/* For mobile view - badge inline with text */
+@media (max-width: 768px) {
+    .nav-item-dropdown .dropdown-trigger {
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    .my-tickets-badge {
+        position: static;
+        margin-left: auto;
+        margin-right: 8px;
+        top: auto;
+        right: auto;
+        order: 2;
+    }
+    
+    .dropdown-arrow {
+        order: 3;
+    }
+    
+    .nav-item-dropdown .dropdown-trigger span:first-of-type {
+        flex: 1;
+    }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 480px) {
+    .my-tickets-badge {
+        font-size: 0.55rem;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 3px;
+    }
+}
+
+/* Badge pulse animation for when count updates */
+@keyframes badgePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Badge glow animation */
+@keyframes badgeGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+    }
+}
+
 /* ALL DEVICES (Desktop, Tablet, Mobile) - Hover to open */
 .nav-item-dropdown .dropdown-submenu {
     position: absolute;
@@ -172,11 +279,19 @@
     margin-left: 5px;
     transition: transform 0.2s ease;
     color: #64748b;
+    position: relative;
+    z-index: 5;
 }
 
 .nav-item-dropdown:hover .dropdown-arrow {
     transform: rotate(180deg);
     color: #f59e0b;
+}
+
+/* Hover effect on the nav item - badge scales slightly */
+.nav-item-dropdown:hover .my-tickets-badge {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
 }
 
 /* Mobile specific adjustments - Keep hover, but adjust positioning */
@@ -255,33 +370,6 @@
     border-radius: 20px;
     min-width: 24px;
     text-align: center;
-}
-
-/* My Tickets Badge - New badge on the main My Tickets label */
-.my-tickets-badge {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-    font-size: 0.6rem;
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
-    border-radius: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 5px;
-    margin-left: 6px;
-    vertical-align: middle;
-    position: relative;
-    top: -1px;
-}
-
-/* For mobile view - adjust badge position */
-@media (max-width: 768px) {
-    .my-tickets-badge {
-        margin-left: auto;
-        margin-right: 10px;
-    }
 }
 
 /* ========== MOBILE ACCOUNT DROPDOWN - STYLED LIKE DESKTOP ========== */
@@ -869,21 +957,6 @@
 }
 
 /* Animations */
-@keyframes badgePulse {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-    }
-    50% {
-        transform: scale(1.2);
-        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-    }
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;
