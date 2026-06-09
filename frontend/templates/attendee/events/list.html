@@ -10,7 +10,15 @@
 {% block og_description %}Filter, search, and book tickets for all upcoming conferences, concerts, and social gatherings in Kenya.{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/attendee/events/events.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendee/event/events.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendee/event/filters.css' %}">
+<style>
+    /* Hide navbar search on events page to avoid duplicate */
+    .navbar .search-form-desktop,
+    .navbar .mobile-search {
+        display: none !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -54,7 +62,7 @@
         </div>
         
         <div class="events-grid" id="eventsGrid">
-            <!-- Events will be loaded here -->
+            <!-- Events will be loaded here by JavaScript -->
         </div>
     </div>
 </div>

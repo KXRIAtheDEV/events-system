@@ -9,8 +9,11 @@
     let loaderVisible = false;
     
     var CONFIG = {
-        fadeOutDelay: 200
+        fadeOutDelay: 200,
+        minDisplayTime: 0  // No minimum display time for instant loading
     };
+    
+    let loaderStartTime = null;
     
     function createLoader() {
         if (document.getElementById('pageLoader')) return;
@@ -35,10 +38,28 @@
             loader.classList.add('active');
             document.body.style.overflow = 'hidden';
             loaderVisible = true;
+            loaderStartTime = Date.now();
         }
     }
     
     function hideLoader() {
+        if (loader && loaderVisible) {
+            // Check if minimum display time has passed
+            if (CONFIG.minDisplayTime > 0 && loaderStartTime) {
+                const elapsed = Date.now() - loaderStartTime;
+                if (elapsed < CONFIG.minDisplayTime) {
+                    const remaining = CONFIG.minDisplayTime - elapsed;
+                    setTimeout(function() {
+                        performHide();
+                    }, remaining);
+                    return;
+                }
+            }
+            performHide();
+        }
+    }
+    
+    function performHide() {
         if (loader && loaderVisible) {
             loader.classList.add('fade-out');
             document.body.style.overflow = '';
@@ -49,8 +70,14 @@
                     loader.classList.remove('fade-out', 'active');
                 }
                 loaderVisible = false;
+                loaderStartTime = null;
             }, CONFIG.fadeOutDelay);
         }
+    }
+    
+    function setMinDisplayTime(time) {
+        CONFIG.minDisplayTime = time || 0;
+        console.log('Loader min display time set to:', CONFIG.minDisplayTime);
     }
     
     function initLoader() {
@@ -141,11 +168,12 @@
         });
     }
     
-    // Expose public API
+    // Expose public API with all methods
     window.PageLoader = {
         show: showLoader,
         hide: hideLoader,
-        init: initLoader
+        init: initLoader,
+        setMinDisplayTime: setMinDisplayTime
     };
     
     // Initialize immediately

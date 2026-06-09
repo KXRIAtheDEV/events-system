@@ -42,15 +42,12 @@ async function loadEventsFromAPI() {
     try {
         const params = new URLSearchParams();
 
-        // Pass category filter server-side
         if (currentCategory !== 'all') {
             params.set('category', currentCategory);
         }
 
-        // Pass search term server-side so the API filters by title/description/venue
         if (currentSearch) {
             params.set('search', currentSearch);
-            // Return up to 200 results when searching so pagination never hides a match
             params.set('limit', '200');
         }
 
@@ -103,18 +100,26 @@ async function addFilters() {
         }))
     ];
     
+    // Remove existing filter section if any
+    let existingSection = document.querySelector('.filters-section');
+    if (existingSection) {
+        existingSection.remove();
+    }
+    
     const filterSection = document.createElement('div');
     filterSection.className = 'filters-section';
     
+    // Category buttons
     let categoriesHtml = '<div class="categories-wrapper">';
     categories.forEach(cat => {
         categoriesHtml += `<button class="category-btn ${currentCategory === cat.id ? 'active' : ''}" data-category="${cat.id}"><i class="fas ${cat.icon}"></i><span>${cat.name}</span></button>`;
     });
-    categoriesHtml += '</div><div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Search events..."></div><div class="search-stats" id="searchStats"></div>';
+    categoriesHtml += '</div>';
     
     filterSection.innerHTML = categoriesHtml;
     header.insertAdjacentElement('afterend', filterSection);
     
+    // Category button event listeners
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             currentCategory = btn.dataset.category;
@@ -123,24 +128,38 @@ async function addFilters() {
         });
     });
     
-    document.getElementById('searchInput')?.addEventListener('input', (e) => {
-        currentSearch = e.target.value.toLowerCase();
-        filterEvents();
-    });
+    // Set up page search listener (Option 1)
+    setupPageSearchListener();
+}
+
+function setupPageSearchListener() {
+    const pageSearchInput = document.getElementById('searchInput');
+    if (pageSearchInput) {
+        pageSearchInput.removeEventListener('input', handleSearchInput);
+        pageSearchInput.addEventListener('input', handleSearchInput);
+    }
+}
+
+function handleSearchInput(e) {
+    currentSearch = e.target.value.toLowerCase().trim();
+    filterEvents();
 }
 
 async function filterEvents() {
     await loadEventsFromAPI();
-
-    // Both category and search are now filtered server-side by the API.
-    // No additional client-side filtering is needed; just use what the API returned.
     filteredEvents = [...eventsCatalog];
-
+    
+    // Update stats display
     const stats = document.getElementById('searchStats');
     if (stats) {
-        stats.innerHTML = currentSearch || currentCategory !== 'all'
-            ? `Found ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`
-            : `Showing ${filteredEvents.length} upcoming events`;
+        if (currentSearch) {
+            stats.innerHTML = `🔍 Found ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''} for "${currentSearch}"`;
+        } else if (currentCategory !== 'all') {
+            const categoryName = document.querySelector(`.category-btn[data-category="${currentCategory}"] span`)?.textContent || currentCategory;
+            stats.innerHTML = `📂 ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''} in ${categoryName}`;
+        } else {
+            stats.innerHTML = `📅 ${filteredEvents.length} upcoming event${filteredEvents.length !== 1 ? 's' : ''}`;
+        }
     }
     renderEvents();
 }
@@ -148,7 +167,7 @@ async function filterEvents() {
 function toggleWishlist(id, btn) {
     const token = localStorage.getItem('attendee_access_token');
     if (!token) {
-        showToast('Please login to save to wishlist', 'info');
+        showToast('🔐 Please login to save to wishlist', 'info');
         setTimeout(() => window.location.href = '/login/', 1500);
         return;
     }
@@ -173,12 +192,12 @@ function toggleWishlist(id, btn) {
         });
         btn.innerHTML = '<i class="fas fa-heart"></i> Saved';
         btn.style.background = '#f59e0b';
-        showToast('Saved to wishlist!', 'success');
+        showToast('❤️ Event saved to wishlist!', 'success');
     } else {
         wishlist = wishlist.filter(item => item.id != id);
         btn.innerHTML = '<i class="far fa-heart"></i> Save';
         btn.style.background = 'rgba(0,0,0,0.5)';
-        showToast('Removed from wishlist', 'info');
+        showToast('🗑️ Removed from wishlist', 'info');
     }
     
     localStorage.setItem('event_wishlist', JSON.stringify(wishlist));
@@ -194,8 +213,18 @@ function toggleWishlist(id, btn) {
 function renderEvents() {
     const grid = document.getElementById('eventsGrid');
     if (!grid) return;
+    
     if (filteredEvents.length === 0) { 
-        grid.innerHTML = '<div style="text-align:center;padding:4rem;"><i class="fas fa-calendar-times"></i><h3>No events found</h3></div>'; 
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h3>No events found</h3>
+                <p>Try adjusting your search or browse all events</p>
+                <button onclick="resetFilters()" class="btn-browse">
+                    <i class="fas fa-redo-alt"></i> Browse All Events
+                </button>
+            </div>
+        `; 
         return; 
     }
     
@@ -205,25 +234,31 @@ function renderEvents() {
     grid.innerHTML = filteredEvents.map(e => {
         const inWishlist = wishlistIds.includes(e.id);
         return `
-            <div class="event-card" style="position:relative;border-radius:20px;overflow:hidden;background:transparent;box-shadow:0 10px 30px -12px rgba(0,0,0,0.25);transition:transform 0.3s;cursor:pointer;height:100%;" onclick="window.location.href='/events/detail/?id=${e.id}'">
-                <div style="position:relative;width:100%;height:280px;overflow:hidden;">
-                    <img src="${e.image || '/static/images/placeholder.jpg'}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.5s;" onerror="this.src='/static/images/placeholder.jpg'">
-                    <div style="position:absolute;bottom:0;left:0;right:0;height:70%;background:linear-gradient(to top,#ec6408 0%,rgba(236,100,8,0.9) 20%,rgba(236,100,8,0.6) 40%,rgba(236,100,8,0.3) 60%,transparent 100%);"></div>
-                    ${e.featured ? '<span style="position:absolute;top:12px;left:12px;background:linear-gradient(135deg,#f59e0b,#ec6408);color:white;padding:4px 12px;border-radius:20px;font-size:0.65rem;">Featured</span>' : ''}
-                    <button class="wishlist-btn" data-id="${e.id}" style="position:absolute;top:12px;right:12px;background:${inWishlist ? '#f59e0b' : 'rgba(0,0,0,0.5)'};border:none;padding:6px 12px;border-radius:20px;color:white;font-size:0.65rem;cursor:pointer;">
+            <div class="event-card" onclick="window.location.href='/events/detail/?id=${e.id}'">
+                <div class="card-image-container">
+                    <img src="${e.image || '/static/images/placeholder.jpg'}" class="card-bg-image" onerror="this.src='/static/images/placeholder.jpg'">
+                    <div class="card-gradient-overlay"></div>
+                    ${e.featured ? '<span class="featured-badge">Featured</span>' : ''}
+                    <button class="wishlist-btn" data-id="${e.id}" style="background:${inWishlist ? '#f59e0b' : 'rgba(0,0,0,0.5)'}">
                         <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i> ${inWishlist ? 'Saved' : 'Save'}
                     </button>
                 </div>
-                <div style="position:absolute;bottom:0;left:0;right:0;padding:20px 16px 70px 16px;color:white;">
-                    <span style="display:inline-block;padding:4px 12px;background:rgba(0,0,0,0.5);border-radius:20px;font-size:0.65rem;">${e.category_name || 'Event'}</span>
-                    <h3 style="font-size:1rem;margin:8px 0 6px;">${e.title}</h3>
-                    <div style="font-size:0.65rem;display:flex;gap:12px;margin-bottom:8px;"><span><i class="fas fa-calendar"></i> ${formatDate(e.date)}</span><span><i class="fas fa-map-marker-alt"></i> ${e.location ? e.location.split(',')[0] : 'TBD'}</span></div>
-                    <div style="font-size:0.7rem;margin-bottom:8px;color:#ffd045;"><i class="fas fa-ticket-alt"></i> ${e.available_tickets || 0} tickets left</div>
-                    <div style="font-size:0.85rem;font-weight:700;color:#ffd045;">KES ${(e.price || 0).toLocaleString()}</div>
+                <div class="card-content">
+                    <span class="card-category">${e.category_name || 'Event'}</span>
+                    <h3 class="card-title">${e.title}</h3>
+                    <div class="card-meta">
+                        <span><i class="fas fa-calendar"></i> ${formatDate(e.date)}</span>
+                        <span><i class="fas fa-map-marker-alt"></i> ${e.location ? e.location.split(',')[0] : 'TBD'}</span>
+                    </div>
+                    <div class="card-price">KES ${(e.price || 0).toLocaleString()}</div>
                 </div>
-                <div style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:10px;padding:12px 16px;">
-                    <button onclick="event.stopPropagation();window.location.href='/events/detail/?id=${e.id}'" style="flex:1;padding:8px;border-radius:30px;font-size:0.7rem;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);cursor:pointer;"><i class="fas fa-info-circle"></i> Details</button>
-                    <button class="book-ticket-btn" data-id="${e.id}" style="flex:1;padding:8px;border-radius:30px;font-size:0.7rem;background:linear-gradient(135deg,#f59e0b,#ec6408);color:white;border:none;cursor:pointer;"><i class="fas fa-ticket-alt"></i> Book</button>
+                <div class="card-actions">
+                    <button class="card-action-btn view-details-btn" onclick="event.stopPropagation();window.location.href='/events/detail/?id=${e.id}'">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                    <button class="card-action-btn book-ticket-btn" data-id="${e.id}">
+                        <i class="fas fa-ticket-alt"></i> Book Ticket
+                    </button>
                 </div>
             </div>
         `;
@@ -256,7 +291,7 @@ function handleWishlistClick(e) {
 function bookTicket(id) {
     const token = localStorage.getItem('attendee_access_token');
     if (!token) {
-        showToast('Please login to book tickets', 'info');
+        showToast('🔐 Please login to book tickets', 'info');
         setTimeout(() => window.location.href = '/login/', 1500);
         return;
     }
@@ -277,7 +312,7 @@ function bookTicket(id) {
     
     const existingItem = cart.items.find(i => i.id == id);
     if (existingItem) {
-        showToast(`${event.title} is already in your booking cart!`, 'info');
+        showToast(`🎟️ ${event.title} is already in your booking cart!`, 'info');
         return;
     }
     
@@ -299,7 +334,25 @@ function bookTicket(id) {
     localStorage.setItem('eventhub_cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cart-updated'));
     
-    showToast(`${event.title} added to booking cart!`, 'success');
+    showToast(`✅ ${event.title} added to booking cart!`, 'success');
+}
+
+function resetFilters() {
+    currentCategory = "all";
+    currentSearch = "";
+    
+    // Update active category button
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === currentCategory);
+    });
+    
+    // Clear page search input
+    const pageSearchInput = document.getElementById('searchInput');
+    if (pageSearchInput) {
+        pageSearchInput.value = '';
+    }
+    
+    filterEvents();
 }
 
 const style = document.createElement('style');
@@ -310,6 +363,9 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Make resetFilters available globally
+window.resetFilters = resetFilters;
 
 document.addEventListener('DOMContentLoaded', async () => { 
     await loadEventsFromAPI();
