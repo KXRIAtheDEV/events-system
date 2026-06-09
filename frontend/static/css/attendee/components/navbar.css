@@ -1004,7 +1004,8 @@
         position: fixed;
         top: 0;
         right: -100%;
-        width: 300px;
+        width: fit-content;
+        min-width: 200px;
         max-width: 85%;
         background: #ffffff;
         flex-direction: column;
@@ -1053,7 +1054,7 @@
         width: 100%;
         padding: 8px 12px;
         justify-content: flex-start;
-        white-space: normal;
+        white-space: nowrap;
         color: #475569;
     }
     
@@ -1157,10 +1158,6 @@
     .logo-icon {
         width: 28px;
         height: 28px;
-    }
-    
-    .nav-links {
-        width: 280px;
     }
 }
 
@@ -1317,6 +1314,7 @@ body.dashboard-page .mobile-search {
         font-size: 0.85rem;
         border-radius: 8px;
         transition: all 0.2s;
+        white-space: nowrap;
     }
     
     .submenu-item:hover {
