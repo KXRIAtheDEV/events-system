@@ -336,7 +336,7 @@
 .mobile-divider-line {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.3), transparent);
-    margin: 16px 0 12px 0;
+    margin: 8px 0 8px 0;
 }
 
 /* Mobile logout wrapper and button */
@@ -348,7 +348,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 8px 12px;
     color: #ef4444;
     text-decoration: none;
     font-size: 0.9rem;
@@ -1004,12 +1004,13 @@
         position: fixed;
         top: 0;
         right: -100%;
-        width: 320px;
+        width: 300px;
         max-width: 85%;
         background: #ffffff;
         flex-direction: column;
         align-items: stretch;
-        padding: 1.5rem 1rem;
+        padding: 1.25rem 0.75rem;
+        gap: 6px;
         transition: right 0.3s ease;
         z-index: 1001;
         overflow-y: auto;
@@ -1050,7 +1051,7 @@
     
     .nav-link {
         width: 100%;
-        padding: 14px 18px;
+        padding: 8px 12px;
         justify-content: flex-start;
         white-space: normal;
         color: #475569;
@@ -1296,8 +1297,8 @@ body.dashboard-page .mobile-search {
         display: none;
         background: #f8fafc;
         border-radius: 10px;
-        margin: 0.25rem 0 0.5rem 0.5rem;
-        padding: 6px;
+        margin: 0.15rem 0 0.25rem 0.25rem;
+        padding: 4px;
         border-left: 2px solid #f59e0b;
     }
     
@@ -1310,7 +1311,7 @@ body.dashboard-page .mobile-search {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 10px 16px;
+        padding: 6px 12px;
         color: #475569;
         text-decoration: none;
         font-size: 0.85rem;
@@ -1328,8 +1329,8 @@ body.dashboard-page .mobile-search {
         font-size: 0.8rem;
         transition: transform 0.2s ease;
         color: #475569;
-        padding: 0.75rem 1.5rem;
-        margin-right: -1.5rem;
+        padding: 0.4rem 0.8rem;
+        margin-right: -0.8rem;
         cursor: pointer;
         display: inline-block;
         z-index: 10;
