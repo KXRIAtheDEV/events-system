@@ -1,6 +1,7 @@
 // ============================================
 // WISHLIST JS - Works with event IDs from localStorage
 // Fetches full event data from API
+// NO INTERNAL LOADING SPINNER
 // ============================================
 
 let wishlistIds = [];
@@ -100,6 +101,8 @@ async function loadWishlist() {
                     date: event.date,
                     category: event.category_name || event.category,
                     original_price: event.original_price,
+                    rating: event.rating || 0,
+                    rating_count: event.rating_count || 0,
                     added_at: new Date().toISOString()
                 });
             }
@@ -138,6 +141,24 @@ function filterAndDisplay() {
     if (wishlistInfo) wishlistInfo.style.display = filtered.length > 0 ? 'block' : 'none';
 }
 
+// Generate star HTML based on rating
+function generateStars(rating) {
+    let starsHtml = '';
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 1; i <= 5; i++) {
+        if (i <= fullStars) {
+            starsHtml += '<i class="fas fa-star"></i>';
+        } else if (i === fullStars + 1 && hasHalfStar) {
+            starsHtml += '<i class="fas fa-star-half-alt"></i>';
+        } else {
+            starsHtml += '<i class="far fa-star"></i>';
+        }
+    }
+    return starsHtml;
+}
+
 function displayWishlist(items) {
     if (!wishlistGrid) return;
     
@@ -146,7 +167,11 @@ function displayWishlist(items) {
         return;
     }
     
-    wishlistGrid.innerHTML = items.map(item => `
+    wishlistGrid.innerHTML = items.map(item => {
+        const starsHtml = generateStars(item.rating || 0);
+        const ratingText = item.rating_count ? `(${item.rating_count})` : '';
+        
+        return `
         <div class="wishlist-card" data-event-id="${item.id}" onclick="viewEvent(${item.id})">
             <div class="card-image-container">
                 <img src="${item.image || '/static/images/placeholder.jpg'}" alt="${escapeHtml(item.title)}" class="card-image" onerror="this.src='/static/images/placeholder.jpg'">
@@ -158,6 +183,10 @@ function displayWishlist(items) {
             <div class="card-content">
                 <span class="card-category">${escapeHtml(item.category || 'Event')}</span>
                 <h3 class="card-title">${escapeHtml(item.title)}</h3>
+                <div class="card-rating">
+                    <div class="card-stars">${starsHtml}</div>
+                    <span class="rating-count">${ratingText}</span>
+                </div>
                 <div class="card-meta">
                     <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(item.location || 'TBD')}</span>
                     <span><i class="fas fa-calendar"></i> ${formatDate(item.date)}</span>
@@ -168,15 +197,15 @@ function displayWishlist(items) {
                 <button class="card-action-btn view-details-btn" onclick="event.stopPropagation(); viewEvent(${item.id})">
                     <i class="fas fa-info-circle"></i> Details
                 </button>
-                <button class="card-action-btn add-to-cart-btn" onclick="event.stopPropagation(); addToCart(${item.id})">
-                    <i class="fas fa-cart-plus"></i> Book Now
+                <button class="card-action-btn add-to-cart-btn" onclick="event.stopPropagation(); proceedToBooking(${item.id})">
+                    <i class="fas fa-ticket-alt"></i> Book Ticket
                 </button>
                 <button class="share-btn-icon" onclick="event.stopPropagation(); openShareModal(${item.id})">
                     <i class="fas fa-share-alt"></i>
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 async function removeFromWishlist(eventId) {
@@ -188,7 +217,7 @@ async function removeFromWishlist(eventId) {
     filterAndDisplay();
     updateEmptyState();
     updateWishlistBadge();
-    showToast('Removed from wishlist', 'success');
+    showToast('🗑️ Event removed from your saved list', 'success');
     window.dispatchEvent(new CustomEvent('wishlist-updated'));
 }
 
@@ -203,21 +232,21 @@ async function clearAllWishlist() {
     filterAndDisplay();
     updateEmptyState();
     updateWishlistBadge();
-    showToast('Wishlist cleared', 'success');
+    showToast('🗑️ Your saved list has been cleared', 'success');
     window.dispatchEvent(new CustomEvent('wishlist-updated'));
 }
 
-async function addToCart(eventId) {
+async function proceedToBooking(eventId) {
     const token = localStorage.getItem('attendee_access_token');
     if (!token) {
-        showToast('Please login to book tickets', 'info');
+        showToast('🔐 Please login to continue with ticket booking', 'info');
         setTimeout(() => window.location.href = '/login/', 1500);
         return;
     }
     
     const event = wishlistItems.find(e => e.id == eventId);
     if (!event) {
-        showToast('Event not found', 'error');
+        showToast('❌ Event details not found', 'error');
         return;
     }
     
@@ -225,7 +254,7 @@ async function addToCart(eventId) {
     cart = cart ? JSON.parse(cart) : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
     
     if (cart.items.find(i => i.id == eventId)) {
-        showToast('Already in cart!', 'info');
+        showToast('🎟️ Ticket already in your booking cart', 'info');
         return;
     }
     
@@ -244,7 +273,7 @@ async function addToCart(eventId) {
     cart.total = cart.subtotal;
     
     localStorage.setItem('eventhub_cart', JSON.stringify(cart));
-    showToast('Added to cart!', 'success');
+    showToast('✅ Ticket added to cart! Proceed to checkout', 'success');
     window.dispatchEvent(new Event('cart-updated'));
 }
 
@@ -289,7 +318,7 @@ function copyShareLink() {
     if (!shareLink) return;
     shareLink.select();
     document.execCommand('copy');
-    showToast('Link copied!', 'success');
+    showToast('🔗 Event link copied to clipboard', 'success');
 }
 
 function updateEmptyState() {
@@ -343,26 +372,17 @@ function showToast(message, type) {
     
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 10000;
-        padding: 12px 20px;
-        border-radius: 8px;
-        color: white;
-        font-size: 0.85rem;
-        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
-        animation: slideInRight 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    
+    setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+    }, 3500);
 }
 
+// Make functions global
 window.removeFromWishlist = removeFromWishlist;
-window.addToCart = addToCart;
+window.proceedToBooking = proceedToBooking;
 window.viewEvent = viewEvent;
 window.openShareModal = openShareModal;
 window.shareOnFacebook = shareOnFacebook;

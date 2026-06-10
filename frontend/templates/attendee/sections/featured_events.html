@@ -73,7 +73,7 @@ async function loadFeaturedEvents() {
                             <span><i class="fas fa-users"></i> ${formatNumber(event.attendees_count || 0)} attending</span>
                             <span><i class="fas fa-ticket-alt"></i> ${event.tickets_left || 0} tickets left</span>
                         </div>
-                        <button class="btn-outline-light" onclick="event.stopPropagation(); bookEvent(${event.id})">Book Now</button>
+                        <button class="btn-outline-light" onclick="event.stopPropagation(); viewEventDetails(${event.id})">View Details</button>
                     </div>
                 </div>
             </div>
@@ -212,30 +212,20 @@ function setupResizeHandler() {
     });
 }
 
-function bookEvent(eventId) {
+function viewEventDetails(eventId) {
     const token = localStorage.getItem('attendee_access_token');
     
-    if (token) {
-        // Add to cart instead of direct checkout
-        const cartItem = {
-            id: eventId,
-            quantity: 1
-        };
-        
-        // Dispatch custom event for cart
-        window.dispatchEvent(new CustomEvent('add-to-cart', { detail: cartItem }));
-        showToast('Added to cart!', 'success');
-        
-        setTimeout(() => {
-            window.location.href = '/cart/';
-        }, 1000);
-    } else {
-        showToast('Please login to book tickets', 'info');
+    if (!token) {
+        showToast('🔐 Please login to view event details and book tickets', 'info');
         setTimeout(() => {
             localStorage.setItem('redirect_after_login', window.location.pathname);
             window.location.href = '/login/';
         }, 1500);
+        return;
     }
+    
+    // Navigate to event detail page for full ticket selection
+    window.location.href = `/events/detail/?id=${eventId}`;
 }
 
 function showToast(message, type) {
@@ -270,6 +260,6 @@ function escapeHtml(text) {
 }
 
 // Make functions global
-window.bookEvent = bookEvent;
+window.viewEventDetails = viewEventDetails;
 window.showToast = showToast;
 </script>

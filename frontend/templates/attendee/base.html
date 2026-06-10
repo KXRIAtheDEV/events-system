@@ -15,21 +15,22 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="{% block og_title %}EventHub - Discover Amazing Events{% endblock %}">
     <meta property="og:description" content="{% block og_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}{% static 'images/favicon.png' %}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'icons/favicon.svg' %}{% endblock %}">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{% block twitter_title %}EventHub - Discover Amazing Events{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}Discover and book tickets for the best events in Kenya.{% endblock %}">
-    <meta name="twitter:image" content="{% block twitter_image %}{% static 'images/favicon.png' %}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'icons/favicon.svg' %}{% endblock %}">
     
-    <!-- Favicon - Multiple formats for all browsers -->
-    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon/favicon.svg' %}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon/favicon-16x16.png' %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon/favicon-32x32.png' %}">
-    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon/favicon.ico' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/favicon/apple-touch-icon.png' %}">
+    <!-- Favicon - Single SVG file for all modern browsers -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/favicon.svg' %}">
+    <link rel="shortcut icon" type="image/svg+xml" href="{% static 'icons/favicon.svg' %}">
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#f59e0b">
+    <meta name="msapplication-TileColor" content="#f59e0b">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Kaushan+Script&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -92,37 +93,98 @@
     {% block extra_js %}{% endblock %}
     
     <script>
+        // Global error handler to catch and log errors
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.message, e.filename, e.lineno);
+            return false;
+        });
+        
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled rejection:', e.reason);
+        });
+        
         // Global logout function
         window.logout = function() {
-            localStorage.removeItem('attendee_access_token');
-            localStorage.removeItem('attendee_refresh_token');
-            localStorage.removeItem('attendee_user');
-            // Preserve user data (cart, wishlist, bookings, tickets)
-            window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-                detail: { isLoggedIn: false, user: null } 
-            }));
-            window.location.href = '/login/';
+            try {
+                localStorage.removeItem('attendee_access_token');
+                localStorage.removeItem('attendee_refresh_token');
+                localStorage.removeItem('attendee_user');
+                window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+                    detail: { isLoggedIn: false, user: null } 
+                }));
+                window.location.href = '/login/';
+            } catch(e) {
+                console.error('Logout error:', e);
+                window.location.href = '/login/';
+            }
         };
         
-        // Initialize loader with custom settings
+        // Safe loader initialization
         document.addEventListener('DOMContentLoaded', function() {
-            if (window.PageLoader) {
-                window.PageLoader.setMinDisplayTime(800);
-                console.log('Loader initialized');
+            try {
+                if (window.PageLoader && typeof window.PageLoader.setMinDisplayTime === 'function') {
+                    window.PageLoader.setMinDisplayTime(800);
+                    console.log('Loader initialized');
+                } else {
+                    console.log('PageLoader not available, using fallback');
+                    window.hideLoader = function() {
+                        const loader = document.getElementById('pageLoader');
+                        if (loader) loader.style.display = 'none';
+                    };
+                    window.showLoader = function() {
+                        const loader = document.getElementById('pageLoader');
+                        if (loader) loader.style.display = 'flex';
+                    };
+                }
+            } catch(e) {
+                console.error('Loader initialization error:', e);
             }
         });
         
-        // Manual control functions
+        // Safe manual control functions
         window.showLoader = function(message) {
-            if (window.PageLoader) window.PageLoader.show(message);
+            try {
+                if (window.PageLoader && window.PageLoader.show) {
+                    window.PageLoader.show(message);
+                } else {
+                    const loader = document.getElementById('pageLoader');
+                    if (loader) loader.style.display = 'flex';
+                }
+            } catch(e) {
+                console.error('showLoader error:', e);
+            }
         };
         
         window.hideLoader = function() {
-            if (window.PageLoader) window.PageLoader.hide();
+            try {
+                if (window.PageLoader && window.PageLoader.hide) {
+                    window.PageLoader.hide();
+                } else {
+                    const loader = document.getElementById('pageLoader');
+                    if (loader) loader.style.display = 'none';
+                }
+            } catch(e) {
+                console.error('hideLoader error:', e);
+            }
         };
         
-        // Check auth status
-        console.log('Auth Guard Status:', window.AuthGuard ? 'Loaded' : 'Not loaded');
+        // Check auth status safely
+        setTimeout(function() {
+            if (window.AuthGuard) {
+                console.log('Auth Guard Status: Loaded');
+            } else {
+                console.log('Auth Guard Status: Not loaded');
+            }
+        }, 500);
+        
+        // Fix for "A display error occurred" - catch any uncaught errors
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('display error')) {
+                console.warn('Display error caught, preventing reload loop');
+                return true;
+            }
+        });
     </script>
 </body>
 </html>

@@ -2,6 +2,9 @@
 <header class="attendee-navbar">
     <div class="navbar-container">
         <a href="/" class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
             <div class="logo-text">
                 <span>EventHub</span>
                 <small>Attendee</small>
@@ -13,7 +16,21 @@
         </button>
 
         <div class="nav-links" id="navLinks">
+            <div class="mobile-close">
+                <button class="close-menu" id="closeMenu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
 
+            <!-- Mobile Search Form -->
+            <div class="mobile-search">
+                <form action="/events/search/" method="GET" id="mobileSearchForm">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="q" id="mobileSearchInput" placeholder="Search events..." autocomplete="off">
+                    <button type="submit" id="mobileSearchBtn">Search</button>
+                </form>
+                <div class="search-validation-mobile" id="mobileSearchValidation"></div>
+            </div>
 
             <!-- Account Dropdown - AT THE TOP (Mobile only) -->
             <div class="nav-item-dropdown mobile-account-dropdown" id="mobileAccountDropdown">
@@ -34,6 +51,16 @@
                     </div>
                     <!-- Logged In View (Mobile) -->
                     <div id="mobileUserLinks" style="display: none;">
+                        <div class="mobile-user-info-dropdown">
+                            <div class="mobile-user-avatar-dropdown">
+                                <span id="mobileUserInitial">U</span>
+                            </div>
+                            <div class="mobile-user-details-dropdown">
+                                <div class="mobile-user-name-dropdown" id="mobileUserName">User</div>
+                                <div class="mobile-user-role-dropdown">Attendee</div>
+                            </div>
+                        </div>
+                        <div class="mobile-dropdown-divider"></div>
                         <a href="/dashboard/" class="submenu-item">
                             <i class="fas fa-tachometer-alt"></i>
                             <span>Dashboard</span>
@@ -52,12 +79,14 @@
 
             <!-- Events - Simple Link -->
             <a href="/events/" class="nav-link">
+                <i class="fas fa-calendar-alt"></i>
                 <span>Events</span>
             </a>
 
             <!-- About Dropdown -->
             <div class="nav-item-dropdown">
                 <a href="#" class="nav-link dropdown-trigger" onclick="return false;">
+                    <i class="fas fa-info-circle"></i>
                     <span>About</span>
                     <i class="fas fa-chevron-down dropdown-arrow"></i>
                 </a>
@@ -77,14 +106,17 @@
                 </div>
             </div>
 
-            <!-- My Tickets Dropdown (Logged In Users) -->
+            <!-- My Tickets Dropdown (Logged In Users) - WITH BADGE ON TOP OF ARROW -->
             <div class="nav-item-dropdown auth-only" style="display: none;">
                 <a href="#" class="nav-link dropdown-trigger" onclick="return false;">
+                    <i class="fas fa-ticket-alt"></i>
                     <span>My Tickets</span>
                     <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    <span class="my-tickets-badge" id="myTicketsBadge" style="display: none;">0</span>
                 </a>
                 <div class="dropdown-submenu">
                     <a href="/tickets/" class="submenu-item">
+                        <i class="fas fa-ticket-alt"></i>
                         <span>My Tickets</span>
                     </a>
                     <a href="/cart/" class="submenu-item" id="navCartLink">
@@ -100,19 +132,25 @@
                 </div>
             </div>
 
-            <!-- Divider before logout -->
+            <!-- Divider before logout (Mobile only) -->
             <div class="mobile-divider-line"></div>
 
             <!-- SEPARATE LOGOUT BUTTON - Bottom of mobile menu -->
             <div id="mobileLogoutBtn" class="mobile-logout-wrapper" style="display: none;">
                 <a href="#" onclick="logout(); return false;" class="mobile-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>
             </div>
         </div>
 
         <div class="nav-actions">
-
+            <form class="search-form-desktop" action="/events/search/" method="GET" id="desktopSearchForm">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" id="desktopSearchInput" placeholder="Search events..." autocomplete="off">
+                <div class="search-validation" id="desktopSearchValidation"></div>
+                <button type="submit" id="desktopSearchBtn">Search</button>
+            </form>
 
             <div class="notifications-dropdown">
                 <button class="notifications-btn" id="notificationsBtn">
@@ -130,13 +168,12 @@
                 </div>
             </div>
 
-            <!-- Account Dropdown (Desktop only) -->
+            <!-- Account Dropdown (Desktop only) - NO BADGE HERE -->
             <div class="profile-dropdown">
                 <button class="profile-btn" id="profileBtn">
                     <i class="fas fa-user-circle"></i>
                     <span id="profileUserName">Account</span>
                     <i class="fas fa-chevron-down"></i>
-                    <span class="profile-notification-badge" id="profileNotificationBadge" style="display: none;"></span>
                 </button>
                 
                 <div class="dropdown-menu" id="dropdownMenu">
@@ -211,7 +248,198 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const isLoggedIn = accessToken && user && Object.keys(user).length > 0;
     
-    // Force hide mobile account dropdown on desktop
+    // Function to close all dropdowns (Desktop)
+    function closeAllDesktopDropdowns() {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        if (dropdownMenu) {
+            dropdownMenu.classList.remove('show');
+        }
+        const notifPanel = document.getElementById('notificationsPanel');
+        if (notifPanel) {
+            notifPanel.classList.remove('show');
+        }
+    }
+    
+    // Function to close all center dropdowns (Desktop - About and My Tickets)
+    function closeAllCenterDropdowns() {
+        const centerDropdowns = document.querySelectorAll('.nav-item-dropdown');
+        centerDropdowns.forEach(dropdown => {
+            const submenu = dropdown.querySelector('.dropdown-submenu');
+            if (submenu) {
+                submenu.classList.remove('show-desktop');
+            }
+            const arrow = dropdown.querySelector('.dropdown-arrow');
+            if (arrow) {
+                arrow.style.transform = '';
+            }
+        });
+    }
+    
+    // Function to close all mobile dropdowns
+    function closeAllMobileDropdowns() {
+        const mobileSubmenus = document.querySelectorAll('.nav-links .dropdown-submenu');
+        mobileSubmenus.forEach(submenu => {
+            submenu.classList.remove('show-mobile');
+        });
+        const mobileArrows = document.querySelectorAll('.nav-links .dropdown-arrow');
+        mobileArrows.forEach(arrow => {
+            arrow.style.transform = '';
+        });
+    }
+    
+    // DESKTOP: Handle center dropdowns (About and My Tickets) on hover
+    if (window.innerWidth > 768) {
+        const centerDropdowns = document.querySelectorAll('.nav-item-dropdown');
+        
+        centerDropdowns.forEach(dropdown => {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const submenu = dropdown.querySelector('.dropdown-submenu');
+            
+            if (trigger && submenu) {
+                // Mouse enter - open this dropdown, close others
+                dropdown.addEventListener('mouseenter', function() {
+                    if (window.innerWidth > 768) {
+                        // Close all other center dropdowns
+                        centerDropdowns.forEach(otherDropdown => {
+                            if (otherDropdown !== dropdown) {
+                                const otherSubmenu = otherDropdown.querySelector('.dropdown-submenu');
+                                const otherArrow = otherDropdown.querySelector('.dropdown-arrow');
+                                if (otherSubmenu) {
+                                    otherSubmenu.classList.remove('show-desktop');
+                                }
+                                if (otherArrow) {
+                                    otherArrow.style.transform = '';
+                                }
+                            }
+                        });
+                        
+                        // Open this dropdown
+                        submenu.classList.add('show-desktop');
+                        const arrow = dropdown.querySelector('.dropdown-arrow');
+                        if (arrow) {
+                            arrow.style.transform = 'rotate(180deg)';
+                        }
+                    }
+                });
+                
+                // Mouse leave - close this dropdown
+                dropdown.addEventListener('mouseleave', function() {
+                    if (window.innerWidth > 768) {
+                        submenu.classList.remove('show-desktop');
+                        const arrow = dropdown.querySelector('.dropdown-arrow');
+                        if (arrow) {
+                            arrow.style.transform = '';
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    // DESKTOP: Handle Account dropdown (right side) - separate from center dropdowns
+    let dropdownOpened = false;
+    const profileBtn = document.getElementById('profileBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    
+    if (profileBtn && dropdownMenu) {
+        profileBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Close center dropdowns when opening account dropdown
+            closeAllCenterDropdowns();
+            
+            // Close notifications panel
+            const notifPanel = document.getElementById('notificationsPanel');
+            if (notifPanel) {
+                notifPanel.classList.remove('show');
+            }
+            
+            dropdownMenu.classList.toggle('show');
+            
+            if (dropdownMenu.classList.contains('show')) {
+                dropdownOpened = true;
+            }
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!dropdownMenu.contains(e.target) && !profileBtn.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+                setTimeout(() => {
+                    if (!dropdownMenu.classList.contains('show')) {
+                        dropdownOpened = false;
+                    }
+                }, 300);
+            }
+        });
+    }
+    
+    // DESKTOP: Handle Notifications dropdown
+    const notifBtn = document.getElementById('notificationsBtn');
+    const notifPanel = document.getElementById('notificationsPanel');
+    if (notifBtn && notifPanel) {
+        notifBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Close center dropdowns when opening notifications
+            closeAllCenterDropdowns();
+            
+            // Close account dropdown
+            if (dropdownMenu) {
+                dropdownMenu.classList.remove('show');
+            }
+            
+            notifPanel.classList.toggle('show');
+            loadNotifications();
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
+                notifPanel.classList.remove('show');
+            }
+        });
+    }
+    
+    // MOBILE: Handle mobile accordion dropdowns - only one open at a time
+    const mobileTriggers = document.querySelectorAll('.nav-links .dropdown-trigger');
+    mobileTriggers.forEach(trigger => {
+        trigger.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const parent = this.closest('.nav-item-dropdown');
+                const submenu = parent.querySelector('.dropdown-submenu');
+                const arrow = this.querySelector('.dropdown-arrow');
+                
+                if (!submenu) return;
+                
+                const isOpen = submenu.classList.contains('show-mobile');
+                
+                // Close all other mobile dropdowns first
+                const allMobileSubmenus = document.querySelectorAll('.nav-links .dropdown-submenu');
+                allMobileSubmenus.forEach(sub => {
+                    if (sub !== submenu) {
+                        sub.classList.remove('show-mobile');
+                        const prevParent = sub.closest('.nav-item-dropdown');
+                        if (prevParent) {
+                            const prevArrow = prevParent.querySelector('.dropdown-arrow');
+                            if (prevArrow) prevArrow.style.transform = '';
+                        }
+                    }
+                });
+                
+                // Toggle current dropdown
+                if (!isOpen) {
+                    submenu.classList.add('show-mobile');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    submenu.classList.remove('show-mobile');
+                    if (arrow) arrow.style.transform = '';
+                }
+            }
+        });
+    });
+    
     function handleMobileAccountVisibility() {
         const mobileAccountDropdown = document.getElementById('mobileAccountDropdown');
         if (mobileAccountDropdown) {
@@ -230,59 +458,71 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
     
-    function updateCartBadge() {
+    // Update My Tickets badge (combined cart + wishlist count)
+    function updateMyTicketsBadge() {
         if (!isLoggedIn) return;
         try {
+            // Get cart count
             const savedCart = localStorage.getItem('eventhub_cart');
             let cart = { items: [] };
             if (savedCart) cart = JSON.parse(savedCart);
-            const count = cart.items ? cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
-            const navBadge = document.getElementById('navCartBadge');
-            if (navBadge) {
-                navBadge.textContent = count;
-                navBadge.style.display = count > 0 ? 'inline-block' : 'none';
-            }
-        } catch (error) {
-            console.error("Error loading cart count:", error);
-        }
-    }
-    
-    function updateWishlistBadge() {
-        if (!isLoggedIn) return;
-        try {
+            const cartCount = cart.items ? cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+            
+            // Get wishlist count
             const savedWishlist = localStorage.getItem('event_wishlist');
             const wishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
-            const count = wishlist.length;
-            const navBadge = document.getElementById('navWishlistBadge');
-            if (navBadge) {
-                navBadge.textContent = count;
-                navBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            const wishlistCount = wishlist.length;
+            
+            // Combined count
+            const totalCount = cartCount + wishlistCount;
+            
+            // Update badge on My Tickets label
+            const myTicketsBadge = document.getElementById('myTicketsBadge');
+            if (myTicketsBadge) {
+                if (totalCount > 0) {
+                    myTicketsBadge.textContent = totalCount;
+                    myTicketsBadge.style.display = 'inline-flex';
+                    // Add pulse animation
+                    myTicketsBadge.style.animation = 'badgePulse 0.5s ease-in-out';
+                    setTimeout(() => {
+                        if (myTicketsBadge) myTicketsBadge.style.animation = '';
+                    }, 500);
+                } else {
+                    myTicketsBadge.style.display = 'none';
+                }
+            }
+            
+            // Also update individual badges
+            const navCartBadge = document.getElementById('navCartBadge');
+            if (navCartBadge) {
+                navCartBadge.textContent = cartCount;
+                navCartBadge.style.display = cartCount > 0 ? 'inline-block' : 'none';
+            }
+            
+            const navWishlistBadge = document.getElementById('navWishlistBadge');
+            if (navWishlistBadge) {
+                navWishlistBadge.textContent = wishlistCount;
+                navWishlistBadge.style.display = wishlistCount > 0 ? 'inline-block' : 'none';
             }
         } catch (error) {
-            console.error("Error loading wishlist count:", error);
+            console.error("Error updating badges:", error);
         }
     }
     
     if (isLoggedIn) {
-        // Show desktop logged-in elements
         if (desktopUser) desktopUser.style.display = 'block';
         if (desktopGuest) desktopGuest.style.display = 'none';
-        
-        // Show mobile logged-in elements
         if (mobileUser) mobileUser.style.display = 'block';
         if (mobileGuest) mobileGuest.style.display = 'none';
         
-        // Show auth-only elements (My Tickets dropdown)
         authOnlyElements.forEach(el => {
             el.style.display = 'block';
         });
         
-        // Hide guest-only elements
         guestOnlyElements.forEach(el => {
             el.style.display = 'none';
         });
         
-        // SHOW THE SEPARATE LOGOUT BUTTON
         if (mobileLogoutBtn) {
             mobileLogoutBtn.style.display = 'block';
         }
@@ -290,43 +530,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const nameVal = user.first_name || user.username || user.name || 'User';
         const initialVal = nameVal.charAt(0).toUpperCase();
         
-        // Desktop
         if (desktopName) desktopName.textContent = nameVal;
         if (desktopInitial) desktopInitial.textContent = initialVal;
         if (profileUserName) profileUserName.textContent = nameVal.split(' ')[0];
-        
-        // Mobile
         if (mobileUserName) mobileUserName.textContent = nameVal;
         if (mobileUserInitial) mobileUserInitial.textContent = initialVal;
         if (mobileAccountLabel) mobileAccountLabel.textContent = nameVal.split(' ')[0];
         
-        // Load badges
-        updateCartBadge();
-        updateWishlistBadge();
+        // Update badges
+        updateMyTicketsBadge();
         
-        // Add logged-in class to nav-links for CSS styling
         if (navLinks) navLinks.classList.add('logged-in');
         if (navLinks) navLinks.classList.remove('logged-out');
     } else {
-        // Show desktop logged-out elements
         if (desktopUser) desktopUser.style.display = 'none';
         if (desktopGuest) desktopGuest.style.display = 'block';
-        
-        // Show mobile logged-out elements
         if (mobileUser) mobileUser.style.display = 'none';
         if (mobileGuest) mobileGuest.style.display = 'block';
         
-        // Hide auth-only elements
         authOnlyElements.forEach(el => {
             el.style.display = 'none';
         });
         
-        // Show guest-only elements
         guestOnlyElements.forEach(el => {
             el.style.display = 'block';
         });
         
-        // HIDE THE SEPARATE LOGOUT BUTTON FOR GUESTS
         if (mobileLogoutBtn) {
             mobileLogoutBtn.style.display = 'none';
         }
@@ -334,70 +563,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (profileUserName) profileUserName.textContent = 'Account';
         if (mobileAccountLabel) mobileAccountLabel.textContent = 'Account';
         
-        // Add logged-out class to nav-links for CSS styling
         if (navLinks) navLinks.classList.add('logged-out');
         if (navLinks) navLinks.classList.remove('logged-in');
     }
     
-    // Call mobile account visibility handler
     handleMobileAccountVisibility();
     
     // Listen for cart and wishlist updates
     window.addEventListener('cart-updated', function() {
         if (!isLoggedIn) return;
-        updateCartBadge();
+        updateMyTicketsBadge();
         showToast('Added to cart!', 'success');
     });
     
     window.addEventListener('wishlist-updated', function() {
         if (!isLoggedIn) return;
-        updateWishlistBadge();
+        updateMyTicketsBadge();
         showToast('Saved to wishlist!', 'success');
-    });
-    
-    let dropdownOpened = false;
-    const profileBtn = document.getElementById('profileBtn');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    
-    // Toggle accordions in mobile view when clicking the arrow icon, or text of non-nav links like About
-    document.querySelectorAll('.nav-links .dropdown-arrow, .nav-links a[href="#"], .nav-links a[href="#"] span').forEach(trigger => {
-        trigger.addEventListener('click', function(e) {
-            if (window.innerWidth <= 1024) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const parent = this.closest('.nav-item-dropdown');
-                const submenu = parent.querySelector('.dropdown-submenu');
-                const arrow = parent.querySelector('.dropdown-arrow');
-                
-                const isOpen = submenu.classList.contains('show-mobile');
-                
-                // Close all other submenus first
-                document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
-                    if (sub !== submenu) {
-                        sub.classList.remove('show-mobile');
-                    }
-                });
-                document.querySelectorAll('.nav-links .dropdown-arrow').forEach(arr => {
-                    if (arr !== arrow) {
-                        arr.style.transform = '';
-                    }
-                });
-                
-                // Toggle the current submenu
-                if (!isOpen) {
-                    submenu.classList.add('show-mobile');
-                    if (arrow) {
-                        arrow.style.transform = 'rotate(180deg)';
-                    }
-                } else {
-                    submenu.classList.remove('show-mobile');
-                    if (arrow) {
-                        arrow.style.transform = '';
-                    }
-                }
-            }
-        });
     });
     
     function getCartCount() {
@@ -431,27 +613,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updateProfileNotificationBadge() {
-        if (!isLoggedIn) return;
-        
-        const cartCount = getCartCount();
-        const wishlistCount = getWishlistCount();
-        const totalItems = cartCount + wishlistCount;
-        const profileBadge = document.getElementById('profileNotificationBadge');
-        
-        if (totalItems > 0 && !dropdownOpened) {
-            profileBadge.textContent = totalItems > 99 ? '99+' : totalItems;
-            profileBadge.style.display = 'flex';
-            profileBadge.classList.add('animate-pulse');
-            setTimeout(() => {
-                if (profileBadge) profileBadge.classList.remove('animate-pulse');
-            }, 800);
-        } else {
-            profileBadge.style.display = 'none';
-            profileBadge.classList.remove('animate-pulse');
-        }
-    }
-    
     function showToast(message, type) {
         const existingToast = document.querySelector('.custom-toast');
         if (existingToast) existingToast.remove();
@@ -465,10 +626,55 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (isLoggedIn) {
         loadNotificationCount();
-        updateProfileNotificationBadge();
     }
     
-
+    // Mobile search validation
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    const mobileSearchValidation = document.getElementById('mobileSearchValidation');
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length > 0 && value.length < 2) {
+                if (mobileSearchValidation) {
+                    mobileSearchValidation.innerHTML = '<i class="fas fa-info-circle"></i> Please enter at least 2 characters';
+                    mobileSearchValidation.classList.add('show', 'error');
+                    mobileSearchValidation.classList.remove('success');
+                }
+            } else if (value.length >= 2) {
+                if (mobileSearchValidation) {
+                    mobileSearchValidation.innerHTML = '<i class="fas fa-check-circle"></i> Press Enter or click Search';
+                    mobileSearchValidation.classList.add('show', 'success');
+                    mobileSearchValidation.classList.remove('error');
+                }
+            } else {
+                if (mobileSearchValidation) mobileSearchValidation.classList.remove('show');
+            }
+        });
+    }
+    
+    // Desktop search validation
+    const desktopSearchInput = document.getElementById('desktopSearchInput');
+    const desktopSearchValidation = document.getElementById('desktopSearchValidation');
+    if (desktopSearchInput) {
+        desktopSearchInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length > 0 && value.length < 2) {
+                if (desktopSearchValidation) {
+                    desktopSearchValidation.innerHTML = '<i class="fas fa-info-circle"></i> Please enter at least 2 characters';
+                    desktopSearchValidation.classList.add('show', 'error');
+                    desktopSearchValidation.classList.remove('success');
+                }
+            } else if (value.length >= 2) {
+                if (desktopSearchValidation) {
+                    desktopSearchValidation.innerHTML = '<i class="fas fa-check-circle"></i> Press Enter or click Search';
+                    desktopSearchValidation.classList.add('show', 'success');
+                    desktopSearchValidation.classList.remove('error');
+                }
+            } else {
+                if (desktopSearchValidation) desktopSearchValidation.classList.remove('show');
+            }
+        });
+    }
     
     const mobileToggle = document.getElementById('mobileToggle');
     const mobileOverlay = document.getElementById('mobileOverlay');
@@ -485,66 +691,13 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileOverlay.classList.remove('show');
         document.body.classList.remove('menu-open');
         
-        // Reset mobile accordions when menu closes
-        document.querySelectorAll('.nav-links .dropdown-submenu').forEach(sub => {
-            sub.classList.remove('show-mobile');
-        });
-        document.querySelectorAll('.nav-links .dropdown-arrow').forEach(arr => {
-            arr.style.transform = '';
-        });
+        // Close all mobile dropdowns when closing menu
+        closeAllMobileDropdowns();
     }
     
     if (mobileToggle) mobileToggle.addEventListener('click', openMobileMenu);
     if (closeMenu) closeMenu.addEventListener('click', closeMobileMenu);
     if (mobileOverlay) mobileOverlay.addEventListener('click', closeMobileMenu);
-    
-    if (profileBtn && dropdownMenu) {
-        profileBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('show');
-            
-            if (dropdownMenu.classList.contains('show')) {
-                dropdownOpened = true;
-                const profileBadge = document.getElementById('profileNotificationBadge');
-                profileBadge.style.display = 'none';
-                profileBadge.classList.remove('animate-pulse');
-            }
-        });
-        
-        document.addEventListener('click', function(e) {
-            if (!dropdownMenu.contains(e.target) && !profileBtn.contains(e.target)) {
-                dropdownMenu.classList.remove('show');
-                setTimeout(() => {
-                    if (!dropdownMenu.classList.contains('show')) {
-                        const cartCount = getCartCount();
-                        const wishlistCount = getWishlistCount();
-                        if (cartCount === 0 && wishlistCount === 0) {
-                            dropdownOpened = false;
-                        } else {
-                            if (!dropdownOpened) {
-                                updateProfileNotificationBadge();
-                            }
-                        }
-                    }
-                }, 300);
-            }
-        });
-    }
-    
-    const notifBtn = document.getElementById('notificationsBtn');
-    const notifPanel = document.getElementById('notificationsPanel');
-    if (notifBtn && notifPanel) {
-        notifBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            notifPanel.classList.toggle('show');
-            loadNotifications();
-        });
-        document.addEventListener('click', function(e) {
-            if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
-                notifPanel.classList.remove('show');
-            }
-        });
-    }
     
     function loadNotifications() {
         const notificationsList = document.getElementById('notificationsList');
@@ -566,29 +719,22 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
     }
     
-    document.querySelectorAll('.nav-link, .submenu-item').forEach(link => {
+    document.querySelectorAll('.nav-link:not(.dropdown-trigger), .submenu-item').forEach(link => {
         link.addEventListener('click', closeMobileMenu);
     });
     
-    // Add resize listener to handle mobile account visibility on window resize
     window.addEventListener('resize', function() {
         handleMobileAccountVisibility();
     });
 });
 
-// CORRECT LOGOUT FUNCTION - ONLY clears auth, preserves user data
 function logout() {
-    console.log('Logging out - preserving cart, wishlist, bookings, and tickets');
-    
-    // Clear ONLY authentication data
     localStorage.removeItem('attendee_access_token');
     localStorage.removeItem('attendee_refresh_token');
     localStorage.removeItem('attendee_user');
-    
     window.dispatchEvent(new CustomEvent('auth-state-changed', { 
         detail: { isLoggedIn: false, user: null } 
     }));
-    
     window.location.href = '/';
 }
 
