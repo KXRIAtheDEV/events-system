@@ -247,6 +247,9 @@ from .models import Category, Event
 
 def api_event_list(request):
     """API endpoint to list and search events for attendees"""
+    from django.core.cache import cache
+    import hashlib
+
     query = request.GET.get('search', '').strip()
     category_id = request.GET.get('category', '').strip()
     city = request.GET.get('city', '').strip()
@@ -257,6 +260,21 @@ def api_event_list(request):
     # Handle search from both list.html and search.html
     if not query:
         query = request.GET.get('q', '').strip()
+
+    # Simple pagination
+    page = int(request.GET.get('page', 1))
+    limit = int(request.GET.get('limit', 6))
+    if 'limit' not in request.GET and ('q' in request.GET or 'search' in request.GET):
+        limit = 200  # return all matches when searching so no result is hidden by pagination
+
+    # Construct unique cache key based on query params
+    params_str = f"search:{query}|cat:{category_id}|city:{city}|ord:{ordering}|page:{page}|limit:{limit}"
+    cache_key = f"api_event_list_{hashlib.md5(params_str.encode('utf-8')).hexdigest()}"
+
+    # Try cache lookup first
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return JsonResponse(cached_data)
         
     events = Event.objects.filter(status='published', end_date__gte=timezone.now()).select_related('category')
     
@@ -291,12 +309,6 @@ def api_event_list(request):
     else:
         events = events.order_by('start_date')
         
-    # Simple pagination
-    page = int(request.GET.get('page', 1))
-    limit = int(request.GET.get('limit', 6))
-    if 'limit' not in request.GET and ('q' in request.GET or 'search' in request.GET):
-        limit = 200  # return all matches when searching so no result is hidden by pagination
-        
     start = (page - 1) * limit
     end = page * limit
     
@@ -330,14 +342,19 @@ def api_event_list(request):
             'is_featured': e.is_featured,
         })
         
-    return JsonResponse({
+    response_data = {
         'success': True,
         'count': count,
         'total_count': count,
         'results': results,
         'events': results,
         'total_pages': (count + limit - 1) // limit
-    })
+    }
+
+    # Store in cache for 30 seconds
+    cache.set(cache_key, response_data, 30)
+    
+    return JsonResponse(response_data)
 
 
 @cache_page(300)
