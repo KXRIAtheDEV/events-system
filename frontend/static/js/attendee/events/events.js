@@ -368,7 +368,6 @@ document.head.appendChild(style);
 window.resetFilters = resetFilters;
 
 document.addEventListener('DOMContentLoaded', async () => { 
-    await loadEventsFromAPI();
     await addFilters(); 
     await filterEvents(); 
 });
