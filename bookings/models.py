@@ -28,6 +28,12 @@ class Ticket(models.Model):
     purchase_date = models.DateTimeField(auto_now_add=True)
     checked_in_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['purchase_date']),
+        ]
+
     def save(self, *args, **kwargs):
         if not self.ticket_number:
             self.ticket_number = f"TICK-{uuid.uuid4().hex[:8].upper()}"

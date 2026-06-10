@@ -16,9 +16,14 @@ from bookings.email_service import send_organizer_event_crud_email
 from bookings.models import Ticket
 
 def serialize_organizer_event(event):
-    tickets = Ticket.objects.filter(event=event, status='valid')
-    sold = sum(t.quantity for t in tickets)
-    revenue = float(sum(t.quantity * t.price for t in tickets))
+    if hasattr(event, 'annotated_sold'):
+        sold = event.annotated_sold
+        revenue = float(event.annotated_revenue)
+    else:
+        tickets = Ticket.objects.filter(event=event, status='valid')
+        sold = sum(t.quantity for t in tickets)
+        revenue = float(sum(t.quantity * t.price for t in tickets))
+        
     return {
         'id': event.id,
         'name': event.title,
@@ -66,7 +71,20 @@ def organizer_required(view_func):
 @require_http_methods(["GET"])
 def api_organizer_events_list(request):
     """List events for the logged-in organizer."""
-    events = Event.objects.filter(organizer=request.user).order_by('-created_at')
+    from django.db.models import Sum, F, DecimalField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+    
+    # Subqueries to pre-calculate ticket sales and revenue
+    valid_tickets = Ticket.objects.filter(event=OuterRef('pk'), status='valid')
+    sold_subquery = valid_tickets.values('event').annotate(total_sold=Sum('quantity')).values('total_sold')
+    revenue_subquery = valid_tickets.values('event').annotate(
+        total_rev=Sum(F('quantity') * F('price'), output_field=DecimalField())
+    ).values('total_rev')
+    
+    events = Event.objects.filter(organizer=request.user).annotate(
+        annotated_sold=Coalesce(Subquery(sold_subquery), 0),
+        annotated_revenue=Coalesce(Subquery(revenue_subquery), 0, output_field=DecimalField())
+    ).select_related('category').prefetch_related('images').order_by('-created_at')
     page = int(request.GET.get('page', 1))
     limit = int(request.GET.get('limit', 12))
     paginator = Paginator(events, limit)
@@ -436,7 +454,16 @@ def api_organizer_payouts_settings_update(request):
 @require_http_methods(["GET"])
 def api_organizer_settings_team(request):
     """List team members for the organizer."""
-    return JsonResponse(request.user.team_members or [], safe=False)
+    from accounts.models import TeamMember
+    members = TeamMember.objects.filter(organizer=request.user).order_by('created_at')
+    results = []
+    for m in members:
+        results.append({
+            'id': m.id,
+            'email': m.email,
+            'role': m.role
+        })
+    return JsonResponse(results, safe=False)
 
 @csrf_exempt
 @organizer_required
@@ -452,20 +479,19 @@ def api_organizer_settings_team_add(request):
         if not email:
             return JsonResponse({'success': False, 'message': 'Email is required'}, status=400)
             
-        team = user.team_members or []
-        
-        if any(m.get('email') == email for m in team):
+        from accounts.models import TeamMember
+        if TeamMember.objects.filter(organizer=user, email__iexact=email).exists():
             return JsonResponse({'success': False, 'message': 'Member already in team'}, status=400)
             
         import uuid
-        member = {
-            'id': uuid.uuid4().hex[:8],
-            'email': email,
-            'role': role
-        }
-        team.append(member)
-        user.team_members = team
-        user.save()
+        member_id = uuid.uuid4().hex[:8]
+        
+        TeamMember.objects.create(
+            id=member_id,
+            organizer=user,
+            email=email,
+            role=role
+        )
         
         return JsonResponse({'success': True, 'message': 'Team member invited!'})
     except Exception as e:
@@ -478,15 +504,13 @@ def api_organizer_settings_team_remove(request, member_id):
     """Remove a team member."""
     try:
         user = request.user
-        team = user.team_members or []
-        filtered_team = [m for m in team if m.get('id') != member_id]
-        
-        if len(team) == len(filtered_team):
+        from accounts.models import TeamMember
+        try:
+            m = TeamMember.objects.get(id=member_id, organizer=user)
+            m.delete()
+            return JsonResponse({'success': True, 'message': 'Team member removed'})
+        except TeamMember.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Member not found'}, status=404)
-            
-        user.team_members = filtered_team
-        user.save()
-        return JsonResponse({'success': True, 'message': 'Team member removed'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
@@ -495,7 +519,17 @@ def api_organizer_settings_team_remove(request, member_id):
 @require_http_methods(["GET"])
 def api_organizer_settings_apikeys(request):
     """List developer API keys."""
-    return JsonResponse(request.user.api_keys or [], safe=False)
+    from accounts.models import ApiKey
+    keys = ApiKey.objects.filter(organizer=request.user).order_by('created_at')
+    results = []
+    for k in keys:
+        results.append({
+            'id': k.id,
+            'name': k.name,
+            'key': k.key,
+            'created_at': k.created_at.isoformat()
+        })
+    return JsonResponse(results, safe=False)
 
 @csrf_exempt
 @organizer_required
@@ -511,18 +545,20 @@ def api_organizer_settings_apikeys_create(request):
         key_id = uuid.uuid4().hex[:8]
         secret_key = f"eh_live_{uuid.uuid4().hex}"
         
-        keys = user.api_keys or []
-        new_key = {
-            'id': key_id,
-            'name': name,
-            'key': secret_key,
-            'created_at': timezone.now().isoformat()
-        }
-        keys.append(new_key)
-        user.api_keys = keys
-        user.save()
+        from accounts.models import ApiKey
+        k = ApiKey.objects.create(
+            id=key_id,
+            organizer=user,
+            name=name,
+            key=secret_key
+        )
         
-        return JsonResponse(new_key)
+        return JsonResponse({
+            'id': k.id,
+            'name': k.name,
+            'key': k.key,
+            'created_at': k.created_at.isoformat()
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
@@ -533,15 +569,13 @@ def api_organizer_settings_apikeys_revoke(request, key_id):
     """Revoke a developer API key."""
     try:
         user = request.user
-        keys = user.api_keys or []
-        filtered_keys = [k for k in keys if k.get('id') != key_id]
-        
-        if len(keys) == len(filtered_keys):
+        from accounts.models import ApiKey
+        try:
+            k = ApiKey.objects.get(id=key_id, organizer=user)
+            k.delete()
+            return JsonResponse({'success': True, 'message': 'API Key revoked'})
+        except ApiKey.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'API Key not found'}, status=404)
-            
-        user.api_keys = filtered_keys
-        user.save()
-        return JsonResponse({'success': True, 'message': 'API Key revoked'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 

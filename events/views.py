@@ -257,7 +257,7 @@ def api_event_list(request):
     if not query:
         query = request.GET.get('q', '').strip()
         
-    events = Event.objects.filter(status='published', end_date__gte=timezone.now())
+    events = Event.objects.filter(status='published', end_date__gte=timezone.now()).select_related('category')
     
     if query:
         events = events.filter(
@@ -341,17 +341,22 @@ def api_event_list(request):
 
 def api_category_list(request):
     """API endpoint to list categories"""
-    categories = Category.objects.all()
+    from django.db.models import Count, Q
+    categories = Category.objects.annotate(
+        active_event_count=Count(
+            'event',
+            filter=Q(event__status='published', event__end_date__gte=timezone.now())
+        )
+    )
     results = []
     for c in categories:
-        event_count = Event.objects.filter(category=c, status='published', end_date__gte=timezone.now()).count()
         results.append({
             'id': c.id,
             'name': c.name,
             'slug': c.slug,
             'description': c.description,
             'icon': c.icon or 'globe',
-            'event_count': event_count
+            'event_count': c.active_event_count
         })
     return JsonResponse({'success': True, 'categories': results})
 
@@ -359,7 +364,7 @@ def api_category_list(request):
 def api_event_detail(request, event_id):
     """API endpoint to get detail of a single event"""
     try:
-        e = Event.objects.get(id=event_id)
+        e = Event.objects.select_related('category', 'organizer').prefetch_related('images').get(id=event_id)
         data = {
             'id': e.id,
             'title': e.title,
@@ -481,7 +486,7 @@ def api_dashboard_recent_activity(request):
     if not user or not user.is_authenticated:
         return JsonResponse([], safe=False)
         
-    tickets = Ticket.objects.filter(attendee=user).order_by('-purchase_date')[:5]
+    tickets = Ticket.objects.filter(attendee=user).select_related('event').order_by('-purchase_date')[:5]
     results = []
     for t in tickets:
         results.append({
@@ -499,9 +504,9 @@ def api_tickets_upcoming(request):
 
 def api_featured_events(request):
     """API endpoint to get featured events for the attendee homepage"""
-    events = Event.objects.filter(status='published', end_date__gte=timezone.now(), is_featured=True).order_by('start_date')[:6]
+    events = Event.objects.filter(status='published', end_date__gte=timezone.now(), is_featured=True).select_related('category').order_by('start_date')[:6]
     if not events.exists():
-        events = Event.objects.filter(status='published', end_date__gte=timezone.now()).order_by('start_date')[:6]
+        events = Event.objects.filter(status='published', end_date__gte=timezone.now()).select_related('category').order_by('start_date')[:6]
         
     results = []
     for e in events:

@@ -146,7 +146,7 @@ def api_tickets_upcoming(request):
         return JsonResponse({'success': False, 'message': 'Please login to view tickets.'}, status=401)
         
     # Get tickets for events starting now or in the future
-    tickets = Ticket.objects.filter(attendee=user, event__end_date__gte=timezone.now()).order_by('event__start_date')
+    tickets = Ticket.objects.filter(attendee=user, event__end_date__gte=timezone.now()).select_related('event').order_by('event__start_date')
     results = []
     for t in tickets:
         results.append({
@@ -177,7 +177,7 @@ def api_tickets_past(request):
         return JsonResponse({'success': False, 'message': 'Please login to view tickets.'}, status=401)
         
     # Get tickets for events that have ended
-    tickets = Ticket.objects.filter(attendee=user, event__end_date__lt=timezone.now()).order_by('-event__start_date')
+    tickets = Ticket.objects.filter(attendee=user, event__end_date__lt=timezone.now()).select_related('event').order_by('-event__start_date')
     results = []
     for t in tickets:
         results.append({
@@ -208,7 +208,7 @@ def api_ticket_detail(request, ticket_number):
         return JsonResponse({'success': False, 'message': 'Please login.'}, status=401)
         
     try:
-        t = Ticket.objects.get(ticket_number=ticket_number, attendee=user)
+        t = Ticket.objects.select_related('event').get(ticket_number=ticket_number, attendee=user)
         data = {
             'ticket_number': t.ticket_number,
             'status': t.status,
@@ -259,7 +259,7 @@ def api_ticket_download(request, ticket_number):
         return HttpResponse('Unauthorized', status=401)
         
     try:
-        t = Ticket.objects.get(ticket_number=ticket_number, attendee=user)
+        t = Ticket.objects.select_related('event', 'event__organizer').get(ticket_number=ticket_number, attendee=user)
         html_content = f"""
         <html>
         <head>
@@ -328,7 +328,7 @@ from events.api_organizer_views import organizer_required
 @require_http_methods(["GET"])
 def api_organizer_bookings_list(request):
     """List bookings (tickets bought) for events organized by the logged-in user."""
-    tickets = Ticket.objects.filter(event__organizer=request.user).order_by('-purchase_date')
+    tickets = Ticket.objects.filter(event__organizer=request.user).select_related('event').order_by('-purchase_date')
     results = []
     for t in tickets:
         results.append({
@@ -359,16 +359,22 @@ def api_organizer_tickets_list(request):
 @require_http_methods(["GET"])
 def api_organizer_tickets_stats(request, event_id=None):
     """Get ticket statistics (total, checked-in, recent)."""
+    from django.db.models import Sum, Q
     tickets = Ticket.objects.filter(event__organizer=request.user)
     if event_id:
         tickets = tickets.filter(event_id=event_id)
         
-    total = sum(t.quantity for t in tickets)
-    checked_in = sum(t.quantity for t in tickets.filter(status='checked_in'))
-    
-    # recent (past 24h)
     yesterday = timezone.now() - timezone.timedelta(days=1)
-    recent = sum(t.quantity for t in tickets.filter(purchase_date__gte=yesterday))
+    
+    stats = tickets.aggregate(
+        total=Sum('quantity'),
+        checked_in=Sum('quantity', filter=Q(status='checked_in')),
+        recent=Sum('quantity', filter=Q(purchase_date__gte=yesterday))
+    )
+    
+    total = stats['total'] or 0
+    checked_in = stats['checked_in'] or 0
+    recent = stats['recent'] or 0
     
     return JsonResponse({
         'total': total,
@@ -385,7 +391,7 @@ def api_organizer_tickets_stats(request, event_id=None):
 def api_organizer_ticket_verify(request, ticket_number):
     """Verify a ticket for organizers."""
     try:
-        t = Ticket.objects.get(ticket_number=ticket_number, event__organizer=request.user)
+        t = Ticket.objects.select_related('event').get(ticket_number=ticket_number, event__organizer=request.user)
         is_valid = t.status == 'valid'
         msg = "Valid ticket"
         if t.status == 'checked_in':
@@ -414,7 +420,7 @@ def api_organizer_ticket_verify(request, ticket_number):
 def api_organizer_ticket_checkin(request, ticket_number):
     """Mark a ticket as checked in."""
     try:
-        t = Ticket.objects.get(ticket_number=ticket_number, event__organizer=request.user)
+        t = Ticket.objects.select_related('event').get(ticket_number=ticket_number, event__organizer=request.user)
         if t.status == 'checked_in':
             return JsonResponse({'success': False, 'message': 'Ticket already checked in.'}, status=400)
         if t.status == 'cancelled':
@@ -444,7 +450,7 @@ def api_organizer_ticket_checkin(request, ticket_number):
 @require_http_methods(["GET"])
 def api_organizer_attendees_list(request):
     """List unique attendees who bought tickets to events organized by the user."""
-    tickets = Ticket.objects.filter(event__organizer=request.user).order_by('-purchase_date')
+    tickets = Ticket.objects.filter(event__organizer=request.user).select_related('event').order_by('-purchase_date')
     
     attendee_map = {}
     for t in tickets:

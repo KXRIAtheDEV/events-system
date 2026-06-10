@@ -53,6 +53,14 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'end_date']),
+            models.Index(fields=['status', 'start_date']),
+            models.Index(fields=['is_featured', 'status']),
+            models.Index(fields=['price']),
+        ]
+
     def __str__(self):
         return self.title
     

@@ -22,11 +22,49 @@ class User(AbstractUser):
     account_number = models.CharField(max_length=50, blank=True)
     account_holder = models.CharField(max_length=150, blank=True)
     routing_number = models.CharField(max_length=50, blank=True)
-    team_members = models.JSONField(default=list, blank=True)
-    api_keys = models.JSONField(default=list, blank=True)
     
+    class Meta(AbstractUser.Meta):
+        indexes = [
+            models.Index(fields=['role']),
+            models.Index(fields=['role', 'is_active']),
+        ]
+
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+
+class TeamMember(models.Model):
+    id = models.CharField(max_length=8, unique=True, primary_key=True)
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='team_members_rel')
+    email = models.EmailField()
+    role = models.CharField(max_length=20, default='viewer')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['organizer']),
+            models.Index(fields=['email']),
+        ]
+
+    def __str__(self):
+        return f"{self.email} ({self.role}) - Org: {self.organizer.username}"
+
+
+class ApiKey(models.Model):
+    id = models.CharField(max_length=8, unique=True, primary_key=True)
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_keys_rel')
+    name = models.CharField(max_length=100)
+    key = models.CharField(max_length=128, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['organizer']),
+            models.Index(fields=['key']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} - Org: {self.organizer.username}"
 
 
 class APIToken(models.Model):
