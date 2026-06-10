@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
 
 from events.models import Event
 from accounts.models import User
@@ -339,6 +340,7 @@ def api_event_list(request):
     })
 
 
+@cache_page(300)
 def api_category_list(request):
     """API endpoint to list categories"""
     from django.db.models import Count, Q
@@ -361,6 +363,7 @@ def api_category_list(request):
     return JsonResponse({'success': True, 'categories': results})
 
 
+@cache_page(15)
 def api_event_detail(request, event_id):
     """API endpoint to get detail of a single event"""
     try:
@@ -502,6 +505,7 @@ def api_tickets_upcoming(request):
     """API endpoint to get upcoming tickets"""
     return JsonResponse({'results': []})
 
+@cache_page(60)
 def api_featured_events(request):
     """API endpoint to get featured events for the attendee homepage"""
     events = Event.objects.filter(status='published', end_date__gte=timezone.now(), is_featured=True).select_related('category').order_by('start_date')[:6]
@@ -530,6 +534,7 @@ def api_featured_events(request):
     return JsonResponse({'success': True, 'events': results})
 
 
+@cache_page(60)
 @require_http_methods(["GET"])
 def api_platform_stats(request):
     """

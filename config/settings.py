@@ -178,7 +178,24 @@ DATABASES = {
 
 # If a DATABASE_URL environment variable is provided (Render/Postgres), use it.
 if os.environ.get('DATABASE_URL'):
-    DATABASES['default'] = dj_database_url.parse(os.environ.get('DATABASE_URL'))
+    DATABASES['default'] = dj_database_url.parse(
+        os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
+
+# Caching Configuration - Shared Database Cache Backend
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache_table',
+        'TIMEOUT': 300,  
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
