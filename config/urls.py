@@ -174,6 +174,7 @@ urlpatterns = [
     
     # API Endpoints
     path('api/', include('accounts.urls')),
+    path('api/attendee/', include('accounts.urls')),
     path('api/attendee/events/', api_event_list, name='api_attendee_event_list'),
     path('api/attendee/events/featured/', api_featured_events, name='api_attendee_events_featured'),
     path('api/attendee/events/search/', api_event_list, name='api_attendee_event_search'),
