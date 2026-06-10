@@ -351,8 +351,8 @@ def api_event_list(request):
         'total_pages': (count + limit - 1) // limit
     }
 
-    # Store in cache for 30 seconds
-    cache.set(cache_key, response_data, 30)
+    # Store in cache for 1 hour (3600 seconds)
+    cache.set(cache_key, response_data, 3600)
     
     return JsonResponse(response_data)
 
@@ -522,7 +522,7 @@ def api_tickets_upcoming(request):
     """API endpoint to get upcoming tickets"""
     return JsonResponse({'results': []})
 
-@cache_page(60)
+@cache_page(3600)
 def api_featured_events(request):
     """API endpoint to get featured events for the attendee homepage"""
     events = Event.objects.filter(status='published', end_date__gte=timezone.now(), is_featured=True).select_related('category').order_by('start_date')[:6]

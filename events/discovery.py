@@ -122,8 +122,8 @@ def _regex_extract_events(html_content: str, county: str, base_url: str, source_
 # Constants
 # ---------------------------------------------------------------------------
 
-REQUEST_TIMEOUT = 8  # seconds per scraper HTTP call
-SCRAPER_TIMEOUT = 10  # seconds for the whole ThreadPoolExecutor round-trip
+REQUEST_TIMEOUT = 4  # seconds per scraper HTTP call
+SCRAPER_TIMEOUT = 5  # seconds for the whole ThreadPoolExecutor round-trip
 
 SCRAPER_HEADERS = {
     "User-Agent": (
@@ -548,6 +548,26 @@ def discover_events_for_county(county: str) -> list[dict]:
         List of dicts; each has keys: type, title, date_text, venue, price_text,
         source, source_url, image_url, description, can_purchase.
     """
+    from django.core.cache import cache
+    from django.db import DatabaseError
+
+    # Normalize county to construct a safe cache key
+    county_clean = county.lower().strip().replace(' ', '_')
+    cache_key = f"discover_events_{county_clean}"
+
+    # Try cache lookup first, handling potential DatabaseErrors (e.g. before migrations or in tests)
+    cached_results = None
+    try:
+        cached_results = cache.get(cache_key)
+    except DatabaseError:
+        pass
+    except Exception as exc:
+        logger.warning("Failed to fetch discovery cache for %s: %s", county, exc)
+
+    if cached_results is not None:
+        logger.info("Returning cached discovery events for county: %s", county)
+        return cached_results
+
     all_results: list[dict] = []
 
     primary_scrapers = [
@@ -556,19 +576,22 @@ def discover_events_for_county(county: str) -> list[dict]:
         ("eventbrite", scrape_eventbrite),
     ]
 
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        future_map = {
-            executor.submit(fn, county): name
-            for name, fn in primary_scrapers
-        }
-        for future in as_completed(future_map, timeout=SCRAPER_TIMEOUT):
-            name = future_map[future]
-            try:
-                batch = future.result(timeout=2)
-                all_results.extend(batch)
-                logger.info("Scraper '%s' returned %d events for %s", name, len(batch), county)
-            except Exception as exc:
-                logger.warning("Scraper '%s' raised: %s", name, exc)
+    try:
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            future_map = {
+                executor.submit(fn, county): name
+                for name, fn in primary_scrapers
+            }
+            for future in as_completed(future_map, timeout=SCRAPER_TIMEOUT):
+                name = future_map[future]
+                try:
+                    batch = future.result()
+                    all_results.extend(batch)
+                    logger.info("Scraper '%s' returned %d events for %s", name, len(batch), county)
+                except Exception as exc:
+                    logger.warning("Scraper '%s' raised: %s", name, exc)
+    except Exception as exc:
+        logger.warning("Scraping execution or as_completed loop timed out/failed for %s: %s", county, exc)
 
     # Use DuckDuckGo as a wide-net fallback when primary scrapers find little
     if len(all_results) < 3:
@@ -583,5 +606,14 @@ def discover_events_for_county(county: str) -> list[dict]:
         if key and key not in seen:
             seen.add(key)
             unique.append(event)
+
+    # Cache the unique list (3600 seconds on success, 300 seconds if empty)
+    try:
+        timeout = 3600 if unique else 300
+        cache.set(cache_key, unique, timeout)
+    except DatabaseError:
+        pass
+    except Exception as exc:
+        logger.warning("Failed to write discovery cache for %s: %s", county, exc)
 
     return unique

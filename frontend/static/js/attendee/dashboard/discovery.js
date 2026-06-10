@@ -60,9 +60,26 @@
     // -------------------------------------------------------------------------
     // Main Search Handler
     // -------------------------------------------------------------------------
+    const KENYAN_COUNTIES = [
+        'nairobi', 'mombasa', 'kisumu', 'nakuru', 'eldoret', 'uasin gishu',
+        'kiambu', 'thika', 'machakos', 'meru', 'kisii', 'nyeri', 'kakamega',
+        'malindi', 'kilifi', 'garissa', 'lamu', 'naivasha', 'nanyuki',
+        'laikipia', 'embu', 'kitui', 'bungoma', 'kericho', 'migori',
+        'siaya', 'homabay', 'homa bay'
+    ];
+
     async function handleSearchSubmit(e) {
-        e.preventDefault();
         const userQuery = searchInput ? searchInput.value.trim() : '';
+        const queryLower = userQuery.toLowerCase();
+
+        // If it's a general search (not empty and not containing a county name),
+        // let the form submit normally, redirecting to the search page (/events/search/?q=...)
+        const isCountyQuery = userQuery === '' || KENYAN_COUNTIES.some(c => queryLower.includes(c));
+        if (!isCountyQuery) {
+            return;
+        }
+
+        e.preventDefault();
 
         setSearchLoading(true);
         showLoadingState();
