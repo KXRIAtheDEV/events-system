@@ -11,7 +11,21 @@
     --transition-fast: 0.2s ease;
 }
 
+/* Sticky footer — main grows so footer stays at viewport bottom on short pages */
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+#main-content {
+    flex: 1 0 auto;
+    width: 100%;
+}
+
 .footer {
+    flex-shrink: 0;
     background: linear-gradient(135deg, var(--np-darker) 0%, var(--np-dark) 100%);
     color: white;
     padding: 3rem 0 1.5rem;
