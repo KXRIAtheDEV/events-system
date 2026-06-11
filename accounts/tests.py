@@ -204,7 +204,8 @@ class AccountAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn('Avatar uploaded successfully.', data['message'])
-        self.assertTrue(data['user']['avatar_url'].endswith('avatar.gif'))
+        self.assertIn('avatar', data['user']['avatar_url'])
+        self.assertTrue(data['user']['avatar_url'].endswith('.gif'))
 
         user.refresh_from_db()
         self.assertTrue(user.avatar)

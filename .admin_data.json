@@ -1,6 +1,33 @@
 {
     "notifications": [
         {
+            "id": 46,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-11T05:47:50.655656+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
+            "id": 45,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-11T05:46:42.892489+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
+            "id": 44,
+            "title": "Event Approved",
+            "message": "Event 'Draft Event' has been approved successfully.",
+            "type": "success",
+            "is_read": false,
+            "created_at": "2026-06-11T05:42:57.978395+00:00",
+            "redirect_url": "/admin-portal/events/detail/?id=1"
+        },
+        {
             "id": 43,
             "title": "Event Approved",
             "message": "Event 'Draft Event' has been approved successfully.",
@@ -437,6 +464,6 @@
             ]
         }
     ],
-    "next_notification_id": 44,
+    "next_notification_id": 47,
     "next_support_ticket_id": 4
 }

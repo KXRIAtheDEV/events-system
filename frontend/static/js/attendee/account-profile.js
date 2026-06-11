@@ -49,7 +49,8 @@ const AccountProfile = (() => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
-                const profile = await response.json();
+                const profileResponse = await response.json();
+                const profile = profileResponse.user || profileResponse;
                 save(profile);
             }
         } catch (e) {

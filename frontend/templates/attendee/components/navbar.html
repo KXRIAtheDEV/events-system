@@ -103,6 +103,10 @@
                         <i class="fas fa-users"></i>
                         <span>Customer Stories</span>
                     </a>
+                    <a href="/privacy/" class="submenu-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Privacy Policy</span>
+                    </a>
                 </div>
             </div>
 
@@ -538,33 +542,54 @@ document.addEventListener('DOMContentLoaded', function() {
         if (mobileAccountLabel) mobileAccountLabel.textContent = nameVal.split(' ')[0];
         
         // Render avatar if present
-        const desktopAvatarContainer = document.querySelector('.user-avatar-dropdown');
-        const mobileAvatarContainer = document.querySelector('.mobile-user-avatar-dropdown');
-        const avatarUrl = user.avatar_url;
-        
-        if (avatarUrl) {
-            if (desktopAvatarContainer) {
-                desktopAvatarContainer.style.backgroundImage = `url(${avatarUrl})`;
-                desktopAvatarContainer.style.backgroundSize = 'cover';
-                desktopAvatarContainer.style.backgroundPosition = 'center';
-                if (desktopInitial) desktopInitial.style.display = 'none';
-            }
-            if (mobileAvatarContainer) {
-                mobileAvatarContainer.style.backgroundImage = `url(${avatarUrl})`;
-                mobileAvatarContainer.style.backgroundSize = 'cover';
-                mobileAvatarContainer.style.backgroundPosition = 'center';
-                if (mobileUserInitial) mobileUserInitial.style.display = 'none';
-            }
-        } else {
-            if (desktopAvatarContainer) {
-                desktopAvatarContainer.style.backgroundImage = 'none';
-                if (desktopInitial) desktopInitial.style.display = '';
-            }
-            if (mobileAvatarContainer) {
-                mobileAvatarContainer.style.backgroundImage = 'none';
-                if (mobileUserInitial) mobileUserInitial.style.display = '';
+        function updateNavbarAvatar(userData) {
+            const desktopAvatarContainer = document.querySelector('.user-avatar-dropdown');
+            const mobileAvatarContainer = document.querySelector('.mobile-user-avatar-dropdown');
+            const avatarUrl = userData.avatar_url;
+            
+            if (avatarUrl) {
+                if (desktopAvatarContainer) {
+                    desktopAvatarContainer.style.backgroundImage = `url(${avatarUrl})`;
+                    desktopAvatarContainer.style.backgroundSize = 'cover';
+                    desktopAvatarContainer.style.backgroundPosition = 'center';
+                    if (desktopInitial) desktopInitial.style.display = 'none';
+                }
+                if (mobileAvatarContainer) {
+                    mobileAvatarContainer.style.backgroundImage = `url(${avatarUrl})`;
+                    mobileAvatarContainer.style.backgroundSize = 'cover';
+                    mobileAvatarContainer.style.backgroundPosition = 'center';
+                    if (mobileUserInitial) mobileUserInitial.style.display = 'none';
+                }
+            } else {
+                if (desktopAvatarContainer) {
+                    desktopAvatarContainer.style.backgroundImage = 'none';
+                    if (desktopInitial) desktopInitial.style.display = '';
+                }
+                if (mobileAvatarContainer) {
+                    mobileAvatarContainer.style.backgroundImage = 'none';
+                    if (mobileUserInitial) mobileUserInitial.style.display = '';
+                }
             }
         }
+        
+        updateNavbarAvatar(user);
+        
+        // Listen for real-time profile updates (like avatar uploads or name changes)
+        window.addEventListener('profile-updated', function(e) {
+            const updatedUser = e.detail;
+            if (updatedUser) {
+                updateNavbarAvatar(updatedUser);
+                const newNameVal = updatedUser.first_name || updatedUser.username || updatedUser.name || 'User';
+                const newInitialVal = newNameVal.charAt(0).toUpperCase();
+                
+                if (desktopName) desktopName.textContent = newNameVal;
+                if (desktopInitial) desktopInitial.textContent = newInitialVal;
+                if (profileUserName) profileUserName.textContent = newNameVal.split(' ')[0];
+                if (mobileUserName) mobileUserName.textContent = newNameVal;
+                if (mobileUserInitial) mobileUserInitial.textContent = newInitialVal;
+                if (mobileAccountLabel) mobileAccountLabel.textContent = newNameVal.split(' ')[0];
+            }
+        });
         
         // Update badges
         updateMyTicketsBadge();

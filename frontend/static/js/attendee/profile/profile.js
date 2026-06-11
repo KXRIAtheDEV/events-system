@@ -86,7 +86,8 @@ async function loadProfile() {
     try {
         // Try to get from API first
         if (window.AttendeeAPIEndpoints && window.AttendeeAPIEndpoints.profile) {
-            const profile = await window.AttendeeAPIEndpoints.profile.getProfile();
+            const profileResponse = await window.AttendeeAPIEndpoints.profile.getProfile();
+            const profile = profileResponse.user || profileResponse;
             currentUser = profile;
             displayProfile(profile);
             // Sync through AccountProfile for consistent format
@@ -109,7 +110,8 @@ async function loadProfile() {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (response.ok) {
-                        const profile = await response.json();
+                        const profileResponse = await response.json();
+                        const profile = profileResponse.user || profileResponse;
                         currentUser = profile;
                         displayProfile(profile);
                         if (window.AccountProfile) {
