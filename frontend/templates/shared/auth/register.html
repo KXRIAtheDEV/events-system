@@ -362,8 +362,16 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json().then(resData => ({status: response.status, body: resData})))
+        .then(response => response.text().then(text => {
+            let resData = null;
+            try { resData = JSON.parse(text); } catch (e) { /* non-JSON response */ }
+            return {status: response.status, body: resData};
+        }))
         .then(({status, body}) => {
+            if (body === null) {
+                showToast(`Unexpected server response (HTTP ${status}). Please try again or contact support.`, 'error');
+                return;
+            }
             if (status === 201) {
                 const prefix = body.user.role === 'organizer' ? 'organizer' : 'attendee';
                 
@@ -375,7 +383,7 @@
                 showToast('Registration successful! Redirecting...', 'success');
                 setTimeout(() => {
                     if (body.user.role === 'organizer') {
-                        window.location.href = '/organizer/';
+                        window.location.href = '/organizer/dashboard/';
                     } else {
                         window.location.href = '/dashboard/';
                     }
@@ -390,7 +398,8 @@
             }
         })
         .catch(error => {
-            showToast('An error occurred', 'error');
+            console.error('Registration request failed:', error);
+            showToast('Could not reach the server. Please check that it is running and try again.', 'error');
         });
     });
     
@@ -434,7 +443,7 @@
                 showToast('Registration successful! Redirecting...', 'success');
                 setTimeout(() => {
                     if (body.user.role === 'organizer') {
-                        window.location.href = '/organizer/';
+                        window.location.href = '/organizer/dashboard/';
                     } else {
                         window.location.href = '/dashboard/';
                     }

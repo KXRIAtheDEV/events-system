@@ -1,7 +1,12 @@
 from django.urls import path
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 
 urlpatterns = [
+    # Portal root -> dashboard (avoids 404 on /organizer/)
+    path('',
+         RedirectView.as_view(url='/organizer/dashboard/', permanent=False),
+         name='organizer_home'),
+
     # Login
     path('login/',
          TemplateView.as_view(template_name='shared/auth/login.html'),

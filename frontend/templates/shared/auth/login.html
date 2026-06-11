@@ -100,17 +100,25 @@
     const roleInput = document.getElementById('roleInput');
     const authTitle = document.querySelector('.auth-title');
     const authSubtitle = document.querySelector('.auth-subtitle');
+    const loginForm = document.getElementById('loginForm');
+    
+    // Organizer logins go through the organizer-scoped endpoint so the server
+    // enforces that only organizer accounts can access the organizer portal.
+    function applyRole(role) {
+        roleInput.value = role;
+        loginForm.setAttribute('action', role === 'organizer' ? '/api/organizer/auth/login/' : '/api/auth/login/');
+        if (role === 'organizer') {
+            authTitle.textContent = 'Organizer Login';
+            authSubtitle.textContent = 'Sign in to manage your events';
+        } else {
+            authTitle.textContent = 'Welcome Back';
+            authSubtitle.textContent = 'Sign in to continue to your account';
+        }
+    }
     
     roleRadios.forEach(radio => {
         radio.addEventListener('change', function() {
-            roleInput.value = this.value;
-            if (this.value === 'organizer') {
-                authTitle.textContent = 'Organizer Login';
-                authSubtitle.textContent = 'Sign in to manage your events';
-            } else {
-                authTitle.textContent = 'Welcome Back';
-                authSubtitle.textContent = 'Sign in to continue to your account';
-            }
+            applyRole(this.value);
         });
     });
     
@@ -133,8 +141,17 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(res => res.json().then(data => ({status: res.status, body: data})))
+        .then(res => res.text().then(text => {
+            let body = null;
+            try { body = JSON.parse(text); } catch (e) { /* non-JSON response */ }
+            return {status: res.status, body};
+        }))
         .then(({status, body}) => {
+            if (body === null) {
+                showToast(`Unexpected server response (HTTP ${status}) during Google Sign-in.`, 'error');
+                googleBtn.innerHTML = '<i class="fab fa-google social-login-icon"></i> Continue with Google';
+                return;
+            }
             if (status === 200 || status === 201) {
                 const userRole = body.user.role;
                 const prefix = userRole === 'organizer' ? 'organizer' : (userRole === 'admin' ? 'admin' : 'attendee');
@@ -169,12 +186,13 @@
                     }, 1000);
                 }
             } else {
-                showToast(body.error || 'Google Sign-in failed', 'error');
+                showToast(body.error || body.message || 'Google Sign-in failed', 'error');
                 googleBtn.innerHTML = '<i class="fab fa-google social-login-icon"></i> Continue with Google';
             }
         })
         .catch(error => {
-            showToast('Network error during Google Sign-in.', 'error');
+            console.error('Google Sign-in request failed:', error);
+            showToast('Could not reach the server during Google Sign-in. Please try again.', 'error');
             googleBtn.innerHTML = '<i class="fab fa-google social-login-icon"></i> Continue with Google';
         });
     }
@@ -205,14 +223,7 @@
                 const radio = document.querySelector(`input[name="role_select"][value="${urlRole}"]`);
                 if (radio) {
                     radio.checked = true;
-                    roleInput.value = urlRole;
-                    if (urlRole === 'organizer') {
-                        authTitle.textContent = 'Organizer Login';
-                        authSubtitle.textContent = 'Sign in to manage your events';
-                    } else {
-                        authTitle.textContent = 'Welcome Back';
-                        authSubtitle.textContent = 'Sign in to continue to your account';
-                    }
+                    applyRole(urlRole);
                 }
             }
         }
@@ -302,8 +313,21 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json().then(data => ({status: response.status, body: data})))
+        .then(response => response.text().then(text => {
+            // Parse defensively: a missing route or server error returns an HTML
+            // page, which previously crashed response.json() and surfaced as a
+            // misleading "Network error" toast.
+            let body = null;
+            try { body = JSON.parse(text); } catch (e) { /* non-JSON response */ }
+            return {status: response.status, body};
+        }))
         .then(({status, body}) => {
+            if (body === null) {
+                showToast(`Unexpected server response (HTTP ${status}). Please try again or contact support.`, 'error');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                return;
+            }
             if (status === 200 || status === 201) {
                 const userRole = body.user.role;
                 const selectedRole = data.role;
@@ -339,13 +363,14 @@
                     }, 1000);
                 }
             } else {
-                showToast(body.error || 'Invalid email or password', 'error');
+                showToast(body.error || body.message || 'Invalid email or password', 'error');
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         })
         .catch(error => {
-            showToast('Network error. Please try again.', 'error');
+            console.error('Login request failed:', error);
+            showToast('Could not reach the server. Please check that it is running and try again.', 'error');
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         });
