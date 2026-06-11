@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadRefunds();
     loadStats();
     setupEventListeners();
+    if (typeof resolveActiveNotificationOnView === 'function') {
+        resolveActiveNotificationOnView();
+    }
 });
 
 function setupEventListeners() {
@@ -152,6 +155,12 @@ async function approveRefund() {
             response: response,
             refund_method: refundMethod
         });
+        if (typeof dismissAdminNotification === 'function') {
+            const notifId = getActiveNotificationId();
+            if (notifId) await dismissAdminNotification(notifId, false);
+            clearActiveNotification();
+        }
+        if (typeof loadNotifications === 'function') loadNotifications();
         showToast('Refund approved and processed', 'success');
         closeProcessModal();
         loadRefunds();
@@ -172,6 +181,12 @@ async function rejectRefund() {
         await apiRequest(`/api/admin/refunds/${currentRefundId}/reject/`, 'POST', {
             response: response
         });
+        if (typeof dismissAdminNotification === 'function') {
+            const notifId = getActiveNotificationId();
+            if (notifId) await dismissAdminNotification(notifId, false);
+            clearActiveNotification();
+        }
+        if (typeof loadNotifications === 'function') loadNotifications();
         showToast('Refund rejected', 'success');
         closeProcessModal();
         loadRefunds();

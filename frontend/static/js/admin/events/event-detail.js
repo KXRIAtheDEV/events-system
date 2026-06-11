@@ -86,6 +86,10 @@ async function loadEventDetail() {
             document.getElementById('ticketTypesCard').style.display = 'block';
             displayTicketTypes(event.ticket_types);
         }
+
+        if (typeof resolveActiveNotificationOnView === 'function') {
+            await resolveActiveNotificationOnView();
+        }
         
     } catch (error) {
         console.error('Error loading event:', error);
@@ -140,6 +144,11 @@ async function approveEvent() {
     showConfirm('Approve this event? It will be published immediately.', async () => {
         try {
             await apiRequest(`/api/admin/events/${eventId}/approve/`, 'POST');
+            if (typeof dismissAdminNotification === 'function') {
+                const notifId = getActiveNotificationId();
+                if (notifId) await dismissAdminNotification(notifId, false);
+                clearActiveNotification();
+            }
             showToast('Event approved successfully', 'success');
             setTimeout(() => location.reload(), 1500);
         } catch (error) {
@@ -189,6 +198,11 @@ async function confirmReject() {
     
     try {
         await apiRequest(`/api/admin/events/${eventId}/reject/`, 'POST', { reason: reason });
+        if (typeof dismissAdminNotification === 'function') {
+            const notifId = getActiveNotificationId();
+            if (notifId) await dismissAdminNotification(notifId, false);
+            clearActiveNotification();
+        }
         if (isApproved) {
             showToast('Event approval revoked.', 'success');
         } else {

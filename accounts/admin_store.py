@@ -52,7 +52,11 @@ def seed_initial_data():
             "message": f"Organizer {organizer_name} has submitted a new event 'Nairobi Food Festival' for approval.",
             "type": "warning",
             "is_read": False,
-            "created_at": two_hours_ago
+            "created_at": two_hours_ago,
+            "redirect_url": "/admin-portal/events/pending/",
+            "entity_type": "event",
+            "action_type": "event_pending_approval",
+            "requires_action": True,
         },
         {
             "id": 2,
@@ -60,7 +64,11 @@ def seed_initial_data():
             "message": f"Attendee {attendee_name} has requested a refund for booking TICK-9E28B.",
             "type": "info",
             "is_read": False,
-            "created_at": yesterday
+            "created_at": yesterday,
+            "redirect_url": "/admin-portal/bookings/refunds/",
+            "entity_type": "refund",
+            "action_type": "refund_pending",
+            "requires_action": True,
         },
         {
             "id": 3,
@@ -68,7 +76,9 @@ def seed_initial_data():
             "message": "A new organizer 'Tech Innovations' is awaiting verification.",
             "type": "warning",
             "is_read": True,
-            "created_at": yesterday
+            "created_at": yesterday,
+            "redirect_url": "/admin-portal/users/organizers/",
+            "requires_action": False,
         }
     ]
 
@@ -132,9 +142,101 @@ def seed_initial_data():
         "next_support_ticket_id": 4
     }
 
+ACTIONABLE_TYPES = ('event_pending_approval', 'refund_pending')
+
+
+def _is_notification_resolved(notification):
+    """Return True when an actionable notification no longer needs admin attention."""
+    action_type = notification.get('action_type')
+    entity_id = notification.get('entity_id')
+    if not action_type or entity_id is None:
+        return False
+
+    try:
+        if action_type == 'event_pending_approval':
+            from events.models import Event
+            event = Event.objects.filter(id=entity_id).first()
+            if not event:
+                return True
+            return event.status != 'pending'
+        if action_type == 'refund_pending':
+            from bookings.models import Ticket
+            ticket = Ticket.objects.filter(id=entity_id).first()
+            if not ticket:
+                return True
+            return ticket.status != 'cancelled'
+    except Exception as e:
+        print(f"Error checking notification resolution: {e}")
+    return False
+
+
+def _prune_resolved_notifications(notifications):
+    """Remove actionable notifications whose underlying task is already complete."""
+    pruned = []
+    for n in notifications:
+        if n.get('requires_action') and _is_notification_resolved(n):
+            continue
+        pruned.append(n)
+    return pruned
+
+
 def get_notifications():
     store = load_store()
-    return store.get("notifications", [])
+    notifications = store.get("notifications", [])
+    pruned = _prune_resolved_notifications(notifications)
+    if len(pruned) != len(notifications):
+        store["notifications"] = pruned
+        save_store(store)
+    return pruned
+
+
+def delete_notification(notification_id):
+    store = load_store()
+    notifications = store.get("notifications", [])
+    filtered = [n for n in notifications if n["id"] != int(notification_id)]
+    if len(filtered) == len(notifications):
+        return False
+    store["notifications"] = filtered
+    save_store(store)
+    return True
+
+
+def dismiss_notification(notification_id, on_view=False):
+    """Remove a notification. On view, only dismiss informational or already-resolved items."""
+    store = load_store()
+    notifications = store.get("notifications", [])
+    target = next((n for n in notifications if n["id"] == int(notification_id)), None)
+    if not target:
+        return False
+
+    if on_view:
+        if target.get('requires_action') and not _is_notification_resolved(target):
+            return False
+
+    store["notifications"] = [n for n in notifications if n["id"] != int(notification_id)]
+    save_store(store)
+    return True
+
+
+def expire_notifications_for_entity(entity_type, entity_id, action_types=None):
+    """Remove notifications linked to an entity after the admin completes the related action."""
+    store = load_store()
+    notifications = store.get("notifications", [])
+    entity_id = str(entity_id)
+    filtered = []
+    for n in notifications:
+        if (
+            n.get("entity_type") == entity_type
+            and str(n.get("entity_id")) == entity_id
+            and (not action_types or n.get("action_type") in action_types)
+        ):
+            continue
+        filtered.append(n)
+    if len(filtered) != len(notifications):
+        store["notifications"] = filtered
+        save_store(store)
+    return True
+
 
 def mark_notification_read(notification_id):
     store = load_store()
@@ -156,22 +258,41 @@ def mark_all_notifications_read():
     save_store(store)
     return True
 
-def add_notification(title, message, n_type="info", redirect_url=None):
+def add_notification(
+    title,
+    message,
+    n_type="info",
+    redirect_url=None,
+    entity_type=None,
+    entity_id=None,
+    action_type=None,
+    requires_action=None,
+):
     store = load_store()
     notifications = store.get("notifications", [])
     next_id = store.get("next_notification_id", len(notifications) + 1)
-    
+
+    if requires_action is None:
+        requires_action = action_type in ACTIONABLE_TYPES
+
     new_notif = {
         "id": next_id,
         "title": title,
         "message": message,
         "type": n_type,
         "is_read": False,
-        "created_at": timezone.now().isoformat()
+        "created_at": timezone.now().isoformat(),
+        "requires_action": requires_action,
     }
     if redirect_url:
         new_notif["redirect_url"] = redirect_url
-        
+    if entity_type:
+        new_notif["entity_type"] = entity_type
+    if entity_id is not None:
+        new_notif["entity_id"] = entity_id
+    if action_type:
+        new_notif["action_type"] = action_type
+
     notifications.insert(0, new_notif)
     store["notifications"] = notifications
     store["next_notification_id"] = next_id + 1

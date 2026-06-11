@@ -14,7 +14,9 @@ from events.models import Event, Category
 from bookings.models import Ticket
 from accounts.admin_store import (
     get_notifications, mark_notification_read, mark_all_notifications_read,
-    add_notification, get_support_tickets, get_support_ticket_detail,
+    add_notification, delete_notification, dismiss_notification,
+    expire_notifications_for_entity,
+    get_support_tickets, get_support_ticket_detail,
     add_support_ticket_reply, update_support_ticket_status
 )
 
@@ -403,11 +405,15 @@ def api_approve_event(request, event_id):
         e = get_object_or_404(Event, id=event_id)
         e.status = 'published'
         e.save()
+        expire_notifications_for_entity('event', e.id, ['event_pending_approval'])
         add_notification(
             title="Event Approved",
             message=f"Event '{e.title}' has been approved successfully.",
             n_type="success",
-            redirect_url=f"/admin-portal/events/detail/?id={e.id}"
+            redirect_url=f"/admin-portal/events/detail/?id={e.id}",
+            entity_type="event",
+            entity_id=e.id,
+            requires_action=False,
         )
         return JsonResponse({'success': True, 'message': 'Event approved successfully'})
     except Exception as e:
@@ -429,11 +435,15 @@ def api_reject_event(request, event_id):
         title = "Event Approval Revoked" if is_revocation else "Event Rejected"
         msg = f"Approval for event '{e.title}' was revoked." if is_revocation else f"Event '{e.title}' was rejected. Reason: {reason}."
         
+        expire_notifications_for_entity('event', e.id, ['event_pending_approval'])
         add_notification(
             title=title,
             message=msg,
             n_type="warning",
-            redirect_url=f"/admin-portal/events/detail/?id={e.id}"
+            redirect_url=f"/admin-portal/events/detail/?id={e.id}",
+            entity_type="event",
+            entity_id=e.id,
+            requires_action=False,
         )
         return JsonResponse({'success': True, 'message': 'Event rejected successfully'})
     except Exception as e:
@@ -501,6 +511,8 @@ def api_bulk_approve(request):
         data = json.loads(request.body)
         ids = data.get('event_ids', [])
         Event.objects.filter(id__in=ids).update(status='published')
+        for event_id in ids:
+            expire_notifications_for_entity('event', event_id, ['event_pending_approval'])
         return JsonResponse({'success': True, 'message': f'Successfully approved {len(ids)} events'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
@@ -513,6 +525,8 @@ def api_bulk_reject(request):
         data = json.loads(request.body)
         ids = data.get('event_ids', [])
         Event.objects.filter(id__in=ids).update(status='draft')
+        for event_id in ids:
+            expire_notifications_for_entity('event', event_id, ['event_pending_approval'])
         return JsonResponse({'success': True, 'message': f'Successfully rejected {len(ids)} events'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
@@ -845,6 +859,7 @@ def refund_approve_api(request, refund_id):
         t = get_object_or_404(Ticket, id=refund_id)
         t.status = 'refunded'
         t.save()
+        expire_notifications_for_entity('refund', t.id, ['refund_pending'])
         return JsonResponse({'success': True, 'message': 'Refund approved successfully'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
@@ -857,6 +872,7 @@ def refund_reject_api(request, refund_id):
         t = get_object_or_404(Ticket, id=refund_id)
         t.status = 'valid' # Restores ticket back to valid
         t.save()
+        expire_notifications_for_entity('refund', t.id, ['refund_pending'])
         return JsonResponse({'success': True, 'message': 'Refund rejected. Ticket restored.'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
@@ -1915,6 +1931,40 @@ def api_notifications_mark_all_read(request):
     try:
         mark_all_notifications_read()
         return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+@admin_required_json
+def api_notification_delete(request, notification_id):
+    try:
+        deleted = delete_notification(notification_id)
+        if not deleted:
+            return JsonResponse({'success': False, 'message': 'Notification not found'}, status=404)
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@admin_required_json
+def api_notification_dismiss(request, notification_id):
+    try:
+        data = json.loads(request.body) if request.body else {}
+        on_view = bool(data.get('on_view', False))
+        dismissed = dismiss_notification(notification_id, on_view=on_view)
+        return JsonResponse({'success': True, 'dismissed': dismissed})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@admin_required_json
+def api_notifications_prune(request):
+    try:
+        notifications = get_notifications()
+        return JsonResponse({'success': True, 'notifications': notifications})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 

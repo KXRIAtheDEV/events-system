@@ -283,7 +283,48 @@ function initNotifications() {
     }
     
     loadNotifications();
+
+    window.addEventListener('pageshow', function() {
+        loadNotifications();
+    });
 }
+
+async function dismissAdminNotification(notificationId, onView = false) {
+    try {
+        await fetch(`/api/admin/notifications/${notificationId}/dismiss/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ on_view: onView })
+        });
+    } catch (error) {
+        console.error('Error dismissing notification:', error);
+    }
+}
+
+function getActiveNotificationId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return sessionStorage.getItem('admin_active_notification_id') || urlParams.get('from_notification');
+}
+
+function clearActiveNotification() {
+    sessionStorage.removeItem('admin_active_notification_id');
+}
+
+async function resolveActiveNotificationOnView() {
+    const notificationId = getActiveNotificationId();
+    if (!notificationId) return;
+
+    await dismissAdminNotification(notificationId, true);
+    clearActiveNotification();
+}
+
+window.dismissAdminNotification = dismissAdminNotification;
+window.getActiveNotificationId = getActiveNotificationId;
+window.clearActiveNotification = clearActiveNotification;
+window.resolveActiveNotificationOnView = resolveActiveNotificationOnView;
 
 async function loadNotifications() {
     const container = document.getElementById('notificationsList');
@@ -293,6 +334,10 @@ async function loadNotifications() {
     container.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div></div>';
     
     try {
+        await fetch('/api/admin/notifications/prune/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        });
         const response = await fetch('/api/admin/notifications/recent/');
         const contentType = response.headers.get('content-type');
         if (response.ok && contentType && contentType.includes('application/json')) {
@@ -344,8 +389,11 @@ function displayNotifications(notifications, unreadCount) {
                 }
             }
 
+            const safeUrl = redirectUrl.replace(/'/g, "\\'");
+            const requiresAction = n.requires_action === true;
+
             return `
-                <div class="notification-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}" style="cursor: pointer;" onclick="handleNotificationClick(event, ${n.id}, '${redirectUrl}')">
+                <div class="notification-item ${!n.is_read ? 'unread' : ''}" data-id="${n.id}" style="cursor: pointer;" onclick="handleNotificationClick(event, ${n.id}, '${safeUrl}', ${requiresAction})">
                     <div class="notification-content">
                         <div class="notification-title">${escapeHtml(n.title)}</div>
                         <div class="notification-message">${escapeHtml(n.message)}</div>
@@ -370,19 +418,22 @@ function displayNotifications(notifications, unreadCount) {
     }
 }
 
-window.handleNotificationClick = async function(event, notificationId, redirectUrl) {
-    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-    if (item && item.classList.contains('unread')) {
-        try {
-            await fetch(`/api/admin/notifications/${notificationId}/read/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken() }
-            });
-        } catch (error) {
-            console.error('Error marking as read on click:', error);
-        }
+window.handleNotificationClick = async function(event, notificationId, redirectUrl, requiresAction) {
+    if (event) event.stopPropagation();
+
+    try {
+        await fetch(`/api/admin/notifications/${notificationId}/read/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        });
+    } catch (error) {
+        console.error('Error marking as read on click:', error);
     }
-    window.location.href = redirectUrl;
+
+    sessionStorage.setItem('admin_active_notification_id', String(notificationId));
+
+    const separator = redirectUrl.includes('?') ? '&' : '?';
+    window.location.href = `${redirectUrl}${separator}from_notification=${notificationId}`;
 };
 
 window.markNotificationRead = async function(notificationId) {

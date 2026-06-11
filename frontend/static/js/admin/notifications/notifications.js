@@ -61,6 +61,7 @@ async function sendBroadcast() {
 
 async function loadNotifications() {
     try {
+        await apiRequest('/api/admin/notifications/prune/', 'POST');
         const data = await apiRequest(`/api/admin/notifications/?page=${currentPage}`);
         
         displayNotifications(data.notifications);
@@ -85,8 +86,12 @@ function displayNotifications(notifications) {
         return;
     }
     
-    container.innerHTML = notifications.map(n => `
-        <div class="notification-item ${n.is_read ? '' : 'unread'}">
+    container.innerHTML = notifications.map(n => {
+        const redirectUrl = n.redirect_url || '/admin-portal/dashboard/';
+        const safeUrl = redirectUrl.replace(/'/g, "\\'");
+        const requiresAction = n.requires_action === true;
+        return `
+        <div class="notification-item ${n.is_read ? '' : 'unread'}" style="cursor: pointer;" onclick="openNotification(${n.id}, '${safeUrl}', ${requiresAction})">
             <div class="notification-content">
                 <div class="notification-title">
                     ${escapeHtml(n.title)}
@@ -96,11 +101,12 @@ function displayNotifications(notifications) {
                 <div class="notification-time">${formatRelativeTime(n.created_at)}</div>
             </div>
             <div class="notification-actions">
-                ${!n.is_read ? `<button class="action-btn" onclick="markAsRead(${n.id})" title="Mark as Read"><i class="fas fa-check"></i></button>` : ''}
-                <button class="action-btn" onclick="deleteNotification(${n.id})" title="Delete"><i class="fas fa-trash"></i></button>
+                ${!n.is_read ? `<button class="action-btn" onclick="event.stopPropagation(); markAsRead(${n.id})" title="Mark as Read"><i class="fas fa-check"></i></button>` : ''}
+                <button class="action-btn" onclick="event.stopPropagation(); deleteNotification(${n.id})" title="Delete"><i class="fas fa-trash"></i></button>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
     
     document.getElementById('recordsCount').textContent = `Showing ${notifications.length} notifications`;
 }
@@ -204,6 +210,17 @@ async function deleteTemplate(id) {
     });
 }
 
+async function openNotification(id, redirectUrl, requiresAction) {
+    try {
+        await apiRequest(`/api/admin/notifications/${id}/read/`, 'POST');
+    } catch (error) {
+        console.error('Error marking as read:', error);
+    }
+    sessionStorage.setItem('admin_active_notification_id', String(id));
+    const separator = redirectUrl.includes('?') ? '&' : '?';
+    window.location.href = `${redirectUrl}${separator}from_notification=${id}`;
+}
+
 async function markAsRead(id) {
     try {
         await apiRequest(`/api/admin/notifications/${id}/read/`, 'POST');
@@ -290,6 +307,7 @@ window.addTemplate = addTemplate;
 window.editTemplate = editTemplate;
 window.saveTemplate = saveTemplate;
 window.deleteTemplate = deleteTemplate;
+window.openNotification = openNotification;
 window.markAsRead = markAsRead;
 window.deleteNotification = deleteNotification;
 window.closeTemplateModal = closeTemplateModal;

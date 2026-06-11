@@ -194,7 +194,10 @@ def api_organizer_events_create(request):
                 title="Event Pending Approval",
                 message=f"Event '{event.title}' created by '{request.user.username}' is waiting for approval.",
                 n_type="warning",
-                redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                redirect_url=f"/admin-portal/events/detail/?id={event.id}",
+                entity_type="event",
+                entity_id=event.id,
+                action_type="event_pending_approval",
             )
         except Exception as notif_err:
             print("Failed to dispatch admin notification:", notif_err)
@@ -303,7 +306,10 @@ def api_organizer_events_update(request, event_id):
                             title="Event Pending Approval",
                             message=f"Event '{event.title}' updated by '{request.user.username}' is waiting for approval.",
                             n_type="warning",
-                            redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                            redirect_url=f"/admin-portal/events/detail/?id={event.id}",
+                            entity_type="event",
+                            entity_id=event.id,
+                            action_type="event_pending_approval",
                         )
                     except Exception as notif_err:
                         print("Failed to dispatch admin notification:", notif_err)
@@ -317,7 +323,10 @@ def api_organizer_events_update(request, event_id):
                         title="Event Pending Approval",
                         message=f"Event '{event.title}' is waiting for approval.",
                         n_type="warning",
-                        redirect_url=f"/admin-portal/events/detail/?id={event.id}"
+                        redirect_url=f"/admin-portal/events/detail/?id={event.id}",
+                        entity_type="event",
+                        entity_id=event.id,
+                        action_type="event_pending_approval",
                     )
                 except Exception as notif_err:
                     print("Failed to dispatch admin notification:", notif_err)
