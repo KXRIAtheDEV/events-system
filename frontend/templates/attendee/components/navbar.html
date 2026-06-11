@@ -537,6 +537,35 @@ document.addEventListener('DOMContentLoaded', function() {
         if (mobileUserInitial) mobileUserInitial.textContent = initialVal;
         if (mobileAccountLabel) mobileAccountLabel.textContent = nameVal.split(' ')[0];
         
+        // Render avatar if present
+        const desktopAvatarContainer = document.querySelector('.user-avatar-dropdown');
+        const mobileAvatarContainer = document.querySelector('.mobile-user-avatar-dropdown');
+        const avatarUrl = user.avatar_url;
+        
+        if (avatarUrl) {
+            if (desktopAvatarContainer) {
+                desktopAvatarContainer.style.backgroundImage = `url(${avatarUrl})`;
+                desktopAvatarContainer.style.backgroundSize = 'cover';
+                desktopAvatarContainer.style.backgroundPosition = 'center';
+                if (desktopInitial) desktopInitial.style.display = 'none';
+            }
+            if (mobileAvatarContainer) {
+                mobileAvatarContainer.style.backgroundImage = `url(${avatarUrl})`;
+                mobileAvatarContainer.style.backgroundSize = 'cover';
+                mobileAvatarContainer.style.backgroundPosition = 'center';
+                if (mobileUserInitial) mobileUserInitial.style.display = 'none';
+            }
+        } else {
+            if (desktopAvatarContainer) {
+                desktopAvatarContainer.style.backgroundImage = 'none';
+                if (desktopInitial) desktopInitial.style.display = '';
+            }
+            if (mobileAvatarContainer) {
+                mobileAvatarContainer.style.backgroundImage = 'none';
+                if (mobileUserInitial) mobileUserInitial.style.display = '';
+            }
+        }
+        
         // Update badges
         updateMyTicketsBadge();
         

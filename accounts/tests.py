@@ -172,6 +172,70 @@ class AccountAPITests(TestCase):
             existing_user.refresh_from_db()
             self.assertEqual(existing_user.google_id, 'google_987654321')
 
+    def test_avatar_upload_success(self):
+        User = get_user_model()
+        user = User.objects.create_user(
+            username='uploaduser',
+            email='upload@example.com',
+            password='StrongPass123!',
+            role='attendee'
+        )
+        login_response = self.post_json('/api/auth/login/', {
+            'username': 'uploaduser',
+            'password': 'StrongPass123!',
+        })
+        self.assertEqual(login_response.status_code, 200)
+        access_token = login_response.json()['access']
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        avatar_file = SimpleUploadedFile("avatar.gif", small_gif, content_type="image/gif")
+
+        response = self.client.post(
+            '/api/profile/upload-avatar/',
+            {'avatar': avatar_file},
+            HTTP_AUTHORIZATION=f'Bearer {access_token}'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('Avatar uploaded successfully.', data['message'])
+        self.assertTrue(data['user']['avatar_url'].endswith('avatar.gif'))
+
+        user.refresh_from_db()
+        self.assertTrue(user.avatar)
+        self.assertEqual(user.avatar_url, '')
+        self.assertEqual(user.get_avatar_url(), user.avatar.url)
+
+    def test_google_oauth_syncs_picture(self):
+        from unittest.mock import patch
+        with patch('google.oauth2.id_token.verify_oauth2_token') as mock_verify:
+            mock_verify.return_value = {
+                'email': 'picuser@example.com',
+                'sub': 'google_pic_123',
+                'given_name': 'Pic',
+                'family_name': 'User',
+                'picture': 'https://lh3.googleusercontent.com/a/some_photo_url'
+            }
+            
+            response = self.post_json('/api/auth/google/', {
+                'credential': 'fake_credential_token',
+                'role': 'attendee'
+            })
+            
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+            self.assertEqual(data['user']['avatar_url'], 'https://lh3.googleusercontent.com/a/some_photo_url')
+            
+            User = get_user_model()
+            user = User.objects.get(email='picuser@example.com')
+            self.assertEqual(user.avatar_url, 'https://lh3.googleusercontent.com/a/some_photo_url')
+            self.assertEqual(user.get_avatar_url(), 'https://lh3.googleusercontent.com/a/some_photo_url')
+
 
 from events.models import Event, Category
 from bookings.models import Ticket

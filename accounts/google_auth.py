@@ -44,6 +44,7 @@ def google_oauth_callback(request):
         google_id = idinfo.get('sub')
         first_name = idinfo.get('given_name', '')
         last_name = idinfo.get('family_name', '')
+        picture = idinfo.get('picture', '')
         
         if not email:
             return json_error('Email not provided by Google.', status=400)
@@ -83,10 +84,16 @@ def google_oauth_callback(request):
             first_name=first_name,
             last_name=last_name,
             role='attendee',
-            google_id=google_id
+            google_id=google_id,
+            avatar_url=picture
         )
         user.set_unusable_password()
         user.save()
+    else:
+        # Update user's Google picture url if provided and not already matched
+        if picture and user.avatar_url != picture:
+            user.avatar_url = picture
+            user.save(update_fields=['avatar_url'])
         
     # Check if active
     if not user.is_active:

@@ -45,6 +45,7 @@ def user_payload(user):
         'is_staff': user.is_staff,
         'is_superuser': user.is_superuser,
         'date_joined': user.date_joined.isoformat() if getattr(user, 'date_joined', None) else None,
+        'avatar_url': user.get_avatar_url(),
     }
 
 
@@ -323,4 +324,22 @@ def profile_stats(request):
         'total_events': total_events,
         'total_reviews': total_reviews,
         'favorite_category': favorite_category
+    })
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def profile_upload_avatar(request):
+    user, error = resolve_authenticated_user(request)
+    if error:
+        return error
+    avatar_file = request.FILES.get('avatar')
+    if not avatar_file:
+        return json_error('No image file provided.', status=400)
+    user.avatar = avatar_file
+    user.avatar_url = ''  # clear url fallback
+    user.save()
+    return JsonResponse({
+        'message': 'Avatar uploaded successfully.',
+        'user': user_payload(user)
     })

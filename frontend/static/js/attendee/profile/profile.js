@@ -144,6 +144,18 @@ function displayProfile(profile) {
     if (profileEmail) profileEmail.textContent = email;
     if (profileInitial) profileInitial.textContent = initial;
     
+    const profileAvatar = document.getElementById('profileAvatar');
+    const avatarUrl = profile.avatar_url;
+    if (profileAvatar) {
+        if (avatarUrl) {
+            profileAvatar.style.backgroundImage = `url(${avatarUrl})`;
+            profileAvatar.classList.add('has-image');
+        } else {
+            profileAvatar.style.backgroundImage = 'none';
+            profileAvatar.classList.remove('has-image');
+        }
+    }
+    
     // Update info fields
     if (displayName) displayName.textContent = name;
     if (displayEmail) displayEmail.textContent = email;
@@ -454,9 +466,15 @@ async function deleteAccount() {
 function setupAvatarUpload() {
     const changeAvatarBtn = document.getElementById('changeAvatarBtn');
     const avatarInput = document.getElementById('avatarInput');
+    const avatarWrapper = document.getElementById('avatarWrapper');
     
-    if (changeAvatarBtn && avatarInput) {
-        changeAvatarBtn.addEventListener('click', () => avatarInput.click());
+    if (avatarInput) {
+        if (changeAvatarBtn) {
+            changeAvatarBtn.addEventListener('click', () => avatarInput.click());
+        }
+        if (avatarWrapper) {
+            avatarWrapper.addEventListener('click', () => avatarInput.click());
+        }
         avatarInput.addEventListener('change', uploadAvatar);
     }
 }
