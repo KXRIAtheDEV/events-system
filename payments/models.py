@@ -60,6 +60,10 @@ class PaymentOrder(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
     screenshot = models.ImageField(upload_to='payment_screenshots/', null=True, blank=True)
+    screenshot_data = models.TextField(
+        blank=True,
+        help_text='Base64 data-URI screenshot (used on serverless where media/ is read-only).',
+    )
     submitted_mpesa_name = models.CharField(max_length=150, blank=True)
     ocr_raw_text = models.TextField(blank=True)
     screenshot_verified = models.BooleanField(

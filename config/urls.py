@@ -41,6 +41,7 @@ from payments.order_views import (
     organizer_pending_orders,
     organizer_approve_order,
     organizer_reject_order,
+    organizer_payment_order_screenshot,
 )
 from events.api_organizer_views import (
     api_organizer_events_list,
@@ -250,6 +251,7 @@ urlpatterns = [
     path('api/organizer/payment-orders/pending/', organizer_pending_orders, name='organizer_pending_orders'),
     path('api/organizer/payment-orders/<int:order_id>/approve/', organizer_approve_order, name='organizer_approve_order'),
     path('api/organizer/payment-orders/<int:order_id>/reject/', organizer_reject_order, name='organizer_reject_order'),
+    path('api/organizer/payment-orders/<int:order_id>/screenshot/', organizer_payment_order_screenshot, name='organizer_payment_order_screenshot'),
     
     path('api/bookings/checkout/', ticket_checkout_api, name='ticket_checkout_api'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),

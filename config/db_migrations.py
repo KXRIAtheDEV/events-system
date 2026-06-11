@@ -51,6 +51,7 @@ PAYMENTS_0002 = '0002_remove_payment_event_id_payment_event_and_more'
 PAYMENTS_0003 = '0003_remove_payment_legacy_event_id'
 PAYMENTS_0004 = '0004_paymentorder_organizernotification_attendeentification'
 PAYMENTS_0005 = '0005_paymentorder_screenshot_verified'
+PAYMENTS_0006 = '0006_paymentorder_screenshot_data'
 
 
 def _applied_migrations(app_label: str) -> set[str]:
@@ -164,6 +165,9 @@ def repair_migration_history() -> list[str]:
     if 'screenshot_verified' in payment_order_columns and PAYMENTS_0005 not in payments_applied:
         if _record_migration('payments', PAYMENTS_0005):
             repairs.append('recorded payments.0005 (screenshot_verified column already existed)')
+    if 'screenshot_data' in payment_order_columns and PAYMENTS_0006 not in payments_applied:
+        if _record_migration('payments', PAYMENTS_0006):
+            repairs.append('recorded payments.0006 (screenshot_data column already existed)')
 
     repairs.extend(repair_payments_schema())
 
@@ -363,6 +367,16 @@ def apply_payment_order_tables_hotfix() -> list[str]:
         if PAYMENTS_0005 not in _applied_migrations('payments'):
             if _record_migration('payments', PAYMENTS_0005):
                 applied.append(f'recorded payments.{PAYMENTS_0005}')
+        if 'screenshot_data' not in payment_cols:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    'ALTER TABLE payments_paymentorder '
+                    'ADD COLUMN IF NOT EXISTS screenshot_data text NOT NULL DEFAULT \'\''
+                )
+            applied.append('added payments_paymentorder.screenshot_data')
+        if PAYMENTS_0006 not in _applied_migrations('payments'):
+            if _record_migration('payments', PAYMENTS_0006):
+                applied.append(f'recorded payments.{PAYMENTS_0006}')
 
     return applied
 

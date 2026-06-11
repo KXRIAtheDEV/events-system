@@ -148,6 +148,7 @@ class PaymentOrderTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.status, 'manual_review')
         self.assertTrue(order.screenshot_verified)
+        self.assertTrue(order.screenshot_data.startswith('data:image/'))
         self.assertFalse(Ticket.objects.filter(attendee=self.attendee).exists())
         self.assertEqual(OrganizerNotification.objects.filter(payment_order=order).count(), 1)
         self.assertEqual(AttendeeNotification.objects.filter(payment_order=order).count(), 1)

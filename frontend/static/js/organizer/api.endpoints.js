@@ -270,6 +270,7 @@ const OrganizerCheckinAPI = {
 // Settings API
 const OrganizerPaymentOrdersAPI = {
     getPending: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.pending),
+    getScreenshot: (id) => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.screenshot(id)),
     approve: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.approve(id), {}),
     reject: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.reject(id), {}),
 };

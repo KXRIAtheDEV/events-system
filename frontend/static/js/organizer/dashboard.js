@@ -333,6 +333,7 @@ window.loadPendingPayments = async function() {
                         <small>M-Pesa name: <strong>${mpesaName}</strong></small><br>
                         <small>Amount: KES ${Number(o.total_amount).toLocaleString()} &middot; Qty: ${o.quantity}</small>
                         ${o.verification_message ? `<br><small class="text-muted">${escapeHtml(o.verification_message)}</small>` : ''}
+                        ${o.has_screenshot ? `<br><button type="button" class="btn btn-sm btn-link p-0 view-screenshot-btn" data-id="${o.id}">View screenshot</button>` : ''}
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-success approve-payment-btn" data-id="${o.id}">Approve</button>
@@ -342,6 +343,20 @@ window.loadPendingPayments = async function() {
             </div>
         `;
         }).join('');
+        container.querySelectorAll('.view-screenshot-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    const data = await OrganizerAPI.paymentOrders.getScreenshot(btn.dataset.id);
+                    if (data.screenshot_data) {
+                        window.open(data.screenshot_data, '_blank', 'noopener');
+                    } else {
+                        showToast('Screenshot not available', 'error');
+                    }
+                } catch (e) {
+                    showToast(e.message || 'Could not load screenshot', 'error');
+                }
+            });
+        });
         container.querySelectorAll('.approve-payment-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 try {

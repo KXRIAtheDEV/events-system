@@ -170,6 +170,7 @@ const ORGANIZER_API_CONFIG = {
             pending: '/payment-orders/pending/',
             approve: (id) => `/payment-orders/${id}/approve/`,
             reject: (id) => `/payment-orders/${id}/reject/`,
+            screenshot: (id) => `/payment-orders/${id}/screenshot/`,
         },
         SETTINGS: {
             general: '/settings/general/',

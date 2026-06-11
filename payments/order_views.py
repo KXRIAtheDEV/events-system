@@ -1,5 +1,6 @@
 import json
 import time
+from io import BytesIO
 
 from django.db.utils import ProgrammingError
 from django.http import JsonResponse, StreamingHttpResponse
@@ -14,6 +15,7 @@ from events.models import Event
 
 from .models import PaymentOrder, OrganizerNotification, AttendeeNotification
 from .screenshot_verifier import verify_screenshot as analyze_payment_screenshot
+from .screenshot_storage import encode_upload_to_data_uri, open_screenshot_stream, order_has_screenshot
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 MAX_SCREENSHOT_SIZE = 5 * 1024 * 1024
@@ -261,10 +263,15 @@ def verify_screenshot(request, order_id):
     if content_type and content_type not in ALLOWED_IMAGE_TYPES:
         return JsonResponse({'success': False, 'message': 'Only JPEG, PNG, or WebP images are allowed.'}, status=400)
 
+    try:
+        data_uri, screenshot_bytes = encode_upload_to_data_uri(screenshot, content_type=content_type)
+    except Exception as exc:
+        return JsonResponse({'success': False, 'message': f'Could not read screenshot: {exc}'}, status=400)
+
     order.status = 'verifying'
-    order.screenshot = screenshot
+    order.screenshot_data = data_uri
     order.verification_message = ''
-    order.save(update_fields=['status', 'screenshot', 'verification_message', 'updated_at'])
+    order.save(update_fields=['status', 'screenshot_data', 'verification_message', 'updated_at'])
 
     def event_stream():
         yield _sse_event('upload_received', 'Screenshot received')
@@ -273,9 +280,13 @@ def verify_screenshot(request, order_id):
         time.sleep(0.2)
         yield _sse_event('reading_text', 'Reading transaction details')
 
+        image_stream = open_screenshot_stream(order)
+        if image_stream is None:
+            image_stream = BytesIO(screenshot_bytes)
+
         try:
             result = analyze_payment_screenshot(
-                order.screenshot,
+                image_stream,
                 order.organizer.mpesa_display_name,
                 order.total_amount,
                 _organizer_numbers(order.organizer),
@@ -403,7 +414,7 @@ def organizer_pending_orders(request):
             'submitted_mpesa_name': order.submitted_mpesa_name,
             'screenshot_verified': order.screenshot_verified,
             'verification_message': order.verification_message,
-            'has_screenshot': bool(order.screenshot),
+            'has_screenshot': order_has_screenshot(order),
             'attendee_name': attendee.get_full_name() or attendee.username,
             'attendee_email': attendee.email,
             'status': order.status,
@@ -455,6 +466,25 @@ def organizer_approve_order(request, order_id):
         'message': 'Payment approved and ticket issued.',
         'ticket_number': ticket.ticket_number,
         'order': _serialize_order(order),
+    })
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
+def organizer_payment_order_screenshot(request, order_id):
+    try:
+        order = PaymentOrder.objects.get(pk=order_id, organizer=request.user)
+    except PaymentOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Order not found.'}, status=404)
+
+    if not order.screenshot_data:
+        return JsonResponse({'success': False, 'message': 'No screenshot on file.'}, status=404)
+
+    return JsonResponse({
+        'success': True,
+        'screenshot_data': order.screenshot_data,
+        'order_id': order.id,
     })
 
 
