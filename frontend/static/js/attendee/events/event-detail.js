@@ -396,7 +396,7 @@ function renderEventDetails(event) {
                     </button>
                     
                     <button id="wishlistBtn" class="wishlist-sidebar-btn ${isInWishlist ? 'active' : ''}">
-                        <i class="fas fa-heart"></i> ${isInWishlist ? 'Saved to Wishlist' : 'Save to Wishlist'}
+                        <i class="fas fa-heart"></i> ${isInWishlist ? 'Remove' : 'Add to wish list'}
                     </button>
                     
                     <div class="ticket-info">
@@ -551,12 +551,12 @@ if (mpesaClose) {
             if (idx === -1) {
                 updatedWishlist.push(event.id);
                 wishlistBtn.classList.add('active');
-                wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Saved to Wishlist';
+                wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Remove';
                 showToast('Event saved to wishlist!', 'success');
             } else {
                 updatedWishlist.splice(idx, 1);
                 wishlistBtn.classList.remove('active');
-                wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Save to Wishlist';
+                wishlistBtn.innerHTML = '<i class="fas fa-heart"></i> Add to wish list';
                 showToast('Event removed from wishlist', 'info');
             }
             

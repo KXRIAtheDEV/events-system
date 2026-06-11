@@ -273,12 +273,12 @@ function toggleWishlist(id, btn) {
             original_price: event.original_price,
             added_at: new Date().toISOString()
         });
-        btn.innerHTML = '<i class="fas fa-heart"></i> Saved';
+        btn.innerHTML = '<i class="fas fa-heart"></i> Remove';
         btn.style.background = '#f59e0b';
         showToast('❤️ Event saved to wishlist!', 'success');
     } else {
         wishlist = wishlist.filter(item => item.id != id);
-        btn.innerHTML = '<i class="far fa-heart"></i> Save';
+        btn.innerHTML = '<i class="far fa-heart"></i> Add to wish list';
         btn.style.background = 'rgba(0,0,0,0.5)';
         showToast('🗑️ Removed from wishlist', 'info');
     }
@@ -323,7 +323,7 @@ function renderEvents() {
                     <div class="card-gradient-overlay"></div>
                     ${e.featured ? '<span class="featured-badge">Featured</span>' : ''}
                     <button class="wishlist-btn" data-id="${e.id}" style="background:${inWishlist ? '#f59e0b' : 'rgba(0,0,0,0.5)'}">
-                        <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i> ${inWishlist ? 'Saved' : 'Save'}
+                        <i class="${inWishlist ? 'fas' : 'far'} fa-heart"></i> ${inWishlist ? 'Remove' : 'Add to wish list'}
                     </button>
                 </div>
                 <div class="card-content">
