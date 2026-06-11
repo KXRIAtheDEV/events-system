@@ -318,7 +318,7 @@ function renderEvents() {
     grid.innerHTML = filteredEvents.map(e => {
         const inWishlist = wishlistIds.includes(e.id);
         return `
-            <div class="event-card" onclick="window.location.href='/events/detail/?id=${e.id}'">
+            <div class="event-card premium-card" onclick="window.location.href='/events/detail/?id=${e.id}'">
                 <div class="card-image-container">
                     <img src="${e.image || '/static/images/placeholder.jpg'}" class="card-bg-image" onerror="this.src='/static/images/placeholder.jpg'">
                     <div class="card-gradient-overlay"></div>
@@ -340,7 +340,7 @@ function renderEvents() {
                     <button class="card-action-btn view-details-btn" onclick="event.stopPropagation();window.location.href='/events/detail/?id=${e.id}'">
                         <i class="fas fa-info-circle"></i> Details
                     </button>
-                    <button class="card-action-btn book-ticket-btn" data-id="${e.id}">
+                    <button class="card-action-btn book-ticket-btn add-to-cart-btn" data-id="${e.id}">
                         <i class="fas fa-ticket-alt"></i> Book Ticket
                     </button>
                 </div>
