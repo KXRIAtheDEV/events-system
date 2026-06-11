@@ -73,3 +73,4 @@
 "GET /api/admin/dashboard/pending-count/ HTTP/1.1" 200 49
 "GET /api/admin/dashboard/recent-activity/ HTTP/1.1" 200 1246
 "GET /api/admin/events/pending/count/ HTTP/1.1" 200 49
+"GET /api/admin/events/pending/count/ HTTP/1.1" 200 49
