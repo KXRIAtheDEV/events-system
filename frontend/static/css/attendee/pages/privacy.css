@@ -1,105 +1,322 @@
 /* ============================================
-   PRIVACY POLICY PAGE SPECIFIC STYLES
+   PRIVACY POLICY PAGE - Readable Legal Layout
+   Uses explicit colors so dark-mode CSS variable
+   overrides (--np-white) cannot break contrast.
    ============================================ */
 
-.privacy-content {
-    background: var(--np-white);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-2xl);
-    border: 1px solid var(--np-border);
-    box-shadow: var(--shadow-sm);
+.privacy-page {
+    padding: 5rem 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    position: relative;
+    overflow: hidden;
+    color-scheme: light;
 }
 
-.privacy-section {
-    margin-bottom: var(--spacing-2xl);
+.privacy-page::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.03) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
 }
 
-.privacy-section:last-child {
+.privacy-page::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.03) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.privacy-page .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* Page Header */
+.privacy-page .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.privacy-page .page-header h1 {
+    font-family: 'Kaushan Script', cursive;
+    font-size: 3rem;
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, #f59e0b, #ec6408);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+}
+
+.privacy-page .page-header p {
+    font-family: 'Manrope', 'Inter', sans-serif;
+    font-size: 1rem;
+    color: #64748b;
     margin-bottom: 0;
 }
 
-.privacy-section h2 {
+/* Last Updated Banner */
+.privacy-page .last-updated-banner {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.privacy-page .last-updated-banner span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #f59e0b, #ec6408);
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-family: 'Manrope', 'Inter', sans-serif;
+}
+
+.privacy-page .last-updated-banner i {
+    font-size: 0.8rem;
+}
+
+/* Table of Contents */
+.privacy-page .toc-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.privacy-page .toc-card h3 {
+    font-family: 'Manrope', 'Inter', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.privacy-page .toc-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.privacy-page .toc-list a {
+    color: #d97706;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: 'Manrope', 'Inter', sans-serif;
+    line-height: 1.5;
+    transition: color 0.2s ease;
+}
+
+.privacy-page .toc-list a:hover {
+    color: #b45309;
+    text-decoration: underline;
+}
+
+/* Main Content Card */
+.privacy-page .privacy-content {
+    background: #ffffff;
+    border-radius: 1.5rem;
+    padding: 3rem;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.privacy-page .privacy-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    scroll-margin-top: 6rem;
+}
+
+.privacy-page .privacy-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.privacy-page .privacy-section h2 {
+    font-family: 'Manrope', 'Inter', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: var(--spacing-md);
-    color: var(--np-dark);
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 2px solid var(--np-border);
+    margin-bottom: 1rem;
+    color: #1e293b;
+    text-align: left;
     position: relative;
+    display: inline-block;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
-.privacy-section h2::after {
+.privacy-page .privacy-section h2::after {
     content: '';
     position: absolute;
-    bottom: -2px;
+    bottom: -5px;
     left: 0;
-    width: 60px;
-    height: 2px;
-    background: var(--np-gradient);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(135deg, #f59e0b, #ec6408);
+    border-radius: 3px;
 }
 
-.privacy-section h3 {
-    font-size: 1.2rem;
+.privacy-page .privacy-section h3 {
+    font-family: 'Manrope', 'Inter', sans-serif;
+    font-size: 1.1rem;
     font-weight: 600;
-    margin: var(--spacing-lg) 0 var(--spacing-sm);
-    color: var(--np-dark);
+    margin: 1.25rem 0 0.5rem;
+    color: #1e293b;
+    text-align: left;
 }
 
-.privacy-section h3:first-of-type {
+.privacy-page .privacy-section h3:first-of-type {
     margin-top: 0;
 }
 
-.privacy-section p {
+.privacy-page .privacy-section p {
+    font-family: 'Manrope', 'Inter', sans-serif;
     font-size: 0.95rem;
-    line-height: 1.8;
-    color: var(--np-gray);
-    margin-bottom: var(--spacing-md);
+    line-height: 1.75;
+    color: #475569;
+    margin-bottom: 1rem;
 }
 
-.privacy-section ul,
-.privacy-section ol {
-    padding-left: var(--spacing-xl);
-    margin-bottom: var(--spacing-md);
+.privacy-page .privacy-section ul,
+.privacy-page .privacy-section ol {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0 1rem;
+    list-style: disc;
 }
 
-.privacy-section li {
+.privacy-page .privacy-section li {
+    font-family: 'Manrope', 'Inter', sans-serif;
     font-size: 0.95rem;
-    color: var(--np-gray);
-    margin-bottom: var(--spacing-xs);
+    color: #475569;
+    margin-bottom: 0.5rem;
     line-height: 1.7;
 }
 
-.last-updated {
-    margin-top: var(--spacing-2xl);
-    padding-top: var(--spacing-lg);
-    border-top: 1px solid var(--np-border);
-    text-align: right;
-    font-size: 0.85rem;
-    color: var(--np-gray);
-    font-style: italic;
+.privacy-page .privacy-section li strong {
+    color: #1e293b;
+}
+
+.privacy-page .privacy-section a {
+    color: #d97706;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease;
+}
+
+.privacy-page .privacy-section a:hover {
+    color: #b45309;
+}
+
+.privacy-page .privacy-section strong {
+    color: #1e293b;
+    font-weight: 600;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .privacy-content {
-        padding: var(--spacing-xl);
+    .privacy-page {
+        padding: 3rem 0;
     }
-    
-    .privacy-section h2 {
+
+    .privacy-page .container {
+        padding: 0 1rem;
+    }
+
+    .privacy-page .page-header h1 {
+        font-size: 2rem;
+    }
+
+    .privacy-page .toc-list {
+        grid-template-columns: 1fr;
+    }
+
+    .privacy-page .privacy-content {
+        padding: 1.5rem;
+    }
+
+    .privacy-page .privacy-section h2 {
         font-size: 1.3rem;
     }
-    
-    .privacy-section h3 {
-        font-size: 1.1rem;
+
+    .privacy-page .privacy-section h3 {
+        font-size: 1rem;
+    }
+
+    .privacy-page .privacy-section p,
+    .privacy-page .privacy-section li {
+        font-size: 0.9rem;
     }
 }
 
 @media (max-width: 480px) {
-    .privacy-content {
-        padding: var(--spacing-lg);
+    .privacy-page .page-header h1 {
+        font-size: 1.5rem;
     }
-    
-    .privacy-section h2 {
+
+    .privacy-page .privacy-content {
+        padding: 1rem;
+    }
+
+    .privacy-page .privacy-section h2 {
         font-size: 1.2rem;
+    }
+
+    .privacy-page .privacy-section ul {
+        padding-left: 1.25rem;
+    }
+}
+
+/* Preserve readability if OS dark mode overrides global variables */
+@media (prefers-color-scheme: dark) {
+    .privacy-page {
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    }
+
+    .privacy-page .privacy-content,
+    .privacy-page .toc-card {
+        background: #ffffff;
+        border-color: #e2e8f0;
+    }
+
+    .privacy-page .privacy-section h2,
+    .privacy-page .privacy-section h3,
+    .privacy-page .privacy-section strong,
+    .privacy-page .privacy-section li strong,
+    .privacy-page .toc-card h3 {
+        color: #1e293b;
+    }
+
+    .privacy-page .privacy-section p,
+    .privacy-page .privacy-section li {
+        color: #475569;
     }
 }
