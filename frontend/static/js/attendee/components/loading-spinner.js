@@ -122,6 +122,7 @@
         
         // Handle form submissions - show loader instantly
         document.addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return;
             var form = e.target.closest('form');
             if (form && !form.hasAttribute('data-no-loader')) {
                 showLoader();

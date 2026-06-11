@@ -80,6 +80,7 @@
         }
 
         e.preventDefault();
+        e.stopPropagation();
 
         setSearchLoading(true);
         showLoadingState();
@@ -93,6 +94,11 @@
             showErrorState('Unable to find events right now. Please try again in a moment.');
         } finally {
             setSearchLoading(false);
+            if (window.PageLoader && typeof window.PageLoader.hide === 'function') {
+                window.PageLoader.hide();
+            } else if (typeof window.hideLoader === 'function') {
+                window.hideLoader();
+            }
         }
     }
 
