@@ -280,18 +280,15 @@ function prefillBillingInfo() {
             // Prefill all billing fields from stored profile
             AccountProfile.prefill({
                 billingName:  'name',
-                billingEmail: 'email',
-                billingPhone: 'phone'
+                billingEmail: 'email'
             });
         } else {
             // Fallback: manual parse
             const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
             const nameInput = document.getElementById('billingName');
             const emailInput = document.getElementById('billingEmail');
-            const phoneInput = document.getElementById('billingPhone');
             if (nameInput) nameInput.value = user.full_name || user.name || '';
             if (emailInput) emailInput.value = user.email || '';
-            if (phoneInput) phoneInput.value = user.phone || '';
         }
     } catch (error) {}
 }
