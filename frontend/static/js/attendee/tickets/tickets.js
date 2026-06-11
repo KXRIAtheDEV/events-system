@@ -56,6 +56,116 @@ function tierBadgeClass(tier) {
     return 'ticket-tier-regular';
 }
 
+function statusLabel(status) {
+    const map = {
+        valid: 'Active',
+        checked_in: 'Used',
+        cancelled: 'Cancelled',
+        active: 'Active',
+    };
+    return map[status] || 'Active';
+}
+
+function statusClass(status) {
+    if (status === 'checked_in' || status === 'used') return 'status-used';
+    if (status === 'cancelled' || status === 'expired') return 'status-cancelled';
+    return 'status-active';
+}
+
+function buildQrUrl(ticketCode) {
+    const payload = encodeURIComponent(ticketCode);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${payload}&bgcolor=ffffff&color=1a1a2e&margin=8`;
+}
+
+function getTicketImageUrl(image) {
+    if (!image) return '/static/images/placeholder.jpg';
+    return String(image).replace(/'/g, '%27');
+}
+
+function renderFlipTicketCard(ticket, index) {
+    const imageUrl = getTicketImageUrl(ticket.image);
+    const qrUrl = buildQrUrl(ticket.ticket_code);
+    const amountPaid = Number(ticket.price) * (ticket.quantity || 1);
+    const venue = escapeHtml((ticket.location || 'Venue TBA').split(',')[0]);
+    const status = statusLabel(ticket.status);
+    const statusCls = statusClass(ticket.status);
+
+    return `
+        <div class="flip-ticket-wrapper" style="animation-delay: ${Math.min(index * 0.06, 0.4)}s">
+            <button type="button" class="flip-ticket" aria-label="Flip ticket for ${escapeHtml(ticket.title)}" data-ticket-code="${escapeHtml(ticket.ticket_code)}">
+                <div class="flip-ticket-inner">
+                    <div class="flip-ticket-face flip-ticket-front">
+                        <div class="flip-ticket-zone-top">
+                            <div class="flip-ticket-media" style="background-image: url('${imageUrl}')"></div>
+                            <span class="flip-ticket-status ${statusCls}">${status}</span>
+                        </div>
+                        <div class="flip-ticket-zone-bottom">
+                            <h3 class="flip-ticket-event-title">${escapeHtml(ticket.title)}</h3>
+                            <div class="flip-ticket-meta-grid">
+                                <div class="flip-ticket-meta-item">
+                                    <i class="fas fa-ticket-alt"></i>
+                                    <span class="checkout-tier-badge ${tierBadgeClass(ticket.ticket_type)}">${escapeHtml(ticket.ticket_type || 'Regular')}</span>
+                                </div>
+                                <div class="flip-ticket-meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${formatTime(ticket.date)}</span>
+                                </div>
+                                <div class="flip-ticket-meta-item span-2">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>${venue}</span>
+                                </div>
+                                <div class="flip-ticket-meta-item span-2">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>${formatDate(ticket.date)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-ticket-face flip-ticket-back">
+                        <div class="flip-ticket-zone-top flip-ticket-qr-zone">
+                            <div class="flip-ticket-qr-frame">
+                                <img src="${qrUrl}" alt="QR code for ticket ${escapeHtml(ticket.ticket_code)}" loading="lazy" width="180" height="180">
+                            </div>
+                            <p class="flip-ticket-qr-hint">Scan at venue entrance</p>
+                        </div>
+                        <div class="flip-ticket-zone-bottom">
+                            <div class="flip-ticket-back-row">
+                                <span class="flip-ticket-back-label">Ticket code</span>
+                                <span class="flip-ticket-back-value mono">${escapeHtml(ticket.ticket_code)}</span>
+                            </div>
+                            <div class="flip-ticket-back-row">
+                                <span class="flip-ticket-back-label">Purchased</span>
+                                <span class="flip-ticket-back-value">${formatDateTime(ticket.purchased_date)}</span>
+                            </div>
+                            <div class="flip-ticket-back-row">
+                                <span class="flip-ticket-back-label">Amount paid</span>
+                                <span class="flip-ticket-back-value price">${formatCurrency(amountPaid)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </button>
+            <span class="flip-ticket-flip-hint"><i class="fas fa-sync-alt"></i> Tap to flip</span>
+        </div>
+    `;
+}
+
+function setupFlipTickets() {
+    document.querySelectorAll('.flip-ticket').forEach(card => {
+        if (card.dataset.flipBound) return;
+        card.dataset.flipBound = '1';
+        card.addEventListener('click', () => {
+            card.classList.toggle('is-flipped');
+            const hint = card.parentElement?.querySelector('.flip-ticket-flip-hint');
+            if (hint) {
+                hint.innerHTML = card.classList.contains('is-flipped')
+                    ? '<i class="fas fa-sync-alt"></i> Tap to view event'
+                    : '<i class="fas fa-sync-alt"></i> Tap to flip';
+            }
+        });
+    });
+}
+
 async function loadTickets() {
     const token = localStorage.getItem('attendee_access_token');
     if (!token) {
@@ -142,40 +252,8 @@ function renderTickets() {
         return;
     }
     
-    container.innerHTML = filtered.map(ticket => `
-        <div class="ticket-card">
-            <div class="ticket-header">
-                <div class="ticket-image" style="background-image: url('${ticket.image || '/static/images/placeholder.jpg'}')"></div>
-                <div class="ticket-info">
-                    <div class="ticket-title">${escapeHtml(ticket.title)}</div>
-                    <span class="checkout-tier-badge ${tierBadgeClass(ticket.ticket_type)}">${escapeHtml(ticket.ticket_type || 'Regular')}</span>
-                    <div class="ticket-meta">
-                        <span><i class="fas fa-calendar"></i> ${formatDate(ticket.date)}</span>
-                        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(ticket.location.split(',')[0])}</span>
-                    </div>
-                </div>
-                <div class="ticket-status status-active">Active</div>
-            </div>
-            <div class="ticket-body">
-                <div class="ticket-code">
-                    <span class="code-label">Ticket Code:</span>
-                    <span class="code-value">${ticket.ticket_code}</span>
-                </div>
-                <div class="ticket-price">
-                    <span>Price:</span>
-                    <strong>${formatCurrency(ticket.price)}</strong>
-                </div>
-            </div>
-            <div class="ticket-footer">
-                <button class="btn-qr" onclick="viewQRCode('${ticket.ticket_code}')">
-                    <i class="fas fa-qrcode"></i> View QR
-                </button>
-                <button class="btn-detail" onclick="viewTicketDetail('${ticket.id}')">
-                    <i class="fas fa-info-circle"></i> Details
-                </button>
-            </div>
-        </div>
-    `).join('');
+    container.innerHTML = filtered.map((ticket, index) => renderFlipTicketCard(ticket, index)).join('');
+    setupFlipTickets();
 }
 
 function viewTicketDetail(ticketId) {
@@ -576,6 +654,35 @@ function formatDate(dateString) {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return 'TBA';
         return date.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return 'TBA';
+    }
+}
+
+function formatTime(dateString) {
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch (e) {
+        return 'TBA';
+    }
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return 'TBA';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'TBA';
+        return date.toLocaleString('en-KE', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+        });
     } catch (e) {
         return 'TBA';
     }
