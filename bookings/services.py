@@ -38,8 +38,11 @@ def compute_order_total(event, ticket_type, quantity):
 def fulfill_payment_order(order):
     from payments.models import PaymentOrder
 
+    # Do not select_related('ticket') here — nullable FK + select_for_update()
+    # causes Postgres error: "FOR UPDATE cannot be applied to the nullable side
+    # of an outer join".
     order = PaymentOrder.objects.select_for_update().select_related(
-        'attendee', 'event', 'organizer', 'ticket'
+        'attendee', 'event', 'organizer'
     ).get(pk=order.pk)
 
     if order.ticket_id:

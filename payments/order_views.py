@@ -362,9 +362,22 @@ def organizer_approve_order(request, order_id):
     except FulfillmentError as exc:
         return JsonResponse({'success': False, 'message': exc.message}, status=400)
 
+    order.refresh_from_db()
+
     OrganizerNotification.objects.filter(
         payment_order=order, organizer=request.user, requires_action=True
     ).update(is_read=True, requires_action=False)
+
+    AttendeeNotification.objects.create(
+        attendee=order.attendee,
+        payment_order=order,
+        title='Payment approved',
+        message=(
+            f'Your payment for {order.event.title} was approved. '
+            f'Ticket {ticket.ticket_number} has been issued.'
+        ),
+        notification_type='success',
+    )
 
     return JsonResponse({
         'success': True,

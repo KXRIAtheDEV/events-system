@@ -103,12 +103,20 @@ class PaymentOrderTests(TestCase):
             status='manual_review',
             submitted_mpesa_name='JOHN DOE',
         )
+        seats_before = self.event.available_seats
         self.client.force_login(self.organizer)
         response = self.client.post(f'/api/organizer/payment-orders/{order.id}/approve/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['ticket_number'])
         order.refresh_from_db()
+        self.event.refresh_from_db()
         self.assertEqual(order.status, 'completed')
-        self.assertTrue(Ticket.objects.filter(attendee=self.attendee, ticket_type='VIP').exists())
+        self.assertEqual(self.event.available_seats, seats_before - 1)
+        ticket = Ticket.objects.get(attendee=self.attendee, ticket_type='VIP')
+        self.assertEqual(ticket.ticket_number, data['ticket_number'])
+        self.assertEqual(ticket.quantity, 1)
 
     def test_reject_manual_review_order(self):
         order = PaymentOrder.objects.create(
