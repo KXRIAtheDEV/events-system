@@ -183,14 +183,132 @@ async function addFilters(categoriesData = null) {
 function setupPageSearchListener() {
     const pageSearchInput = document.getElementById('searchInput');
     if (pageSearchInput) {
+        // Create suggestions container dynamically inside search-wrapper
+        const wrapper = pageSearchInput.closest('.search-wrapper');
+        let suggestionsContainer = document.getElementById('searchSuggestions');
+        if (wrapper && !suggestionsContainer) {
+            suggestionsContainer = document.createElement('div');
+            suggestionsContainer.id = 'searchSuggestions';
+            suggestionsContainer.className = 'search-suggestions';
+            wrapper.appendChild(suggestionsContainer);
+        }
+
         pageSearchInput.removeEventListener('input', handleSearchInput);
         pageSearchInput.addEventListener('input', handleSearchInput);
+
+        pageSearchInput.removeEventListener('focus', showSuggestions);
+        pageSearchInput.addEventListener('focus', showSuggestions);
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (suggestionsContainer && !pageSearchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.classList.remove('show');
+            }
+        });
+
+        // Add Enter key listener to save search query
+        pageSearchInput.removeEventListener('keydown', handleSearchKeydown);
+        pageSearchInput.addEventListener('keydown', handleSearchKeydown);
     }
 }
 
 function handleSearchInput(e) {
     currentSearch = e.target.value.toLowerCase().trim();
     filterEvents();
+    // Show updated list as they type
+    showSuggestions();
+}
+
+function showSuggestions() {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    if (!suggestionsContainer) return;
+
+    const recentSearches = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+    if (recentSearches.length === 0) {
+        suggestionsContainer.classList.remove('show');
+        return;
+    }
+
+    const input = document.getElementById('searchInput');
+    const typed = input ? input.value.trim().toLowerCase() : '';
+    
+    // Filter history based on what is typed (if anything is typed)
+    const filteredSearches = typed 
+        ? recentSearches.filter(q => q.toLowerCase().includes(typed))
+        : recentSearches;
+
+    if (filteredSearches.length === 0) {
+        suggestionsContainer.classList.remove('show');
+        return;
+    }
+
+    suggestionsContainer.innerHTML = `
+        <div class="suggestion-header">
+            <span>Recent Searches</span>
+            <button class="suggestion-clear-btn" id="clearRecentBtn">Clear</button>
+        </div>
+        ${filteredSearches.map(query => `
+            <div class="suggestion-item" data-query="${escapeHtml(query)}">
+                <i class="fas fa-history"></i>
+                <span>${escapeHtml(query)}</span>
+            </div>
+        `).join('')}
+    `;
+
+    suggestionsContainer.classList.add('show');
+
+    // Add click event for suggestion items
+    suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const query = item.dataset.query;
+            if (input) {
+                input.value = query;
+                currentSearch = query.toLowerCase();
+                saveSearchQuery(query);
+                filterEvents();
+            }
+            suggestionsContainer.classList.remove('show');
+        });
+    });
+
+    // Add click event for clear button
+    const clearBtn = document.getElementById('clearRecentBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            localStorage.setItem('recent_searches', JSON.stringify([]));
+            suggestionsContainer.classList.remove('show');
+        });
+    }
+}
+
+function handleSearchKeydown(e) {
+    if (e.key === 'Enter') {
+        const query = e.target.value.trim();
+        if (query) {
+            saveSearchQuery(query);
+        }
+        const suggestionsContainer = document.getElementById('searchSuggestions');
+        if (suggestionsContainer) suggestionsContainer.classList.remove('show');
+    }
+}
+
+function saveSearchQuery(query) {
+    if (!query) return;
+    let recentSearches = JSON.parse(localStorage.getItem('recent_searches') || '[]');
+    recentSearches = recentSearches.filter(q => q.toLowerCase() !== query.toLowerCase());
+    recentSearches.unshift(query);
+    if (recentSearches.length > 5) {
+        recentSearches = recentSearches.slice(0, 5);
+    }
+    localStorage.setItem('recent_searches', JSON.stringify(recentSearches));
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 async function filterEvents(isInitialLoad = false) {
