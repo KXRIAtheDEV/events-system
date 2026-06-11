@@ -8,16 +8,29 @@ events.0004) so `migrate` can complete and auth tables stay in sync.
 from __future__ import annotations
 
 import io
+import logging
 from typing import Any
 
 from django.core.management import call_command
 from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
+from django.utils import timezone
 
+logger = logging.getLogger(__name__)
 
 # events.0005 was deployed to production before 0004 existed, leaving a gap.
 EVENTS_REPAIR_FAKES = (
     ('events', '0004_eventimage', '0005_alter_event_banner_image_alter_eventimage_image'),
+)
+
+AUTH_COLUMN_HOTFIXES = (
+    # (column_name, postgres_ddl)
+    ('avatar', "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS avatar varchar(100)"),
+    (
+        'avatar_url',
+        "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS avatar_url varchar(500) "
+        "NOT NULL DEFAULT ''",
+    ),
 )
 
 
@@ -27,31 +40,113 @@ def _applied_migrations(app_label: str) -> set[str]:
     )
 
 
+def _record_migration(app_label: str, name: str) -> bool:
+    """Insert a migration row directly (bypasses Django's dependency validator)."""
+    recorder = MigrationRecorder(connection)
+    if recorder.migration_qs.filter(app=app_label, name=name).exists():
+        return False
+    recorder.migration_qs.create(app=app_label, name=name, applied=timezone.now())
+    return True
+
+
+def _table_exists(table_name: str) -> bool:
+    with connection.cursor() as cursor:
+        if connection.vendor == 'postgresql':
+            cursor.execute(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema = 'public' AND table_name = %s)",
+                [table_name],
+            )
+            return bool(cursor.fetchone()[0])
+        if connection.vendor == 'sqlite':
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=%s",
+                [table_name],
+            )
+            return cursor.fetchone() is not None
+    return False
+
+
 def repair_migration_history() -> list[str]:
-    """Fake-apply missing dependency migrations when a later one is already recorded."""
+    """Record missing dependency migrations when a later one is already applied."""
     repairs: list[str] = []
     for app_label, missing_name, later_name in EVENTS_REPAIR_FAKES:
         applied = _applied_migrations(app_label)
         if later_name in applied and missing_name not in applied:
-            call_command('migrate', app_label, missing_name, fake=True, interactive=False)
-            repairs.append(f'faked {app_label}.{missing_name}')
+            if _record_migration(app_label, missing_name):
+                repairs.append(f'recorded {app_label}.{missing_name}')
+            else:
+                repairs.append(f'skipped {app_label}.{missing_name} (already present)')
+
+    accounts_applied = _applied_migrations('accounts')
+    if (
+        _table_exists('accounts_apikey')
+        and '0006_apikey_teammember_user_accounts_us_role_1fa9a5_idx_and_more' not in accounts_applied
+    ):
+        if _record_migration('accounts', '0006_apikey_teammember_user_accounts_us_role_1fa9a5_idx_and_more'):
+            repairs.append('recorded accounts.0006 (apikey table already existed)')
+
+    user_columns = set(_auth_schema_status().get('user_columns') or [])
+    if {'avatar', 'avatar_url'}.issubset(user_columns):
+        if '0008_user_avatar_user_avatar_url' not in accounts_applied:
+            if _record_migration('accounts', '0008_user_avatar_user_avatar_url'):
+                repairs.append('recorded accounts.0008 (avatar columns already existed)')
+
     return repairs
 
 
+def apply_auth_column_hotfixes() -> list[str]:
+    """Add auth-critical columns when migration history is still out of sync."""
+    if connection.vendor != 'postgresql':
+        return []
+
+    applied: list[str] = []
+    existing = set(_auth_schema_status().get('user_columns') or [])
+    try:
+        with connection.cursor() as cursor:
+            for column_name, ddl in AUTH_COLUMN_HOTFIXES:
+                if column_name not in existing:
+                    cursor.execute(ddl)
+                    applied.append(f'added accounts_user.{column_name}')
+    except Exception:
+        logger.exception('Auth column hotfix failed')
+        raise
+    return applied
+
+
 def run_migrations() -> dict[str, Any]:
-    """Repair history, run migrate, and return a structured result."""
+    """Repair history, run migrate, hotfix auth columns, and return a structured result."""
     out = io.StringIO()
     err = io.StringIO()
     repairs: list[str] = []
+    hotfixes: list[str] = []
     success = False
     error_msg = None
 
     try:
         repairs = repair_migration_history()
         call_command('migrate', interactive=False, stdout=out, stderr=err)
+        hotfixes = apply_auth_column_hotfixes()
         success = True
     except Exception as exc:
         error_msg = str(exc)
+        # Recover from partially-applied migrations (e.g. avatar column added via hotfix).
+        extra_repairs = repair_migration_history()
+        repairs.extend(extra_repairs)
+        try:
+            call_command('migrate', interactive=False, stdout=out, stderr=err)
+            success = True
+            error_msg = None
+        except Exception as retry_exc:
+            error_msg = str(retry_exc)
+            try:
+                hotfixes = apply_auth_column_hotfixes()
+                if _auth_schema_status().get('ready'):
+                    success = True
+                    error_msg = None
+            except Exception as hotfix_exc:
+                logger.exception('Auth hotfix after migrate failure also failed')
+                error_msg = str(hotfix_exc)
 
     output = out.getvalue()
     if err.getvalue():
@@ -63,6 +158,7 @@ def run_migrations() -> dict[str, Any]:
     return {
         'success': success,
         'repairs': repairs,
+        'hotfixes': hotfixes,
         'output': output,
         'error': error_msg,
         'accounts_migrations': accounts_migrations,
