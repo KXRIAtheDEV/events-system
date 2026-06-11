@@ -30,7 +30,6 @@
         <button type="button" class="category-btn" data-category="bookings">Bookings</button>
         <button type="button" class="category-btn" data-category="checkin">Check-in</button>
         <button type="button" class="category-btn" data-category="attendees">Attendees</button>
-        <button type="button" class="category-btn" data-category="analytics">Analytics</button>
         <button type="button" class="category-btn" data-category="promotions">Promotions</button>
         <button type="button" class="category-btn" data-category="reviews">Reviews</button>
         <button type="button" class="category-btn" data-category="settings">Settings</button>
@@ -53,7 +52,6 @@
                 <ul>
                     <li><strong>Dashboard</strong> — overview metrics and quick actions</li>
                     <li><strong>Events</strong> — create and manage events</li>
-                    <li><strong>Analytics</strong> — per-event sales and attendance</li>
                     <li><strong>Attendees</strong> — customer directory</li>
                     <li><strong>Bookings</strong> — ticket sales ledger</li>
                     <li><strong>Promotions</strong> — discount codes</li>
@@ -73,7 +71,7 @@
         <div class="faq-item" data-category="getting-started">
             <div class="faq-question"><span>What is the difference between organizer and attendee accounts?</span><i class="fas fa-chevron-down"></i></div>
             <div class="faq-answer">
-                <p><strong>Attendee accounts</strong> browse events, book tickets, and manage personal bookings. <strong>Organizer accounts</strong> create events, configure payments, approve sales, check in attendees, and view analytics. You need an organizer role to access this portal.</p>
+                <p><strong>Attendee accounts</strong> browse events, book tickets, and manage personal bookings. <strong>Organizer accounts</strong> create events, configure payments, approve sales, check in attendees, and track performance on the Dashboard. You need an organizer role to access this portal.</p>
             </div>
         </div>
 
@@ -112,7 +110,7 @@
         <div class="faq-item" data-category="dashboard">
             <div class="faq-question"><span>What is the Performance Score?</span><i class="fas fa-chevron-down"></i></div>
             <div class="faq-answer">
-                <p>The Performance Score (0–100) summarizes how well your events are doing. It considers factors such as average rating and ticket fulfillment rate. Use it as a quick health check alongside detailed Analytics.</p>
+                <p>The Performance Score (0–100) summarizes how well your events are doing. It considers factors such as average rating and ticket fulfillment rate. Use it as a quick health check alongside your Dashboard revenue chart and Bookings ledger.</p>
             </div>
         </div>
         <div class="faq-item" data-category="dashboard">
@@ -162,7 +160,7 @@
         <div class="faq-item" data-category="events">
             <div class="faq-question"><span>How do I see tickets sold for a specific event?</span><i class="fas fa-chevron-down"></i></div>
             <div class="faq-answer">
-                <p>Each event card shows <strong>tickets sold / capacity</strong>. For deeper detail, open <strong>Analytics</strong> and select the event, or filter <strong>Bookings</strong> and <strong>Attendees</strong> by that event.</p>
+                <p>Each event card shows <strong>tickets sold / capacity</strong>. For deeper detail, filter <strong>Bookings</strong> and <strong>Attendees</strong> by that event, or review the Revenue Overview chart on the Dashboard.</p>
             </div>
         </div>
 
@@ -312,33 +310,16 @@
             </div>
         </div>
 
-        <!-- Analytics -->
-        <div class="faq-item" data-category="analytics">
-            <div class="faq-question"><span>How is revenue calculated in Analytics?</span><i class="fas fa-chevron-down"></i></div>
+        <div class="faq-item" data-category="dashboard">
+            <div class="faq-question"><span>How is revenue calculated on the Dashboard?</span><i class="fas fa-chevron-down"></i></div>
             <div class="faq-answer">
-                <p>Revenue is the gross total from <strong>valid</strong> ticket sales for the selected event, in KES. Cancelled or refunded tickets are excluded.</p>
+                <p>Revenue is the gross total from <strong>valid</strong> ticket sales across your events, in KES. Cancelled or refunded tickets are excluded. The Revenue Overview chart lets you view totals over 7 days, 4 weeks, 12 months, or year to date.</p>
             </div>
         </div>
-        <div class="faq-item" data-category="analytics">
+        <div class="faq-item" data-category="dashboard">
             <div class="faq-question"><span>What is the difference between tickets sold and attendance?</span><i class="fas fa-chevron-down"></i></div>
             <div class="faq-answer">
-                <p><strong>Tickets sold</strong> is the number of valid tickets purchased. <strong>Attendance</strong> (or checked-in count) is how many of those tickets were actually scanned or manually checked in at the venue.</p>
-            </div>
-        </div>
-        <div class="faq-item" data-category="analytics">
-            <div class="faq-question"><span>What charts are available on the Analytics page?</span><i class="fas fa-chevron-down"></i></div>
-            <div class="faq-answer">
-                <p>Select an event to view KPI cards plus:</p>
-                <ul>
-                    <li><strong>Sales Trend</strong> — line chart of tickets sold over time</li>
-                    <li><strong>Ticket Type Distribution</strong> — pie chart breaking down sales by tier (e.g. General, VIP)</li>
-                </ul>
-            </div>
-        </div>
-        <div class="faq-item" data-category="analytics">
-            <div class="faq-question"><span>How is dashboard revenue different from Analytics?</span><i class="fas fa-chevron-down"></i></div>
-            <div class="faq-answer">
-                <p>The <strong>Dashboard</strong> revenue chart shows aggregate earnings across <em>all</em> your events for a chosen time period. <strong>Analytics</strong> drills into a single event's sales, attendance, and ticket-type breakdown.</p>
+                <p><strong>Tickets sold</strong> is the number of valid tickets purchased. <strong>Attendance</strong> (or checked-in count) is how many of those tickets were actually scanned or manually checked in at the venue. Check-in stats are available on the Tickets page.</p>
             </div>
         </div>
 

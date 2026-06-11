@@ -31,11 +31,6 @@ urlpatterns = [
          TemplateView.as_view(template_name='organizer/dashboard/event_detail.html'),
          name='organizer_event_detail'),
 
-    # Analytics
-    path('analytics/',
-         TemplateView.as_view(template_name='organizer/dashboard/analytics.html'),
-         name='organizer_analytics'),
-
     # Tickets
     path('tickets/',
          TemplateView.as_view(template_name='organizer/dashboard/tickets.html'),
