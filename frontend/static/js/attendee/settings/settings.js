@@ -308,20 +308,9 @@ function deleteAccount() {
 // Update Navbar User Info
 function updateNavbarUserInfo() {
     const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-    const nameVal = user.name || user.first_name || user.username || 'User';
-    const initialVal = nameVal.charAt(0).toUpperCase();
-    
-    const desktopName = document.getElementById('desktopUserName');
-    const profileUserName = document.getElementById('profileUserName');
-    const desktopInitial = document.getElementById('desktopUserInitial');
-    const mobileName = document.getElementById('mobileUserName');
-    const mobileInitial = document.getElementById('mobileUserInitial');
-    
-    if (desktopName) desktopName.textContent = nameVal;
-    if (profileUserName) profileUserName.textContent = nameVal.split(' ')[0];
-    if (desktopInitial) desktopInitial.textContent = initialVal;
-    if (mobileName) mobileName.textContent = nameVal;
-    if (mobileInitial) mobileInitial.textContent = initialVal;
+    if (window.AccountProfile) {
+        AccountProfile.applyToNavbar(user);
+    }
 }
 
 // Show Message

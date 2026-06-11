@@ -29,7 +29,11 @@ const AccountProfile = (() => {
         try {
             const current = get();
             const merged = Object.assign({}, current, data);
+            if (!merged.name && merged.full_name) {
+                merged.name = merged.full_name;
+            }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            applyToNavbar(merged);
             window.dispatchEvent(new CustomEvent('profile-updated', { detail: merged }));
             return merged;
         } catch (e) {
@@ -82,7 +86,7 @@ const AccountProfile = (() => {
 
             // Only prefill if there's something to fill and the field is empty
             const effectiveValue = profileKey === 'name'
-                ? (profile.full_name || profile.name || profile.first_name || '')
+                ? resolveDisplayName(profile)
                 : (profile[profileKey] || '');
 
             if (!effectiveValue) return;
@@ -151,11 +155,94 @@ const AccountProfile = (() => {
     }
 
     /**
-     * Returns a display-safe name string.
+     * Resolves the best display name from a profile object.
+     * Prefers full_name (Google / profile page) over isolated first_name.
      */
-    function getDisplayName() {
-        const p = get();
-        return p.full_name || p.name || p.first_name || 'User';
+    function resolveDisplayName(profile) {
+        const p = profile || get();
+        if (p.full_name && String(p.full_name).trim()) {
+            return String(p.full_name).trim();
+        }
+        if (p.name && String(p.name).trim()) {
+            return String(p.name).trim();
+        }
+        const combined = [p.first_name, p.last_name]
+            .map(part => (part && String(part).trim()) || '')
+            .filter(Boolean)
+            .join(' ');
+        if (combined) return combined;
+        if (p.username && String(p.username).trim()) {
+            return String(p.username).trim();
+        }
+        return 'User';
+    }
+
+    /**
+     * Returns a display-safe full name string for the current user.
+     */
+    function getDisplayName(profile) {
+        return resolveDisplayName(profile);
+    }
+
+    /**
+     * Short label for compact navbar UI (first name / first word).
+     */
+    function getNavbarShortName(profile) {
+        const full = resolveDisplayName(profile);
+        return full.split(/\s+/)[0] || full;
+    }
+
+    /**
+     * Updates navbar account name and avatar from profile data.
+     */
+    function applyToNavbar(profile) {
+        const p = profile || get();
+        const displayName = resolveDisplayName(p);
+        const shortName = displayName.split(/\s+/)[0] || displayName;
+        const initial = displayName.charAt(0).toUpperCase();
+
+        const desktopName = document.getElementById('desktopUserName');
+        const desktopInitial = document.getElementById('desktopUserInitial');
+        const profileUserName = document.getElementById('profileUserName');
+        const mobileUserName = document.getElementById('mobileUserName');
+        const mobileUserInitial = document.getElementById('mobileUserInitial');
+        const mobileAccountLabel = document.getElementById('mobileAccountLabel');
+
+        if (desktopName) desktopName.textContent = displayName;
+        if (desktopInitial) desktopInitial.textContent = initial;
+        if (profileUserName) profileUserName.textContent = shortName;
+        if (mobileUserName) mobileUserName.textContent = displayName;
+        if (mobileUserInitial) mobileUserInitial.textContent = initial;
+        if (mobileAccountLabel) mobileAccountLabel.textContent = shortName;
+
+        const avatarUrl = p.avatar_url;
+        const desktopAvatarContainer = document.querySelector('.user-avatar-dropdown');
+        const mobileAvatarContainer = document.querySelector('.mobile-user-avatar-dropdown');
+
+        if (avatarUrl) {
+            const busted = `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            if (desktopAvatarContainer) {
+                desktopAvatarContainer.style.backgroundImage = `url(${busted})`;
+                desktopAvatarContainer.style.backgroundSize = 'cover';
+                desktopAvatarContainer.style.backgroundPosition = 'center';
+                if (desktopInitial) desktopInitial.style.display = 'none';
+            }
+            if (mobileAvatarContainer) {
+                mobileAvatarContainer.style.backgroundImage = `url(${busted})`;
+                mobileAvatarContainer.style.backgroundSize = 'cover';
+                mobileAvatarContainer.style.backgroundPosition = 'center';
+                if (mobileUserInitial) mobileUserInitial.style.display = 'none';
+            }
+        } else {
+            if (desktopAvatarContainer) {
+                desktopAvatarContainer.style.backgroundImage = 'none';
+                if (desktopInitial) desktopInitial.style.display = '';
+            }
+            if (mobileAvatarContainer) {
+                mobileAvatarContainer.style.backgroundImage = 'none';
+                if (mobileUserInitial) mobileUserInitial.style.display = '';
+            }
+        }
     }
 
     /**
@@ -172,7 +259,17 @@ const AccountProfile = (() => {
     }
 
     // Public API
-    return { get, save, syncFromAPI, prefill, getDisplayName, getMpesaPhone };
+    return {
+        get,
+        save,
+        syncFromAPI,
+        prefill,
+        getDisplayName,
+        getNavbarShortName,
+        resolveDisplayName,
+        applyToNavbar,
+        getMpesaPhone,
+    };
 })();
 
 // Expose globally

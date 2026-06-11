@@ -108,10 +108,18 @@ def _complete_google_login(request, User, google_id, email, first_name, last_nam
         user.set_unusable_password()
         user.save()
     else:
-        # Update user's Google picture url if provided and not already matched
+        update_fields = []
+        if first_name and first_name != user.first_name:
+            user.first_name = first_name
+            update_fields.append('first_name')
+        if last_name and last_name != user.last_name:
+            user.last_name = last_name
+            update_fields.append('last_name')
         if picture and user.avatar_url != picture:
             user.avatar_url = picture
-            user.save(update_fields=['avatar_url'])
+            update_fields.append('avatar_url')
+        if update_fields:
+            user.save(update_fields=update_fields)
         
     # Check if active
     if not user.is_active:

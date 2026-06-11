@@ -39,7 +39,9 @@ function displayUserName() {
     const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
     const userNameSpan = document.getElementById('userName');
     if (userNameSpan) {
-        const name = user.name || user.first_name || user.username || 'Attendee';
+        const name = window.AccountProfile
+            ? AccountProfile.resolveDisplayName(user)
+            : (user.full_name || user.name || user.first_name || user.username || 'Attendee');
         userNameSpan.textContent = name;
     }
 }

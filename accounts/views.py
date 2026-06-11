@@ -34,13 +34,15 @@ def resolve_authenticated_user(request):
 
 
 def user_payload(user):
+    full_name = f"{user.first_name} {user.last_name}".strip() or user.username
     return {
         'id': user.id,
         'username': user.username,
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
-        'full_name': f"{user.first_name} {user.last_name}".strip(),
+        'full_name': full_name,
+        'name': full_name,
         'phone': user.phone,
         'role': user.role,
         'organization_name': user.organization_name,

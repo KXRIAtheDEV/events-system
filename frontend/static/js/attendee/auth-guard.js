@@ -197,12 +197,14 @@ const AuthGuard = {
         
         // Update user name displays
         if (isLoggedIn && user) {
+            const displayName = window.AccountProfile
+                ? AccountProfile.resolveDisplayName(user)
+                : (user.full_name || user.name || user.first_name || user.username || 'User');
             document.querySelectorAll('.user-name-display').forEach(el => {
-                el.textContent = user.name || user.first_name || user.username || 'User';
+                el.textContent = displayName;
             });
             document.querySelectorAll('.user-initial-display').forEach(el => {
-                const name = user.name || user.first_name || user.username || 'User';
-                el.textContent = name.charAt(0).toUpperCase();
+                el.textContent = displayName.charAt(0).toUpperCase();
             });
         }
     }
