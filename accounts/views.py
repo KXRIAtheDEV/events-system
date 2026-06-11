@@ -6,12 +6,16 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from django.db import DatabaseError
+
 from .auth import (
     authenticate_bearer,
+    database_unavailable_response,
     issue_token_pair,
     json_error,
     login_user,
     parse_json_body,
+    retry_after_migration_repair,
     revoke_user_tokens,
     token_hash,
 )
@@ -94,22 +98,27 @@ def register(request):
     if errors:
         return json_error('Registration failed.', status=400, errors=errors)
 
-    user = User.objects.create_user(
-        username=username,
-        email=email,
-        password=password,
-        first_name=(data.get('first_name') or '').strip(),
-        last_name=(data.get('last_name') or '').strip(),
-        phone=(data.get('phone') or '').strip(),
-        role=role,
-        organization_name=organization_name if role == 'organizer' else '',
-    )
-
-    return JsonResponse({
-        'message': 'Registration successful.',
-        'user': user_payload(user),
-        **issue_token_pair(user),
-    }, status=201)
+    try:
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=(data.get('first_name') or '').strip(),
+            last_name=(data.get('last_name') or '').strip(),
+            phone=(data.get('phone') or '').strip(),
+            role=role,
+            organization_name=organization_name if role == 'organizer' else '',
+        )
+        return JsonResponse({
+            'message': 'Registration successful.',
+            'user': user_payload(user),
+            **issue_token_pair(user),
+        }, status=201)
+    except DatabaseError as exc:
+        repaired = retry_after_migration_repair(request, register)
+        if repaired is not None:
+            return repaired
+        return database_unavailable_response(exc)
 
 
 @csrf_exempt
@@ -121,22 +130,29 @@ def login(request):
 
     identifier = (data.get('username') or data.get('email') or '').strip()
     password = data.get('password') or ''
-    user = login_user(identifier, password)
 
-    if not user:
-        return json_error('Invalid username/email or password.', status=401)
-    if not user.is_active:
-        return json_error('This account is inactive.', status=403)
-    if request.path.startswith('/api/organizer/') and user.role != 'organizer' and not user.is_superuser:
-        return json_error('Only organizer accounts can access the organizer portal.', status=403)
+    try:
+        user = login_user(identifier, password)
 
-    django_login(request, user)
+        if not user:
+            return json_error('Invalid username/email or password.', status=401)
+        if not user.is_active:
+            return json_error('This account is inactive.', status=403)
+        if request.path.startswith('/api/organizer/') and user.role != 'organizer' and not user.is_superuser:
+            return json_error('Only organizer accounts can access the organizer portal.', status=403)
 
-    return JsonResponse({
-        'message': 'Login successful.',
-        'user': user_payload(user),
-        **issue_token_pair(user),
-    })
+        django_login(request, user)
+
+        return JsonResponse({
+            'message': 'Login successful.',
+            'user': user_payload(user),
+            **issue_token_pair(user),
+        })
+    except DatabaseError as exc:
+        repaired = retry_after_migration_repair(request, login)
+        if repaired is not None:
+            return repaired
+        return database_unavailable_response(exc)
 
 
 @csrf_exempt

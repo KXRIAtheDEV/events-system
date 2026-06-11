@@ -5,7 +5,15 @@ from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 import json
 import random
-from .auth import issue_token_pair, json_error, parse_json_body
+from django.db import DatabaseError
+
+from .auth import (
+    database_unavailable_response,
+    issue_token_pair,
+    json_error,
+    parse_json_body,
+    retry_after_migration_repair,
+)
 from .views import user_payload
 
 @csrf_exempt
@@ -53,7 +61,17 @@ def google_oauth_callback(request):
         return json_error(f'Invalid token: {str(e)}', status=400)
         
     User = get_user_model()
-    
+
+    try:
+        return _complete_google_login(request, User, google_id, email, first_name, last_name, picture, role)
+    except DatabaseError as exc:
+        repaired = retry_after_migration_repair(request, google_oauth_callback)
+        if repaired is not None:
+            return repaired
+        return database_unavailable_response(exc)
+
+
+def _complete_google_login(request, User, google_id, email, first_name, last_name, picture, role):
     # 1. Try to find user by google_id or email
     user = User.objects.filter(google_id=google_id).first()
     if not user:

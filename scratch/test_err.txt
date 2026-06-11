@@ -1,0 +1,13 @@
+Creating test database for alias 'default'...
+C:\Users\bradr\OneDrive\Documents\GitHub\events-system\.venv\Lib\site-packages\django\core\handlers\base.py:62: UserWarning: No directory at: C:\Users\bradr\OneDrive\Documents\GitHub\events-system\staticfiles\
+  mw_instance = middleware(adapted_handler)
+Forbidden: /api/organizer/auth/login/
+......Bad Request: /api/organizer/auth/register/
+.Unauthorized: /api/auth/check-status/
+.Forbidden: /api/admin/checkins/stats/
+.........
+----------------------------------------------------------------------
+Ran 17 tests in 40.980s
+
+OK
+Destroying test database for alias 'default'...

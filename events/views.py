@@ -892,6 +892,12 @@ def api_db_status(request):
         from django.db.migrations.recorder import MigrationRecorder
         applied = MigrationRecorder.Migration.objects.filter(app='events').values_list('name', flat=True)
         status_info['applied_migrations'] = list(applied)
+        status_info['accounts_migrations'] = list(
+            MigrationRecorder.Migration.objects.filter(app='accounts').values_list('name', flat=True)
+        )
+
+        from config.db_migrations import _auth_schema_status
+        status_info['auth_schema'] = _auth_schema_status()
         
     except Exception as e:
         status_info['error'] = str(e)
@@ -900,31 +906,9 @@ def api_db_status(request):
 
 
 def api_run_migrations(request):
-    """Diagnostic view to run Django migrations on the database."""
-    from django.core.management import call_command
-    import io
-    
-    out = io.StringIO()
-    err = io.StringIO()
-    
-    success = False
-    error_msg = None
-    output_str = ""
-    
-    try:
-        call_command('migrate', interactive=False, stdout=out, stderr=err)
-        success = True
-        output_str = out.getvalue()
-    except Exception as e:
-        success = False
-        error_msg = str(e)
-        output_str = out.getvalue() + "\n" + err.getvalue()
-        
-    return JsonResponse({
-        'success': success,
-        'output': output_str,
-        'error': error_msg
-    })
+    """Diagnostic view to repair migration history and run Django migrations."""
+    from config.db_migrations import run_migrations
+    return JsonResponse(run_migrations())
 
 
 
