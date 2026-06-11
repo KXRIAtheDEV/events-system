@@ -44,8 +44,12 @@ MPESA_COLUMN_HOTFIXES = (
 PAYMENT_REQUIRED_TABLES = (
     'payments_paymentorder',
     'payments_organizernotification',
-    'payments_attendeentification',
+    'payments_attendeenotification',
 )
+
+PAYMENTS_0002 = '0002_remove_payment_event_id_payment_event_and_more'
+PAYMENTS_0003 = '0003_remove_payment_legacy_event_id'
+PAYMENTS_0004 = '0004_paymentorder_organizernotification_attendeentification'
 
 
 def _applied_migrations(app_label: str) -> set[str]:
@@ -61,6 +65,44 @@ def _record_migration(app_label: str, name: str) -> bool:
         return False
     recorder.migration_qs.create(app=app_label, name=name, applied=timezone.now())
     return True
+
+
+def _table_columns(table_name: str) -> set[str]:
+    with connection.cursor() as cursor:
+        if connection.vendor == 'postgresql':
+            cursor.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = %s",
+                [table_name],
+            )
+            return {row[0] for row in cursor.fetchall()}
+        if connection.vendor == 'sqlite':
+            cursor.execute(f'PRAGMA table_info({table_name})')
+            return {row[1] for row in cursor.fetchall()}
+    return set()
+
+
+def _column_has_fk(table_name: str, column_name: str) -> bool:
+    if connection.vendor != 'postgresql':
+        return False
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                 AND tc.table_schema = kcu.table_schema
+                WHERE tc.constraint_type = 'FOREIGN KEY'
+                  AND tc.table_schema = 'public'
+                  AND kcu.table_name = %s
+                  AND kcu.column_name = %s
+            )
+            """,
+            [table_name, column_name],
+        )
+        return bool(cursor.fetchone()[0])
 
 
 def _table_exists(table_name: str) -> bool:
@@ -113,11 +155,199 @@ def repair_migration_history() -> list[str]:
                 repairs.append('recorded accounts.0009 (mpesa columns already existed)')
 
     payments_applied = _applied_migrations('payments')
-    if _table_exists('payments_paymentorder') and '0004_paymentorder_organizernotification_attendeentification' not in payments_applied:
-        if _record_migration('payments', '0004_paymentorder_organizernotification_attendeentification'):
+    if _table_exists('payments_paymentorder') and PAYMENTS_0004 not in payments_applied:
+        if _record_migration('payments', PAYMENTS_0004):
             repairs.append('recorded payments.0004 (payment tables already existed)')
 
+    repairs.extend(repair_payments_schema())
+
     return repairs
+
+
+def repair_payments_schema() -> list[str]:
+    """
+    Fix payments_payment when production is stuck on payments.0002.
+
+    Common failure: legacy_event_id already exists (partial 0002) while Django
+    history still only has 0001_initial, so migrate cannot reach 0004.
+    """
+    if connection.vendor != 'postgresql' or not _table_exists('payments_payment'):
+        return []
+
+    actions: list[str] = []
+    applied = _applied_migrations('payments')
+
+    def record(name: str) -> None:
+        if name not in applied and _record_migration('payments', name):
+            actions.append(f'recorded payments.{name}')
+            applied.add(name)
+
+    cols = _table_columns('payments_payment')
+    has_legacy = 'legacy_event_id' in cols
+    has_event_id = 'event_id' in cols
+    event_id_is_fk = has_event_id and _column_has_fk('payments_payment', 'event_id')
+
+    # Both integer event_id and legacy_event_id — consolidate before 0002 can run.
+    if has_legacy and has_event_id and not event_id_is_fk:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE payments_payment
+                SET legacy_event_id = event_id
+                WHERE legacy_event_id IS NULL AND event_id IS NOT NULL
+                """
+            )
+            cursor.execute('ALTER TABLE payments_payment DROP COLUMN event_id')
+        actions.append('removed duplicate integer payments_payment.event_id')
+        cols = _table_columns('payments_payment')
+        has_event_id = 'event_id' in cols
+        event_id_is_fk = has_event_id and _column_has_fk('payments_payment', 'event_id')
+
+    # 0002 rename done (legacy exists) but FK column / index missing.
+    if 'legacy_event_id' in cols and not event_id_is_fk:
+        with connection.cursor() as cursor:
+            if 'event_id' not in cols:
+                cursor.execute(
+                    """
+                    ALTER TABLE payments_payment
+                    ADD COLUMN event_id bigint NULL
+                    REFERENCES events_event(id) DEFERRABLE INITIALLY DEFERRED
+                    """
+                )
+                actions.append('added payments_payment.event_id FK')
+            cursor.execute(
+                """
+                UPDATE payments_payment pp
+                SET event_id = pp.legacy_event_id
+                WHERE pp.event_id IS NULL
+                  AND pp.legacy_event_id IS NOT NULL
+                  AND EXISTS (
+                      SELECT 1 FROM events_event e WHERE e.id = pp.legacy_event_id
+                  )
+                """
+            )
+            cursor.execute(
+                'CREATE INDEX IF NOT EXISTS payments_pa_status_7ad4af_idx ON payments_payment (status)'
+            )
+            actions.append('backfilled payments_payment.event_id from legacy_event_id')
+        record(PAYMENTS_0002)
+        cols = _table_columns('payments_payment')
+        has_legacy = 'legacy_event_id' in cols
+        event_id_is_fk = 'event_id' in cols and _column_has_fk('payments_payment', 'event_id')
+
+    # 0002 complete — drop legacy column (0003).
+    if 'legacy_event_id' in cols and event_id_is_fk:
+        with connection.cursor() as cursor:
+            cursor.execute('ALTER TABLE payments_payment DROP COLUMN legacy_event_id')
+        actions.append('dropped payments_payment.legacy_event_id')
+        record(PAYMENTS_0002)
+        record(PAYMENTS_0003)
+        cols = _table_columns('payments_payment')
+        has_legacy = False
+
+    # Already at post-0003 schema but history not recorded.
+    if not has_legacy and event_id_is_fk:
+        record(PAYMENTS_0002)
+        record(PAYMENTS_0003)
+
+    return actions
+
+
+def apply_payment_order_tables_hotfix() -> list[str]:
+    """Create checkout tables when payments.0004 cannot be applied via migrate."""
+    if connection.vendor != 'postgresql':
+        return []
+    if _payment_schema_status().get('ready'):
+        return []
+
+    applied: list[str] = []
+    with connection.cursor() as cursor:
+        if not _table_exists('payments_paymentorder'):
+            cursor.execute(
+                """
+                CREATE TABLE payments_paymentorder (
+                    id bigserial PRIMARY KEY,
+                    ticket_type varchar(20) NOT NULL,
+                    quantity integer NOT NULL CHECK (quantity >= 0),
+                    unit_price numeric(10, 2) NOT NULL,
+                    total_amount numeric(10, 2) NOT NULL,
+                    status varchar(20) NOT NULL,
+                    screenshot varchar(100) NULL,
+                    submitted_mpesa_name varchar(150) NOT NULL DEFAULT '',
+                    ocr_raw_text text NOT NULL DEFAULT '',
+                    verification_message text NOT NULL DEFAULT '',
+                    created_at timestamptz NOT NULL DEFAULT NOW(),
+                    updated_at timestamptz NOT NULL DEFAULT NOW(),
+                    attendee_id bigint NOT NULL REFERENCES accounts_user(id) ON DELETE CASCADE,
+                    event_id bigint NOT NULL REFERENCES events_event(id) ON DELETE CASCADE,
+                    organizer_id bigint NOT NULL REFERENCES accounts_user(id) ON DELETE CASCADE,
+                    ticket_id bigint NULL REFERENCES bookings_ticket(id) ON DELETE SET NULL
+                )
+                """
+            )
+            cursor.execute(
+                'CREATE INDEX IF NOT EXISTS payments_pa_status_8a1f2c_idx ON payments_paymentorder (status)'
+            )
+            cursor.execute(
+                'CREATE INDEX IF NOT EXISTS payments_pa_attende_3b4c5d_idx '
+                'ON payments_paymentorder (attendee_id, status)'
+            )
+            cursor.execute(
+                'CREATE INDEX IF NOT EXISTS payments_pa_organiz_6e7f8a_idx '
+                'ON payments_paymentorder (organizer_id, status)'
+            )
+            applied.append('created payments_paymentorder')
+
+        if not _table_exists('payments_organizernotification'):
+            cursor.execute(
+                """
+                CREATE TABLE payments_organizernotification (
+                    id bigserial PRIMARY KEY,
+                    title varchar(200) NOT NULL,
+                    message text NOT NULL,
+                    notification_type varchar(20) NOT NULL DEFAULT 'info',
+                    is_read boolean NOT NULL DEFAULT false,
+                    requires_action boolean NOT NULL DEFAULT false,
+                    action_type varchar(50) NOT NULL DEFAULT '',
+                    created_at timestamptz NOT NULL DEFAULT NOW(),
+                    organizer_id bigint NOT NULL REFERENCES accounts_user(id) ON DELETE CASCADE,
+                    payment_order_id bigint NULL REFERENCES payments_paymentorder(id) ON DELETE CASCADE
+                )
+                """
+            )
+            cursor.execute(
+                'CREATE INDEX IF NOT EXISTS payments_or_organiz_9a0b1c_idx '
+                'ON payments_organizernotification (organizer_id, is_read)'
+            )
+            applied.append('created payments_organizernotification')
+
+        if not _table_exists('payments_attendeenotification'):
+            cursor.execute(
+                """
+                CREATE TABLE payments_attendeenotification (
+                    id bigserial PRIMARY KEY,
+                    title varchar(200) NOT NULL,
+                    message text NOT NULL,
+                    notification_type varchar(20) NOT NULL DEFAULT 'info',
+                    is_read boolean NOT NULL DEFAULT false,
+                    created_at timestamptz NOT NULL DEFAULT NOW(),
+                    attendee_id bigint NOT NULL REFERENCES accounts_user(id) ON DELETE CASCADE,
+                    payment_order_id bigint NULL REFERENCES payments_paymentorder(id) ON DELETE CASCADE
+                )
+                """
+            )
+            cursor.execute(
+                'CREATE INDEX IF NOT EXISTS payments_at_attende_2d3e4f_idx '
+                'ON payments_attendeenotification (attendee_id, is_read)'
+            )
+            applied.append('created payments_attendeenotification')
+
+    if _payment_schema_status().get('ready'):
+        if PAYMENTS_0004 not in _applied_migrations('payments'):
+            if _record_migration('payments', PAYMENTS_0004):
+                applied.append(f'recorded payments.{PAYMENTS_0004}')
+
+    return applied
 
 
 def apply_auth_column_hotfixes() -> list[str]:
@@ -161,12 +391,15 @@ def apply_mpesa_column_hotfixes() -> list[str]:
 def _payment_schema_status() -> dict[str, Any]:
     status: dict[str, Any] = {
         'tables': {},
+        'payments_payment_columns': [],
         'ready': False,
         'error': None,
     }
     try:
         for table_name in PAYMENT_REQUIRED_TABLES:
             status['tables'][table_name] = _table_exists(table_name)
+        if _table_exists('payments_payment'):
+            status['payments_payment_columns'] = sorted(_table_columns('payments_payment'))
         status['ready'] = all(status['tables'].values())
     except Exception as exc:
         status['error'] = str(exc)
@@ -179,26 +412,20 @@ def ensure_payment_schema() -> list[str]:
     if _payment_schema_status().get('ready'):
         return actions
 
+    actions.extend(repair_payments_schema())
+
     out = io.StringIO()
     err = io.StringIO()
     try:
-        call_command('migrate', 'accounts', interactive=False, stdout=out, stderr=err)
-        actions.append('migrate accounts')
         call_command('migrate', 'payments', interactive=False, stdout=out, stderr=err)
         actions.append('migrate payments')
-    except Exception:
-        logger.exception('Targeted payments migrate failed')
-        raise
-
-    mpesa_hotfixes = apply_mpesa_column_hotfixes()
-    actions.extend(mpesa_hotfixes)
-
-    extra_repairs = repair_migration_history()
-    actions.extend(extra_repairs)
+    except Exception as exc:
+        logger.warning('payments migrate failed after schema repair: %s', exc)
+        actions.append(f'payments migrate failed: {exc}')
 
     if not _payment_schema_status().get('ready'):
-        call_command('migrate', interactive=False, stdout=out, stderr=err)
-        actions.append('migrate all (payment tables still missing)')
+        hotfix_actions = apply_payment_order_tables_hotfix()
+        actions.extend(hotfix_actions)
 
     return actions
 
@@ -213,7 +440,9 @@ def run_migrations() -> dict[str, Any]:
     error_msg = None
 
     payment_actions: list[str] = []
+    payment_repairs: list[str] = []
     try:
+        payment_repairs = repair_payments_schema()
         repairs = repair_migration_history()
         call_command('migrate', interactive=False, stdout=out, stderr=err)
         hotfixes = apply_auth_column_hotfixes()
@@ -224,6 +453,7 @@ def run_migrations() -> dict[str, Any]:
             error_msg = 'Schema incomplete after migrate'
     except Exception as exc:
         error_msg = str(exc)
+        payment_repairs.extend(repair_payments_schema())
         # Recover from partially-applied migrations (e.g. avatar column added via hotfix).
         extra_repairs = repair_migration_history()
         repairs.extend(extra_repairs)
@@ -246,6 +476,8 @@ def run_migrations() -> dict[str, Any]:
             except Exception as hotfix_exc:
                 logger.exception('Schema hotfix after migrate failure also failed')
                 error_msg = str(hotfix_exc)
+
+    repairs = payment_repairs + repairs
 
     output = out.getvalue()
     if err.getvalue():
