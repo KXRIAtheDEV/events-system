@@ -500,42 +500,53 @@ function bookTicket(id) {
     const event = eventsCatalog.find(e => e.id == id);
     if (!event) return;
     
-    let cart = localStorage.getItem('eventhub_cart');
-    if (cart) {
-        try {
-            cart = JSON.parse(cart);
-        } catch(e) {
-            cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
-        }
-    } else {
-        cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
-    }
-    
+    const storage = window.EventhubCartStorage;
+    const cart = storage ? storage.loadEventhubCart() : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+
     const existingItem = cart.items.find(i => i.id == id);
     if (existingItem) {
         showToast(`🎟️ ${event.title} is already in your booking cart!`, 'info');
         return;
     }
-    
-    cart.items.push({
-        id: event.id,
-        title: event.title,
-        category: event.category_name,
-        date: event.date,
-        location: event.location,
-        price: event.price,
-        image: event.image,
-        quantity: 1
-    });
-    
+
+    const item = storage
+        ? storage.slimCartItem({
+            id: event.id,
+            title: event.title,
+            category: event.category_name,
+            date: event.date,
+            location: event.location,
+            price: event.price,
+            image: event.image,
+            quantity: 1,
+        })
+        : {
+            id: event.id,
+            title: event.title,
+            category: event.category_name,
+            date: event.date,
+            location: event.location,
+            price: event.price,
+            quantity: 1,
+        };
+
+    cart.items.push(item);
     cart.subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     cart.platform_fee = 0;
     cart.total = cart.subtotal;
-    
-    localStorage.setItem('eventhub_cart', JSON.stringify(cart));
-    window.dispatchEvent(new Event('cart-updated'));
-    
-    showToast(`✅ ${event.title} added to booking cart!`, 'success');
+
+    try {
+        if (storage) {
+            storage.saveEventhubCart(cart);
+        } else {
+            localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+        }
+        window.dispatchEvent(new Event('cart-updated'));
+        showToast(`✅ ${event.title} added to booking cart!`, 'success');
+    } catch (error) {
+        console.error('Failed to save cart:', error);
+        showToast('Could not save cart. Please clear site data or book from the event page.', 'error');
+    }
 }
 
 function resetFilters() {

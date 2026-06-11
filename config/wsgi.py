@@ -19,14 +19,22 @@ app = application
 
 # Run migrations on serverless/managed Postgres (Supabase via DATABASE_URL) with repair.
 if os.environ.get('VERCEL') or os.environ.get('DATABASE_URL'):
+    import logging
+    _migration_logger = logging.getLogger('config.wsgi')
     try:
         from config.db_migrations import run_migrations
         result = run_migrations()
         if result.get('repairs'):
-            print('Vercel migration repairs:', result['repairs'])
+            _migration_logger.warning('Vercel migration repairs: %s', result['repairs'])
+        if result.get('payment_actions'):
+            _migration_logger.warning('Vercel payment schema actions: %s', result['payment_actions'])
         if not result.get('success'):
-            print('Vercel startup migration failed:', result.get('error'))
+            _migration_logger.error(
+                'Vercel startup migration failed: %s (payment_schema=%s)',
+                result.get('error'),
+                result.get('payment_schema'),
+            )
     except Exception as e:
-        print('Vercel startup migration failed:', e)
+        _migration_logger.exception('Vercel startup migration failed: %s', e)
 
 

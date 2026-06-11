@@ -103,9 +103,14 @@
             credentials: 'same-origin',
             body: JSON.stringify({ event_id: eventId, ticket_type: ticketType, quantity }),
         });
-        const data = await response.json();
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (_) {
+            data = {};
+        }
         if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Could not start checkout.');
+            throw new Error(data.message || data.error || 'Could not start checkout.');
         }
         return data.order;
     }

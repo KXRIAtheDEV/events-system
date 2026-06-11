@@ -33,6 +33,20 @@ AUTH_COLUMN_HOTFIXES = (
     ),
 )
 
+MPESA_COLUMN_HOTFIXES = (
+    ('mpesa_display_name', "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS mpesa_display_name varchar(150) NOT NULL DEFAULT ''"),
+    ('mpesa_paybill', "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS mpesa_paybill varchar(20) NOT NULL DEFAULT ''"),
+    ('mpesa_till', "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS mpesa_till varchar(20) NOT NULL DEFAULT ''"),
+    ('mpesa_pochi', "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS mpesa_pochi varchar(20) NOT NULL DEFAULT ''"),
+    ('mpesa_send_money', "ALTER TABLE accounts_user ADD COLUMN IF NOT EXISTS mpesa_send_money varchar(20) NOT NULL DEFAULT ''"),
+)
+
+PAYMENT_REQUIRED_TABLES = (
+    'payments_paymentorder',
+    'payments_organizernotification',
+    'payments_attendeentification',
+)
+
 
 def _applied_migrations(app_label: str) -> set[str]:
     return set(
@@ -92,6 +106,17 @@ def repair_migration_history() -> list[str]:
             if _record_migration('accounts', '0008_user_avatar_user_avatar_url'):
                 repairs.append('recorded accounts.0008 (avatar columns already existed)')
 
+    mpesa_columns = {'mpesa_display_name', 'mpesa_paybill', 'mpesa_till', 'mpesa_pochi', 'mpesa_send_money'}
+    if mpesa_columns.issubset(user_columns):
+        if '0009_user_mpesa_fields' not in accounts_applied:
+            if _record_migration('accounts', '0009_user_mpesa_fields'):
+                repairs.append('recorded accounts.0009 (mpesa columns already existed)')
+
+    payments_applied = _applied_migrations('payments')
+    if _table_exists('payments_paymentorder') and '0004_paymentorder_organizernotification_attendeentification' not in payments_applied:
+        if _record_migration('payments', '0004_paymentorder_organizernotification_attendeentification'):
+            repairs.append('recorded payments.0004 (payment tables already existed)')
+
     return repairs
 
 
@@ -114,6 +139,70 @@ def apply_auth_column_hotfixes() -> list[str]:
     return applied
 
 
+def apply_mpesa_column_hotfixes() -> list[str]:
+    """Add M-Pesa organizer settings columns when migration history is out of sync."""
+    if connection.vendor != 'postgresql':
+        return []
+
+    applied: list[str] = []
+    existing = set(_auth_schema_status().get('user_columns') or [])
+    try:
+        with connection.cursor() as cursor:
+            for column_name, ddl in MPESA_COLUMN_HOTFIXES:
+                if column_name not in existing:
+                    cursor.execute(ddl)
+                    applied.append(f'added accounts_user.{column_name}')
+    except Exception:
+        logger.exception('M-Pesa column hotfix failed')
+        raise
+    return applied
+
+
+def _payment_schema_status() -> dict[str, Any]:
+    status: dict[str, Any] = {
+        'tables': {},
+        'ready': False,
+        'error': None,
+    }
+    try:
+        for table_name in PAYMENT_REQUIRED_TABLES:
+            status['tables'][table_name] = _table_exists(table_name)
+        status['ready'] = all(status['tables'].values())
+    except Exception as exc:
+        status['error'] = str(exc)
+    return status
+
+
+def ensure_payment_schema() -> list[str]:
+    """Run payments/accounts migrations and hotfixes until checkout tables exist."""
+    actions: list[str] = []
+    if _payment_schema_status().get('ready'):
+        return actions
+
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        call_command('migrate', 'accounts', interactive=False, stdout=out, stderr=err)
+        actions.append('migrate accounts')
+        call_command('migrate', 'payments', interactive=False, stdout=out, stderr=err)
+        actions.append('migrate payments')
+    except Exception:
+        logger.exception('Targeted payments migrate failed')
+        raise
+
+    mpesa_hotfixes = apply_mpesa_column_hotfixes()
+    actions.extend(mpesa_hotfixes)
+
+    extra_repairs = repair_migration_history()
+    actions.extend(extra_repairs)
+
+    if not _payment_schema_status().get('ready'):
+        call_command('migrate', interactive=False, stdout=out, stderr=err)
+        actions.append('migrate all (payment tables still missing)')
+
+    return actions
+
+
 def run_migrations() -> dict[str, Any]:
     """Repair history, run migrate, hotfix auth columns, and return a structured result."""
     out = io.StringIO()
@@ -123,11 +212,16 @@ def run_migrations() -> dict[str, Any]:
     success = False
     error_msg = None
 
+    payment_actions: list[str] = []
     try:
         repairs = repair_migration_history()
         call_command('migrate', interactive=False, stdout=out, stderr=err)
         hotfixes = apply_auth_column_hotfixes()
-        success = True
+        hotfixes.extend(apply_mpesa_column_hotfixes())
+        payment_actions = ensure_payment_schema()
+        success = _auth_schema_status().get('ready') and _payment_schema_status().get('ready')
+        if not success:
+            error_msg = 'Schema incomplete after migrate'
     except Exception as exc:
         error_msg = str(exc)
         # Recover from partially-applied migrations (e.g. avatar column added via hotfix).
@@ -135,17 +229,22 @@ def run_migrations() -> dict[str, Any]:
         repairs.extend(extra_repairs)
         try:
             call_command('migrate', interactive=False, stdout=out, stderr=err)
-            success = True
-            error_msg = None
+            hotfixes = apply_auth_column_hotfixes()
+            hotfixes.extend(apply_mpesa_column_hotfixes())
+            payment_actions = ensure_payment_schema()
+            success = _auth_schema_status().get('ready') and _payment_schema_status().get('ready')
+            error_msg = None if success else 'Schema incomplete after migrate retry'
         except Exception as retry_exc:
             error_msg = str(retry_exc)
             try:
                 hotfixes = apply_auth_column_hotfixes()
-                if _auth_schema_status().get('ready'):
-                    success = True
+                hotfixes.extend(apply_mpesa_column_hotfixes())
+                payment_actions = ensure_payment_schema()
+                success = _auth_schema_status().get('ready') and _payment_schema_status().get('ready')
+                if success:
                     error_msg = None
             except Exception as hotfix_exc:
-                logger.exception('Auth hotfix after migrate failure also failed')
+                logger.exception('Schema hotfix after migrate failure also failed')
                 error_msg = str(hotfix_exc)
 
     output = out.getvalue()
@@ -153,16 +252,21 @@ def run_migrations() -> dict[str, Any]:
         output = (output + '\n' + err.getvalue()).strip()
 
     accounts_migrations = sorted(_applied_migrations('accounts'))
+    payments_migrations = sorted(_applied_migrations('payments'))
     auth_tables = _auth_schema_status()
+    payment_tables = _payment_schema_status()
 
     return {
         'success': success,
         'repairs': repairs,
         'hotfixes': hotfixes,
+        'payment_actions': payment_actions,
         'output': output,
         'error': error_msg,
         'accounts_migrations': accounts_migrations,
+        'payments_migrations': payments_migrations,
         'auth_schema': auth_tables,
+        'payment_schema': payment_tables,
     }
 
 

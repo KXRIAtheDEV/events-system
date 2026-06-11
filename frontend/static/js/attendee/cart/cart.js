@@ -40,16 +40,18 @@ function setupEventListeners() {
 
 function loadCart() {
     try {
-        const savedCart = localStorage.getItem('eventhub_cart');
-        if (savedCart) {
-            cartData = JSON.parse(savedCart);
-            if (!cartData.items) cartData.items = [];
-            if (!cartData.subtotal) cartData.subtotal = 0;
-            if (!cartData.platform_fee) cartData.platform_fee = 0;
-            if (!cartData.total) cartData.total = 0;
+        if (window.EventhubCartStorage) {
+            cartData = window.EventhubCartStorage.loadEventhubCart();
         } else {
-            cartData = { items: [], subtotal: 0, platform_fee: 0, total: 0, discount_amount: 0, promo_code: null };
+            const savedCart = localStorage.getItem('eventhub_cart');
+            cartData = savedCart ? JSON.parse(savedCart) : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
         }
+        if (!cartData.items) cartData.items = [];
+        if (!cartData.subtotal) cartData.subtotal = 0;
+        if (!cartData.platform_fee) cartData.platform_fee = 0;
+        if (!cartData.total) cartData.total = 0;
+        if (cartData.discount_amount === undefined) cartData.discount_amount = 0;
+        if (cartData.promo_code === undefined) cartData.promo_code = null;
         
         displayCart();
         
@@ -190,7 +192,16 @@ function recalculateCartTotals() {
 }
 
 function saveCartToLocalStorage() {
-    localStorage.setItem('eventhub_cart', JSON.stringify(cartData));
+    try {
+        if (window.EventhubCartStorage) {
+            window.EventhubCartStorage.saveEventhubCart(cartData);
+        } else {
+            localStorage.setItem('eventhub_cart', JSON.stringify(cartData));
+        }
+    } catch (error) {
+        console.error('Failed to save cart:', error);
+        showToast('Could not save cart — storage may be full. Remove old items and try again.', 'error');
+    }
 }
 
 async function applyPromoCode(e) {

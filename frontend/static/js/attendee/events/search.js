@@ -348,41 +348,51 @@ function addToCart(eventId, title, price, image) {
         return;
     }
     
-    let cart = localStorage.getItem('eventhub_cart');
-    if (cart) {
-        try {
-            cart = JSON.parse(cart);
-        } catch(e) {
-            cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
-        }
-    } else {
-        cart = { items: [], subtotal: 0, platform_fee: 0, total: 0 };
-    }
-    
+    const storage = window.EventhubCartStorage;
+    const cart = storage ? storage.loadEventhubCart() : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+
     const existingItem = cart.items.find(i => i.id == eventId);
     if (existingItem) {
         showToast(`${title} is already in your cart!`, 'info');
         return;
     }
-    
-    cart.items.push({
-        id: eventId,
-        title: title,
-        price: price,
-        quantity: 1,
-        image: image,
-        location: 'Event Venue',
-        date: new Date().toISOString()
-    });
-    
+
+    const item = storage
+        ? storage.slimCartItem({
+            id: eventId,
+            title: title,
+            price: price,
+            quantity: 1,
+            image: image,
+            location: 'Event Venue',
+            date: new Date().toISOString(),
+        })
+        : {
+            id: eventId,
+            title: title,
+            price: price,
+            quantity: 1,
+            location: 'Event Venue',
+            date: new Date().toISOString(),
+        };
+
+    cart.items.push(item);
     cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
     cart.platform_fee = 0;
     cart.total = cart.subtotal;
-    
-    localStorage.setItem('eventhub_cart', JSON.stringify(cart));
-    window.dispatchEvent(new Event('cart-updated'));
-    
-    showToast(`${title} added to cart!`, 'success');
+
+    try {
+        if (storage) {
+            storage.saveEventhubCart(cart);
+        } else {
+            localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+        }
+        window.dispatchEvent(new Event('cart-updated'));
+        showToast(`${title} added to cart!`, 'success');
+    } catch (error) {
+        console.error('Failed to save cart:', error);
+        showToast('Could not save cart. Please clear site data or book from the event page.', 'error');
+    }
 }
 
 window.changePage = changePage;

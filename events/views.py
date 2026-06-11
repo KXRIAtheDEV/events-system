@@ -896,8 +896,12 @@ def api_db_status(request):
             MigrationRecorder.Migration.objects.filter(app='accounts').values_list('name', flat=True)
         )
 
-        from config.db_migrations import _auth_schema_status
+        from config.db_migrations import _auth_schema_status, _payment_schema_status
         status_info['auth_schema'] = _auth_schema_status()
+        status_info['payment_schema'] = _payment_schema_status()
+        status_info['payments_migrations'] = list(
+            MigrationRecorder.Migration.objects.filter(app='payments').values_list('name', flat=True)
+        )
         
     except Exception as e:
         status_info['error'] = str(e)

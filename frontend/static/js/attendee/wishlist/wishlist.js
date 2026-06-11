@@ -245,38 +245,62 @@ async function proceedToBooking(eventId) {
         setTimeout(() => window.location.href = '/login/', 1500);
         return;
     }
-    
+
+    if (window.CheckoutFlow) {
+        window.CheckoutFlow.startCheckout(eventId, 'Regular', 1);
+        return;
+    }
+
     const event = wishlistItems.find(e => e.id == eventId);
     if (!event) {
         showToast('❌ Event details not found', 'error');
         return;
     }
-    
-    let cart = localStorage.getItem('eventhub_cart');
-    cart = cart ? JSON.parse(cart) : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
-    
+
+    const storage = window.EventhubCartStorage;
+    const cart = storage ? storage.loadEventhubCart() : { items: [], subtotal: 0, platform_fee: 0, total: 0 };
+
     if (cart.items.find(i => i.id == eventId)) {
         showToast('🎟️ Ticket already in your booking cart', 'info');
         return;
     }
-    
-    cart.items.push({
-        id: event.id,
-        title: event.title,
-        price: event.price,
-        quantity: 1,
-        image: event.image,
-        location: event.location,
-        date: event.date
-    });
-    
+
+    const slimItem = storage
+        ? storage.slimCartItem({
+            id: event.id,
+            title: event.title,
+            price: event.price,
+            quantity: 1,
+            image: event.image,
+            location: event.location,
+            date: event.date,
+        })
+        : {
+            id: event.id,
+            title: event.title,
+            price: event.price,
+            quantity: 1,
+            location: event.location,
+            date: event.date,
+        };
+
+    cart.items.push(slimItem);
     cart.subtotal = cart.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
     cart.platform_fee = 0;
     cart.total = cart.subtotal;
-    
-    localStorage.setItem('eventhub_cart', JSON.stringify(cart));
-    showToast('✅ Ticket added to cart! Proceed to checkout', 'success');
-    window.dispatchEvent(new Event('cart-updated'));
+
+    try {
+        if (storage) {
+            storage.saveEventhubCart(cart);
+        } else {
+            localStorage.setItem('eventhub_cart', JSON.stringify(cart));
+        }
+        showToast('✅ Ticket added to cart! Proceed to checkout', 'success');
+        window.dispatchEvent(new Event('cart-updated'));
+    } catch (error) {
+        console.error('Failed to save cart:', error);
+        showToast('Could not save cart. Please clear site data or book from the event page.', 'error');
+    }
 }
 
 function viewEvent(eventId) {

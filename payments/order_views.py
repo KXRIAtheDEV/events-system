@@ -1,6 +1,7 @@
 import json
 import time
 
+from django.db.utils import ProgrammingError
 from django.http import JsonResponse, StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -112,16 +113,29 @@ def create_payment_order(request):
     except FulfillmentError as exc:
         return JsonResponse({'success': False, 'message': exc.message}, status=400)
 
-    order = PaymentOrder.objects.create(
-        attendee=user,
-        event=event,
-        organizer=organizer,
-        ticket_type=ticket_type,
-        quantity=qty,
-        unit_price=unit_price,
-        total_amount=total_amount,
-        status='pending_payment',
-    )
+    order_fields = {
+        'attendee': user,
+        'event': event,
+        'organizer': organizer,
+        'ticket_type': ticket_type,
+        'quantity': qty,
+        'unit_price': unit_price,
+        'total_amount': total_amount,
+        'status': 'pending_payment',
+    }
+    try:
+        order = PaymentOrder.objects.create(**order_fields)
+    except ProgrammingError as exc:
+        if 'payments_paymentorder' not in str(exc).lower():
+            raise
+        from config.db_migrations import run_migrations
+        migration_result = run_migrations()
+        if not migration_result.get('success'):
+            return JsonResponse({
+                'success': False,
+                'message': 'Payment system is being updated. Please try again in a moment.',
+            }, status=503)
+        order = PaymentOrder.objects.create(**order_fields)
 
     return JsonResponse({
         'success': True,
