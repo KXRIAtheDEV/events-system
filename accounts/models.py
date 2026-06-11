@@ -31,6 +31,36 @@ class User(AbstractUser):
     account_number = models.CharField(max_length=50, blank=True)
     account_holder = models.CharField(max_length=150, blank=True)
     routing_number = models.CharField(max_length=50, blank=True)
+
+    # M-Pesa payment profile (organizer)
+    mpesa_display_name = models.CharField(max_length=150, blank=True)
+    mpesa_paybill = models.CharField(max_length=20, blank=True)
+    mpesa_till = models.CharField(max_length=20, blank=True)
+    mpesa_pochi = models.CharField(max_length=20, blank=True)
+    mpesa_send_money = models.CharField(max_length=20, blank=True)
+
+    def has_mpesa_payment_config(self):
+        return bool(
+            self.mpesa_display_name.strip()
+            and any([
+                self.mpesa_paybill.strip(),
+                self.mpesa_till.strip(),
+                self.mpesa_pochi.strip(),
+                self.mpesa_send_money.strip(),
+            ])
+        )
+
+    def mpesa_payment_options(self):
+        options = []
+        if self.mpesa_paybill.strip():
+            options.append({'type': 'paybill', 'label': 'Paybill', 'value': self.mpesa_paybill.strip()})
+        if self.mpesa_till.strip():
+            options.append({'type': 'till', 'label': 'Till Number', 'value': self.mpesa_till.strip()})
+        if self.mpesa_pochi.strip():
+            options.append({'type': 'pochi', 'label': 'Pochi la Biashara', 'value': self.mpesa_pochi.strip()})
+        if self.mpesa_send_money.strip():
+            options.append({'type': 'send_money', 'label': 'Send Money', 'value': self.mpesa_send_money.strip()})
+        return options
     
     class Meta(AbstractUser.Meta):
         indexes = [

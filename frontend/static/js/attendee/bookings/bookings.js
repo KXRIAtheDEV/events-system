@@ -9,7 +9,7 @@ let itemsPerPage = 10;
 let currentSearch = '';
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadBookingsFromStorage();
+    loadBookingsFromAPI();
     setupEventListeners();
     setupReviewModalHandlers();
 });
@@ -25,21 +25,46 @@ function setupEventListeners() {
     }
 }
 
-function loadBookingsFromStorage() {
+async function loadBookingsFromAPI() {
+    const token = localStorage.getItem('attendee_access_token');
+    if (!token) {
+        allBookings = [];
+        renderBookings();
+        updateBookingCount();
+        return;
+    }
     try {
-        const savedBookings = localStorage.getItem('eventhub_bookings');
-        
-        if (savedBookings) {
-            allBookings = JSON.parse(savedBookings);
-            console.log('Loaded bookings:', allBookings.length);
-        } else {
-            allBookings = [];
-        }
-        
+        const headers = { Authorization: `Bearer ${token}` };
+        const [upRes, pastRes] = await Promise.all([
+            fetch('/api/attendee/tickets/upcoming/', { headers, credentials: 'same-origin' }),
+            fetch('/api/attendee/tickets/past/', { headers, credentials: 'same-origin' }),
+        ]);
+        const up = await upRes.json();
+        const past = await pastRes.json();
+        const tickets = [...(up.results || []), ...(past.results || [])];
+        allBookings = tickets.map(t => ({
+            id: t.ticket_number,
+            booking_date: t.purchase_date,
+            status: 'confirmed',
+            total_amount: parseFloat(t.price) * (t.quantity || 1),
+            receipt_number: t.ticket_number,
+            items: [{
+                title: t.event?.title || 'Event',
+                category: t.ticket_type || 'Regular',
+                date: t.event?.start_date,
+                location: t.event?.venue_name || t.event?.location || '',
+                price: parseFloat(t.price),
+                quantity: t.quantity || 1,
+                image: t.event?.banner_image,
+                ticket_type: t.ticket_type,
+            }],
+        }));
         renderBookings();
         updateBookingCount();
     } catch (error) {
         console.error('Error loading bookings:', error);
+        allBookings = [];
+        renderBookings();
     }
 }
 

@@ -292,157 +292,44 @@ function backToCart() {
 
 async function processCheckout(e) {
     e.preventDefault();
-    
-    const billingInfo = {
-        full_name: document.getElementById('billingName')?.value.trim(),
-        email: document.getElementById('billingEmail')?.value.trim(),
-        phone: document.getElementById('billingPhone')?.value.trim()
-    };
-    
-    if (!billingInfo.full_name) { showToast('Please enter your full name', 'error'); return; }
-    if (!billingInfo.email || !isValidEmail(billingInfo.email)) { showToast('Please enter a valid email address', 'error'); return; }
-    if (!billingInfo.phone) { showToast('Please enter your M-Pesa phone number', 'error'); return; }
-    
-    try {
-        const bookingId = 'BK' + Date.now();
-        await initiateMpesaPayment(bookingId, billingInfo);
-    } catch (error) {
-        showToast(error.message || 'Checkout failed', 'error');
+
+    if (!window.CheckoutFlow) {
+        showToast('Checkout is loading. Please try again.', 'error');
+        return;
     }
+
+    const item = cartData.items[0];
+    if (!item) {
+        showToast('Your booking cart is empty', 'error');
+        return;
+    }
+
+    if (cartData.items.length > 1) {
+        showToast('Complete payment for each event one at a time.', 'info');
+    }
+
+    backToCart();
+    const ticketType = item.ticket_type || 'Regular';
+    await window.CheckoutFlow.startCheckout(item.id, ticketType, item.quantity);
 }
 
-async function initiateMpesaPayment(bookingId, billingInfo) {
-    try {
-        checkoutViewEl.style.display = 'none';
-        paymentViewEl.style.display = 'block';
-        
-        const paymentStatusEl = document.getElementById('paymentStatus');
-        if (paymentStatusEl) {
-            paymentStatusEl.innerHTML = `
-                <div class="mpesa-payment-initiation">
-                    <div class="mpesa-spinner">
-                        <div class="mpesa-ring"></div>
-                        <div class="mpesa-ring"></div>
-                        <div class="mpesa-ring"></div>
-                        <div class="mpesa-ring"></div>
-                    </div>
-                    <i class="fas fa-mobile-alt mpesa-icon"></i>
-                    <h3>Initiating M-Pesa Payment</h3>
-                    <p>Please wait while we connect to M-Pesa...</p>
-                </div>
-            `;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        if (paymentStatusEl) {
-            paymentStatusEl.innerHTML = `
-                <div class="mpesa-stk-push">
-                    <div class="stk-loader">
-                        <div class="stk-wave"></div>
-                        <div class="stk-wave"></div>
-                        <div class="stk-wave"></div>
-                    </div>
-                    <i class="fas fa-phone-alt stk-icon"></i>
-                    <h3>STK Push Sent!</h3>
-                    <p>Please check your phone for the M-Pesa prompt</p>
-                    <div class="phone-number">${formatPhoneNumber(billingInfo.phone)}</div>
-                    <div class="amount">Amount: ${formatCurrency(cartData.total)}</div>
-                    <div class="booking-ref">Booking ID: ${bookingId}</div>
-                    <button class="btn-outline" onclick="cancelPayment()">Cancel Payment</button>
-                </div>
-            `;
-        }
-        
-        if (paymentTimeout) clearTimeout(paymentTimeout);
-        paymentTimeout = setTimeout(async () => {
-            await completePayment(bookingId, billingInfo);
-        }, 8000);
-        
-    } catch (error) {
-        showToast(error.message || 'Failed to initiate payment', 'error');
-        backToCart();
-    }
-}
-
-async function completePayment(bookingId, billingInfo) {
-    try {
-        const paymentStatusEl = document.getElementById('paymentStatus');
-        
-        const newBooking = {
-            id: bookingId,
-            booking_date: new Date().toISOString(),
-            status: 'confirmed',
-            payment_method: 'M-Pesa',
-            receipt_number: 'MPESA' + Math.floor(Math.random() * 10000000),
-            total_amount: cartData.total,
-            subtotal: cartData.subtotal,
-            discount: cartData.discount_amount || 0,
-            billing_info: {
-                name: billingInfo.full_name,
-                email: billingInfo.email,
-                phone: billingInfo.phone
-            },
-            items: cartData.items.map(item => ({
-                id: item.id,
-                title: item.title,
-                category: item.category,
-                date: item.date,
-                location: item.location,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image,
-                ticket_status: 'active',
-                ticket_code: 'TKT' + Math.floor(Math.random() * 1000000)
-            }))
-        };
-        
-        const existingBookings = JSON.parse(localStorage.getItem('eventhub_bookings') || '[]');
-        existingBookings.unshift(newBooking);
-        localStorage.setItem('eventhub_bookings', JSON.stringify(existingBookings));
-        
-        if (paymentStatusEl) {
-            paymentStatusEl.innerHTML = `
-                <div class="payment-success">
-                    <i class="fas fa-check-circle"></i>
-                    <h3>Booking Confirmed!</h3>
-                    <p>Your booking has been successfully completed.</p>
-                    <div class="payment-details">
-                        <p><strong>Booking ID:</strong> ${bookingId}</p>
-                        <p><strong>M-Pesa Receipt:</strong> ${newBooking.receipt_number}</p>
-                        <p><strong>Amount Paid:</strong> ${formatCurrency(cartData.total)}</p>
-                        <p><strong>Tickets Booked:</strong> ${cartData.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
-                    </div>
-                    <div class="redirect-message">
-                        <i class="fas fa-spinner fa-pulse"></i>
-                        <p>Redirecting to your bookings...</p>
-                    </div>
-                </div>
-            `;
-        }
-        
+function onCartCheckoutSuccess() {
+    if (!cartData.items.length) return;
+    cartData.items.shift();
+    recalculateCartTotals();
+    saveCartToLocalStorage();
+    displayCart();
+    if (cartData.items.length > 0) {
+        showToast('Payment complete! Continue with the next event in your cart.', 'success');
+    } else {
         localStorage.removeItem('eventhub_cart');
         updateCartCount(0);
-        showToast('Booking confirmed! Redirecting to your bookings...', 'success');
-        
-        setTimeout(() => {
-            window.location.href = '/bookings/';
-        }, 3000);
-        
-    } catch (error) {
-        const paymentStatusEl = document.getElementById('paymentStatus');
-        if (paymentStatusEl) {
-            paymentStatusEl.innerHTML = `
-                <div class="payment-failed">
-                    <i class="fas fa-times-circle"></i>
-                    <h3>Payment Failed</h3>
-                    <p>${error.message || 'Your payment could not be processed. Please try again.'}</p>
-                    <button class="btn-outline" onclick="backToCart()">Try Again</button>
-                </div>
-            `;
-        }
+        showToast('All bookings complete!', 'success');
+        setTimeout(() => { window.location.href = '/tickets/'; }, 2000);
     }
 }
+
+window.addEventListener('checkout-success', onCartCheckoutSuccess);
 
 function cancelPayment() {
     if (paymentTimeout) {

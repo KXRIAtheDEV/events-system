@@ -1401,6 +1401,103 @@ textarea.form-control {
     }
 }
 
+/* Manual M-Pesa checkout modal */
+.checkout-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+.checkout-modal-content {
+    max-width: 480px;
+    width: 92%;
+    background: #fff;
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.checkout-close {
+    position: absolute;
+    top: 1rem;
+    right: 1.25rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #64748b;
+}
+.checkout-hint { color: #64748b; margin-bottom: 1rem; font-size: 0.9rem; }
+.checkout-summary { text-align: center; margin-bottom: 1.25rem; }
+.checkout-amount { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
+.checkout-receiver { margin-top: 0.5rem; color: #475569; }
+.checkout-payment-options { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+.checkout-payment-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+.checkout-payment-value { font-size: 1.1rem; font-weight: 600; color: #0f172a; margin-top: 0.25rem; }
+.checkout-copy-btn {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.checkout-primary-btn {
+    width: 100%;
+    padding: 0.875rem;
+    background: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.checkout-secondary-btn {
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    margin: 0.25rem;
+}
+.checkout-file-input { width: 100%; margin-bottom: 1rem; }
+.checkout-preview { margin-bottom: 1rem; }
+.checkout-result { text-align: center; padding: 1rem 0; }
+.checkout-result.success i { color: #22c55e; font-size: 2.5rem; }
+.checkout-result.fail i { color: #ef4444; font-size: 2.5rem; }
+.checkout-fail-actions { display: flex; flex-wrap: wrap; justify-content: center; margin: 1rem 0; }
+.checkout-manual-box { margin-top: 1rem; text-align: left; }
+.checkout-text-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin: 0.5rem 0 1rem;
+    box-sizing: border-box;
+}
+.checkout-tier-badge, .ticket-tier-vip, .ticket-tier-vvip, .ticket-tier-regular {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+.ticket-tier-regular { background: #e2e8f0; color: #334155; }
+.ticket-tier-vip { background: #fef3c7; color: #b45309; }
+.ticket-tier-vvip { background: #ede9fe; color: #6d28d9; }
+
 @media print {
     .event-sidebar,
     .directions-btn,

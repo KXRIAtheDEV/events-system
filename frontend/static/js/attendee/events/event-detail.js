@@ -493,47 +493,21 @@ function renderEventDetails(event) {
         };
     }
     
-    // Book button
+    // Book button — manual M-Pesa checkout flow
     if (bookBtn) {
         bookBtn.onclick = () => {
-            const token = localStorage.getItem('attendee_access_token');
-            if (!token) {
-                showToast('Please login to book tickets', 'info');
-                setTimeout(() => window.location.href = '/login/', 1500);
-                return;
-            }
             if (event.available_tickets <= 0) {
                 showToast('Sorry, this event is sold out!', 'error');
                 return;
             }
-            const currentPrice = getSelectedPrice();
-            const total = quantity * currentPrice;
             const tierName = getSelectedTier();
-            
-            document.getElementById('mpesaAmount').textContent = `KES ${total.toLocaleString()}`;
-            document.getElementById('mpesaEventId').value = event.id;
-            document.getElementById('mpesaQuantity').value = quantity;
-            document.getElementById('mpesaTotal').value = total;
-            
-            window.currentBookingTicketTier = tierName;
-            window.currentBookingTicketPrice = currentPrice;
-            
-            document.getElementById('mpesaModal').style.display = 'flex';
-
-            // Prefill phone from stored account profile
-            if (window.AccountProfile) {
-                AccountProfile.prefill({ mpesaPhone: 'phone' });
+            if (window.CheckoutFlow) {
+                window.CheckoutFlow.startCheckout(event.id, tierName, quantity);
+            } else {
+                showToast('Checkout is loading. Please try again.', 'error');
             }
         };
     }
-
-const mpesaClose = document.getElementById('mpesaClose');
-if (mpesaClose) {
-    mpesaClose.addEventListener('click', () => {
-        document.getElementById('mpesaModal').style.display = 'none';
-        resetMpesaModal();
-    });
-}
     
     // Wishlist button
     if (wishlistBtn) {
@@ -619,151 +593,5 @@ async function loadEventDetails() {
         console.error('Error fetching event details:', error);
         container.innerHTML = '<div class="error-state">Error loading event details. Please try again.</div>';
     }
-}
-async function initiateMpesaPayment() {
-    const phone = document.getElementById('mpesaPhone').value.trim();
-    const eventId = document.getElementById('mpesaEventId').value;
-    const quantity = document.getElementById('mpesaQuantity').value;
-    const amount = document.getElementById('mpesaTotal').value;
-    const token = localStorage.getItem('attendee_access_token');
-
-    if (!phone) {
-        showToast('Please enter your M-Pesa phone number', 'error');
-        return;
-    }
-
-    const payBtn = document.getElementById('mpesaPayBtn');
-    payBtn.disabled = true;
-    payBtn.textContent = 'Sending prompt...';
-
-    try {
-        const response = await fetch('/payments/pay/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ event_id: eventId, quantity, phone_number: phone, amount })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            document.getElementById('mpesaForm').style.display = 'none';
-            document.getElementById('mpesaWaiting').style.display = 'block';
-            pollPaymentStatus(data.checkout_request_id);
-        } else {
-            showToast(data.message || 'Payment failed. Try again.', 'error');
-            payBtn.disabled = false;
-            payBtn.textContent = 'Pay Now';
-        }
-    } catch (error) {
-        showToast('Payment failed. Please try again.', 'error');
-        payBtn.disabled = false;
-        payBtn.textContent = 'Pay Now';
-    }
-}
-
-function pollPaymentStatus(checkoutId) {
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    const interval = setInterval(async () => {
-        attempts++;
-        try {
-            const response = await fetch(`/payments/status/${checkoutId}/`);
-            const data = await response.json();
-
-            if (data.status === 'completed') {
-                clearInterval(interval);
-                document.getElementById('mpesaModal').style.display = 'none';
-                
-                try {
-                    const bookingId = 'BK' + Date.now();
-                    const user = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-                    const phone = document.getElementById('mpesaPhone').value.trim();
-                    const qty = parseInt(document.getElementById('mpesaQuantity').value) || 1;
-                    const amount = parseFloat(document.getElementById('mpesaTotal').value) || 0;
-                    
-                    const ticketPrice = window.currentBookingTicketPrice || parseFloat(event.price) || 0;
-                    const ticketTier = window.currentBookingTicketTier || 'Regular';
-                    
-                    const newBooking = {
-                        id: bookingId,
-                        booking_date: new Date().toISOString(),
-                        status: 'confirmed',
-                        payment_method: 'M-Pesa',
-                        receipt_number: data.receipt || ('MPESA' + Math.floor(Math.random() * 10000000)),
-                        total_amount: amount,
-                        subtotal: qty * ticketPrice,
-                        booking_fee: Math.ceil(qty * ticketPrice * 0.05),
-                        discount: 0,
-                        billing_info: {
-                            name: user.name || 'Attendee',
-                            email: user.email || '',
-                            phone: phone
-                        },
-                        items: [{
-                            id: event.id,
-                            title: event.title,
-                            category: event.category_name || event.category || 'Event',
-                            date: event.start_date || event.date,
-                            location: event.location || event.venue || '',
-                            price: ticketPrice,
-                            quantity: qty,
-                            image: event.image || event.banner_image || '',
-                            ticket_status: 'active',
-                            ticket_type: ticketTier,
-                            ticket_code: 'TKT' + Math.floor(Math.random() * 1000000),
-                            ticket_codes: Array.from({length: qty}, () => 'TKT' + Math.floor(Math.random() * 1000000))
-                        }]
-                    };
-                    
-                    const existingBookings = JSON.parse(localStorage.getItem('eventhub_bookings') || '[]');
-                    existingBookings.unshift(newBooking);
-                    localStorage.setItem('eventhub_bookings', JSON.stringify(existingBookings));
-                } catch (saveErr) {
-                    console.error('Failed to save booking to storage:', saveErr);
-                }
-                
-                showToast('Payment successful! Your ticket is confirmed.', 'success');
-                setTimeout(() => window.location.href = '/tickets/', 2000);
-            } else if (data.status === 'failed' || data.status === 'cancelled') {
-                clearInterval(interval);
-                resetMpesaModal();
-                showToast('Payment was not completed. Please try again.', 'error');
-            } else if (attempts >= maxAttempts) {
-                clearInterval(interval);
-                resetMpesaModal();
-                showToast('Payment timed out. Please try again.', 'error');
-            }
-        } catch (error) {
-            console.error('Polling error:', error);
-        }
-    }, 3000);
-}
-
-function resetMpesaModal() {
-    document.getElementById('mpesaForm').style.display = 'block';
-    document.getElementById('mpesaWaiting').style.display = 'none';
-    const payBtn = document.getElementById('mpesaPayBtn');
-    if (payBtn) {
-        payBtn.disabled = false;
-        payBtn.textContent = 'Pay Now';
-    }
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        document.cookie.split(';').forEach(cookie => {
-            const c = cookie.trim();
-            if (c.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(c.slice(name.length + 1));
-            }
-        });
-    }
-    return cookieValue;
 }
 document.addEventListener('DOMContentLoaded', loadEventDetails);

@@ -268,9 +268,17 @@ const OrganizerCheckinAPI = {
 };
 
 // Settings API
+const OrganizerPaymentOrdersAPI = {
+    getPending: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.pending),
+    approve: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.approve(id), {}),
+    reject: (id) => OrganizerAPI.post(ORGANIZER_API_CONFIG.ENDPOINTS.PAYMENT_ORDERS.reject(id), {}),
+};
+
 const OrganizerSettingsAPI = {
     getGeneral: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.general),
     updateGeneral: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.updateGeneral, data),
+    getMpesa: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.mpesa),
+    updateMpesa: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.updateMpesa, data),
     getPayment: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.payment),
     updatePayment: (data) => OrganizerAPI.put(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.updatePayment, data),
     getNotification: () => OrganizerAPI.get(ORGANIZER_API_CONFIG.ENDPOINTS.SETTINGS.notification),
@@ -345,6 +353,7 @@ Object.assign(OrganizerAPI, {
     bookings: OrganizerBookingsAPI,
     attendees: OrganizerAttendeesAPI,
     payouts: OrganizerPayoutsAPI,
+    paymentOrders: OrganizerPaymentOrdersAPI,
     promotions: OrganizerPromotionsAPI,
     reviews: OrganizerReviewsAPI,
     notifications: OrganizerNotificationsAPI,

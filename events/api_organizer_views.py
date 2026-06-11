@@ -425,6 +425,62 @@ def api_organizer_settings_general_update(request):
 @csrf_exempt
 @organizer_required
 @require_http_methods(["GET"])
+def api_organizer_settings_mpesa(request):
+    """Retrieve M-Pesa payment profile for the logged-in organizer."""
+    user = request.user
+    return JsonResponse({
+        'mpesa_display_name': user.mpesa_display_name,
+        'mpesa_paybill': user.mpesa_paybill,
+        'mpesa_till': user.mpesa_till,
+        'mpesa_pochi': user.mpesa_pochi,
+        'mpesa_send_money': user.mpesa_send_money,
+        'is_configured': user.has_mpesa_payment_config(),
+    })
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["PUT"])
+def api_organizer_settings_mpesa_update(request):
+    """Update M-Pesa payment profile for the logged-in organizer."""
+    try:
+        user = request.user
+        data = json.loads(request.body)
+
+        if 'mpesa_display_name' in data:
+            user.mpesa_display_name = data['mpesa_display_name'].strip()
+        if 'mpesa_paybill' in data:
+            user.mpesa_paybill = data['mpesa_paybill'].strip()
+        if 'mpesa_till' in data:
+            user.mpesa_till = data['mpesa_till'].strip()
+        if 'mpesa_pochi' in data:
+            user.mpesa_pochi = data['mpesa_pochi'].strip()
+        if 'mpesa_send_money' in data:
+            user.mpesa_send_money = data['mpesa_send_money'].strip()
+
+        has_number = any([
+            user.mpesa_paybill.strip(),
+            user.mpesa_till.strip(),
+            user.mpesa_pochi.strip(),
+            user.mpesa_send_money.strip(),
+        ])
+        if not user.mpesa_display_name.strip():
+            return JsonResponse({'success': False, 'message': 'M-Pesa display name is required.'}, status=400)
+        if not has_number:
+            return JsonResponse({
+                'success': False,
+                'message': 'At least one payment number (Paybill, Till, Pochi, or Send Money) is required.',
+            }, status=400)
+
+        user.save()
+        return JsonResponse({'success': True, 'message': 'M-Pesa payment settings saved successfully!'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@organizer_required
+@require_http_methods(["GET"])
 def api_organizer_payouts_settings(request):
     """Retrieve payouts settlement credentials for the organizer."""
     user = request.user

@@ -32,76 +32,56 @@ function setupEventListeners() {
     }
 }
 
-function loadTickets() {
+function mapApiTicket(t) {
+    return {
+        id: t.ticket_number,
+        booking_id: t.ticket_number,
+        title: t.event?.title || 'Event',
+        category: 'Event',
+        date: t.event?.start_date,
+        location: t.event?.venue_name || t.event?.location || '',
+        price: t.price,
+        image: t.event?.banner_image,
+        ticket_code: t.ticket_number,
+        ticket_type: t.ticket_type || 'Regular',
+        status: t.status,
+        purchased_date: t.purchase_date,
+        quantity: t.quantity,
+    };
+}
+
+function tierBadgeClass(tier) {
+    if (tier === 'VIP') return 'ticket-tier-vip';
+    if (tier === 'VVIP') return 'ticket-tier-vvip';
+    return 'ticket-tier-regular';
+}
+
+async function loadTickets() {
+    const token = localStorage.getItem('attendee_access_token');
+    if (!token) {
+        allTickets = [];
+        renderTickets();
+        return;
+    }
     try {
-        // Try to load from eventhub_tickets first
-        const savedTickets = localStorage.getItem('eventhub_tickets');
-        
-        if (savedTickets && JSON.parse(savedTickets).length > 0) {
-            allTickets = JSON.parse(savedTickets);
-        } else {
-            // Fallback to generating from bookings
-            const savedBookings = localStorage.getItem('eventhub_bookings');
-            if (savedBookings) {
-                const bookings = JSON.parse(savedBookings);
-                allTickets = [];
-                
-                let filteredBookings = bookings;
-                if (currentBookingId) {
-                    filteredBookings = bookings.filter(booking => booking.id === currentBookingId);
-                }
-                
-                filteredBookings.forEach(booking => {
-                    booking.items.forEach((item, itemIndex) => {
-                        if (item.ticket_codes && item.ticket_codes.length > 0) {
-                            item.ticket_codes.forEach((code, idx) => {
-                                allTickets.push({
-                                    id: `${booking.id}_${item.id}_${idx}`,
-                                    booking_id: booking.id,
-                                    title: item.title,
-                                    category: item.category,
-                                    date: item.date,
-                                    location: item.location,
-                                    price: item.price,
-                                    image: item.image,
-                                    ticket_code: code,
-                                    status: 'active',
-                                    purchased_date: booking.booking_date,
-                                    receipt_number: booking.receipt_number,
-                                    quantity: 1
-                                });
-                            });
-                        } else {
-                            for (let i = 0; i < item.quantity; i++) {
-                                allTickets.push({
-                                    id: `${booking.id}_${item.id}_${i}`,
-                                    booking_id: booking.id,
-                                    title: item.title,
-                                    category: item.category,
-                                    date: item.date,
-                                    location: item.location,
-                                    price: item.price,
-                                    image: item.image,
-                                    ticket_code: item.ticket_code || `TKT${Math.floor(Math.random() * 1000000)}`,
-                                    status: 'active',
-                                    purchased_date: booking.booking_date,
-                                    receipt_number: booking.receipt_number,
-                                    quantity: 1
-                                });
-                            }
-                        }
-                    });
-                });
-            }
+        const headers = { Authorization: `Bearer ${token}` };
+        const [upRes, pastRes] = await Promise.all([
+            fetch('/api/attendee/tickets/upcoming/', { headers, credentials: 'same-origin' }),
+            fetch('/api/attendee/tickets/past/', { headers, credentials: 'same-origin' }),
+        ]);
+        const up = await upRes.json();
+        const past = await pastRes.json();
+        allTickets = [...(up.results || []), ...(past.results || [])].map(mapApiTicket);
+        if (currentBookingId) {
+            allTickets = allTickets.filter(t => t.booking_id === currentBookingId);
         }
-        
         renderTickets();
         updateHeaderInfo();
     } catch (error) {
         console.error('Error loading tickets:', error);
         const container = document.getElementById('ticketsList');
         if (container) {
-            container.innerHTML = '<div class="error-state">Failed to load tickets. Please try again.</div>';
+            container.innerHTML = '<div class="error-state">Failed to load tickets. Please log in and try again.</div>';
         }
     }
 }
@@ -168,6 +148,7 @@ function renderTickets() {
                 <div class="ticket-image" style="background-image: url('${ticket.image || '/static/images/placeholder.jpg'}')"></div>
                 <div class="ticket-info">
                     <div class="ticket-title">${escapeHtml(ticket.title)}</div>
+                    <span class="checkout-tier-badge ${tierBadgeClass(ticket.ticket_type)}">${escapeHtml(ticket.ticket_type || 'Regular')}</span>
                     <div class="ticket-meta">
                         <span><i class="fas fa-calendar"></i> ${formatDate(ticket.date)}</span>
                         <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(ticket.location.split(',')[0])}</span>

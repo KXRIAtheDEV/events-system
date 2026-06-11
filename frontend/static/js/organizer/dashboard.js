@@ -305,6 +305,62 @@ window.loadPerformance = async function() {
     }
 };
 
+window.loadPendingPayments = async function() {
+    const container = document.getElementById('pendingPaymentsList');
+    if (!container) return;
+    try {
+        const data = await OrganizerAPI.paymentOrders.getPending();
+        const orders = data.orders || [];
+        if (!orders.length) {
+            container.innerHTML = '<div class="text-muted text-center">No pending payment approvals</div>';
+            return;
+        }
+        container.innerHTML = orders.map(o => `
+            <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <strong>${escapeHtml(o.event_title)}</strong>
+                        <span class="badge bg-warning text-dark ms-2">${escapeHtml(o.ticket_type)}</span><br>
+                        <small>Attendee: ${escapeHtml(o.attendee_name)}</small><br>
+                        <small>M-Pesa name: <strong>${escapeHtml(o.submitted_mpesa_name)}</strong></small><br>
+                        <small>Amount: KES ${Number(o.total_amount).toLocaleString()} &middot; Qty: ${o.quantity}</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success approve-payment-btn" data-id="${o.id}">Approve</button>
+                        <button class="btn btn-sm btn-outline-danger reject-payment-btn" data-id="${o.id}">Reject</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        container.querySelectorAll('.approve-payment-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    await OrganizerAPI.paymentOrders.approve(btn.dataset.id);
+                    showToast('Payment approved. Ticket issued.', 'success');
+                    loadPendingPayments();
+                    loadDashboardStats();
+                } catch (e) {
+                    showToast(e.message || 'Approval failed', 'error');
+                }
+            });
+        });
+        container.querySelectorAll('.reject-payment-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Reject this payment submission?')) return;
+                try {
+                    await OrganizerAPI.paymentOrders.reject(btn.dataset.id);
+                    showToast('Payment rejected.', 'info');
+                    loadPendingPayments();
+                } catch (e) {
+                    showToast(e.message || 'Rejection failed', 'error');
+                }
+            });
+        });
+    } catch (e) {
+        container.innerHTML = '<div class="text-muted text-center">Could not load pending approvals</div>';
+    }
+};
+
 window.loadNotifications = async function() {
     try {
         const notifs = await OrganizerAPI.dashboard.getNotifications();

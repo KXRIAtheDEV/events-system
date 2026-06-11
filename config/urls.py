@@ -31,6 +31,17 @@ from bookings.views import (
     api_organizer_attendees_stats
 )
 from bookings.email_service import send_newsletter_confirmation
+from payments.order_views import (
+    create_payment_order,
+    payment_order_status,
+    verify_screenshot,
+    submit_mpesa_name,
+    attendee_notifications_list,
+    attendee_notification_mark_read,
+    organizer_pending_orders,
+    organizer_approve_order,
+    organizer_reject_order,
+)
 from events.api_organizer_views import (
     api_organizer_events_list,
     api_organizer_events_create,
@@ -47,6 +58,8 @@ from events.api_organizer_views import (
     api_organizer_settings_apikeys,
     api_organizer_settings_apikeys_create,
     api_organizer_settings_apikeys_revoke,
+    api_organizer_settings_mpesa,
+    api_organizer_settings_mpesa_update,
     api_organizer_reviews_stats,
     api_organizer_event_analytics,
     api_organizer_upload_image,
@@ -224,6 +237,19 @@ urlpatterns = [
     path('api/organizer/settings/api-keys/', api_organizer_settings_apikeys, name='api_organizer_settings_apikeys'),
     path('api/organizer/settings/api-keys/create/', api_organizer_settings_apikeys_create, name='api_organizer_settings_apikeys_create'),
     path('api/organizer/settings/api-keys/<str:key_id>/revoke/', api_organizer_settings_apikeys_revoke, name='api_organizer_settings_apikeys_revoke'),
+    path('api/organizer/settings/mpesa/', api_organizer_settings_mpesa, name='api_organizer_settings_mpesa'),
+    path('api/organizer/settings/mpesa/update/', api_organizer_settings_mpesa_update, name='api_organizer_settings_mpesa_update'),
+
+    # Manual M-Pesa payment orders
+    path('api/attendee/payment-orders/create/', create_payment_order, name='create_payment_order'),
+    path('api/attendee/payment-orders/<int:order_id>/status/', payment_order_status, name='payment_order_status'),
+    path('api/attendee/payment-orders/<int:order_id>/verify-screenshot/', verify_screenshot, name='verify_screenshot'),
+    path('api/attendee/payment-orders/<int:order_id>/submit-mpesa-name/', submit_mpesa_name, name='submit_mpesa_name'),
+    path('api/attendee/notifications/', attendee_notifications_list, name='attendee_notifications_list'),
+    path('api/attendee/notifications/<int:notification_id>/read/', attendee_notification_mark_read, name='attendee_notification_mark_read'),
+    path('api/organizer/payment-orders/pending/', organizer_pending_orders, name='organizer_pending_orders'),
+    path('api/organizer/payment-orders/<int:order_id>/approve/', organizer_approve_order, name='organizer_approve_order'),
+    path('api/organizer/payment-orders/<int:order_id>/reject/', organizer_reject_order, name='organizer_reject_order'),
     
     path('api/bookings/checkout/', ticket_checkout_api, name='ticket_checkout_api'),
     path('api/contact/submit/', api_contact_submit, name='api_contact_submit'),
