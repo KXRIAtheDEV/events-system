@@ -138,14 +138,16 @@ async function loadCategoriesFromAPI() {
     }
 }
 
-async function addFilters() {
+async function addFilters(categoriesData = null) {
     const container = document.querySelector('.events-page .container');
     if (!container) return;
     
     const header = container.querySelector('.events-header');
     if (!header) return;
     
-    const categoriesData = await loadCategoriesFromAPI();
+    if (!categoriesData) {
+        categoriesData = await loadCategoriesFromAPI();
+    }
     
     const categories = [
         { id: "all", name: "All Events", icon: "fa-calendar-alt" },
@@ -156,33 +158,23 @@ async function addFilters() {
         }))
     ];
     
-    // Remove existing filter section if any
-    let existingSection = document.querySelector('.filters-section');
-    if (existingSection) {
-        existingSection.remove();
-    }
-    
-    const filterSection = document.createElement('div');
-    filterSection.className = 'filters-section';
-    
-    // Category buttons
-    let categoriesHtml = '<div class="categories-wrapper">';
-    categories.forEach(cat => {
-        categoriesHtml += `<button class="category-btn ${currentCategory === cat.id ? 'active' : ''}" data-category="${cat.id}"><i class="fas ${cat.icon}"></i><span>${cat.name}</span></button>`;
-    });
-    categoriesHtml += '</div>';
-    
-    filterSection.innerHTML = categoriesHtml;
-    header.insertAdjacentElement('afterend', filterSection);
-    
-    // Category button event listeners
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            currentCategory = btn.dataset.category;
-            document.querySelectorAll('.category-btn').forEach(b => b.classList.toggle('active', b.dataset.category === currentCategory));
-            filterEvents();
+    const wrapper = document.getElementById('categoriesWrapper') || document.querySelector('.categories-wrapper');
+    if (wrapper) {
+        let categoriesHtml = '';
+        categories.forEach(cat => {
+            categoriesHtml += `<button class="category-btn ${currentCategory === cat.id ? 'active' : ''}" data-category="${cat.id}"><i class="fas ${cat.icon}"></i><span>${cat.name}</span></button>`;
         });
-    });
+        wrapper.innerHTML = categoriesHtml;
+        
+        // Category button event listeners
+        wrapper.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentCategory = btn.dataset.category;
+                wrapper.querySelectorAll('.category-btn').forEach(b => b.classList.toggle('active', b.dataset.category === currentCategory));
+                filterEvents();
+            });
+        });
+    }
     
     // Set up page search listener (Option 1)
     setupPageSearchListener();
@@ -204,13 +196,27 @@ function handleSearchInput(e) {
 async function filterEvents(isInitialLoad = false) {
     if (isInitialLoad) {
         renderStreamLoader(false);
-        await new Promise(resolve => setTimeout(resolve, 250)); // simulate DB connection handshake
+        updateStep('step-connect', 'active');
+        
+        // Start both fetches concurrently
+        const categoriesPromise = loadCategoriesFromAPI();
+        const eventsPromise = loadEventsFromAPI();
+        
         updateStep('step-connect', 'completed');
         updateStep('step-categories', 'active');
-        
-        await addFilters();
-        updateStep('step-categories', 'completed');
         updateStep('step-events', 'active');
+        
+        const categoriesData = await categoriesPromise;
+        updateStep('step-categories', 'completed');
+        
+        await addFilters(categoriesData);
+        
+        await eventsPromise;
+        updateStep('step-events', 'completed');
+        updateStep('step-render', 'active');
+        
+        // Minimal visual transition delay
+        await new Promise(resolve => setTimeout(resolve, 50));
     } else {
         const grid = document.getElementById('eventsGrid');
         if (grid) {
@@ -221,14 +227,7 @@ async function filterEvents(isInitialLoad = false) {
                 </div>
             `;
         }
-    }
-
-    await loadEventsFromAPI();
-    
-    if (isInitialLoad) {
-        updateStep('step-events', 'completed');
-        updateStep('step-render', 'active');
-        await new Promise(resolve => setTimeout(resolve, 200)); // smooth visual transition
+        await loadEventsFromAPI();
     }
 
     filteredEvents = [...eventsCatalog];

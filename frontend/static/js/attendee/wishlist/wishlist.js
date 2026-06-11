@@ -89,8 +89,10 @@ async function loadWishlist() {
         
         wishlistItems = [];
         
-        for (const id of wishlistIds) {
-            const event = await getEventById(id);
+        const eventPromises = wishlistIds.map(id => getEventById(id));
+        const events = await Promise.all(eventPromises);
+        
+        for (const event of events) {
             if (event) {
                 wishlistItems.push({
                     id: event.id,

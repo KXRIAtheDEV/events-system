@@ -94,15 +94,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function runSearchSequence() {
     renderStreamLoader(true);
-    await new Promise(resolve => setTimeout(resolve, 250)); // simulate DB connection handshake
+    updateStep('step-connect', 'active');
+    
+    // Start both fetches concurrently
+    const categoriesPromise = loadCategories();
+    const searchPromise = loadSearchResults(true);
+    
     updateStep('step-connect', 'completed');
     updateStep('step-categories', 'active');
-    
-    await loadCategories();
-    updateStep('step-categories', 'completed');
     updateStep('step-events', 'active');
     
-    await loadSearchResults(true);
+    await categoriesPromise;
+    updateStep('step-categories', 'completed');
+    
+    await searchPromise;
 }
 
 function setupEventListeners() {
@@ -187,7 +192,7 @@ async function loadSearchResults(isInitialLoad = false) {
         if (isInitialLoad) {
             updateStep('step-events', 'completed');
             updateStep('step-render', 'active');
-            await new Promise(resolve => setTimeout(resolve, 200)); // smooth visual transition
+            await new Promise(resolve => setTimeout(resolve, 50)); // smooth visual transition
         }
         
         if (data.success) {
