@@ -2,6 +2,11 @@ from django.urls import path
 from django.views.generic import TemplateView
 
 urlpatterns = [
+    # Login
+    path('login/',
+         TemplateView.as_view(template_name='shared/auth/login.html'),
+         name='organizer_login'),
+
     # Dashboard
     path('dashboard/',
          TemplateView.as_view(template_name='organizer/dashboard/dashboard.html'),

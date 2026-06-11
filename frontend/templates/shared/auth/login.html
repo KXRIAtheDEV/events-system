@@ -197,6 +197,27 @@
 
     initGoogleSignIn();
     
+    // Pre-select role based on URL path
+    (function preselectRole() {
+        if (typeof getRoleFromUrl === 'function') {
+            const urlRole = getRoleFromUrl();
+            if (urlRole) {
+                const radio = document.querySelector(`input[name="role_select"][value="${urlRole}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    roleInput.value = urlRole;
+                    if (urlRole === 'organizer') {
+                        authTitle.textContent = 'Organizer Login';
+                        authSubtitle.textContent = 'Sign in to manage your events';
+                    } else {
+                        authTitle.textContent = 'Welcome Back';
+                        authSubtitle.textContent = 'Sign in to continue to your account';
+                    }
+                }
+            }
+        }
+    })();
+    
     function validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email) return 'Email is required';
