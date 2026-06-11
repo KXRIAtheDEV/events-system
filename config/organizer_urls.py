@@ -97,14 +97,17 @@ urlpatterns = [
          TemplateView.as_view(template_name='organizer/settings/settings.html'),
          name='organizer_profile'),
 
-    # Support
+    # FAQs (formerly Support)
+    path('faq/',
+         TemplateView.as_view(template_name='organizer/dashboard/faq.html'),
+         name='organizer_faq'),
     path('support/',
-         TemplateView.as_view(template_name='organizer/dashboard/support.html'),
+         RedirectView.as_view(url='/organizer/faq/', permanent=True),
          name='organizer_support'),
     path('support/tickets/',
-         TemplateView.as_view(template_name='organizer/dashboard/support.html'),
+         RedirectView.as_view(url='/organizer/faq/', permanent=True),
          name='organizer_support_tickets'),
     path('support/tickets/<int:ticket_id>/',
-         TemplateView.as_view(template_name='organizer/dashboard/support.html'),
+         RedirectView.as_view(url='/organizer/faq/', permanent=True),
          name='organizer_support_ticket_detail'),
 ]
