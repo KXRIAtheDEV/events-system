@@ -25,8 +25,62 @@ const categoryFilter = document.getElementById('categoryFilter');
 const cityFilter = document.getElementById('cityFilter');
 const sortSelect = document.getElementById('sortBy');
 
+function renderStreamLoader(isSearch = false) {
+    const grid = document.getElementById('searchResultsGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = `
+        <div class="stream-loader">
+            <div class="stream-loader-spinner"></div>
+            <h3 class="stream-loader-title">${isSearch ? "Searching Event Registry" : "Scanning Event Registry"}</h3>
+            <div class="stream-loader-steps">
+                <div class="loader-step active" id="step-connect">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    <span>Connecting to database...</span>
+                </div>
+                <div class="loader-step pending" id="step-categories">
+                    <i class="far fa-circle"></i>
+                    <span>Loading filter categories...</span>
+                </div>
+                <div class="loader-step pending" id="step-events">
+                    <i class="far fa-circle"></i>
+                    <span>Retrieving matches...</span>
+                </div>
+                <div class="loader-step pending" id="step-render">
+                    <i class="far fa-circle"></i>
+                    <span>Rendering displays...</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateStep(stepId, status) {
+    const el = document.getElementById(stepId);
+    if (!el) return;
+    
+    const icon = el.querySelector('i');
+    
+    if (status === 'completed') {
+        el.className = 'loader-step completed';
+        if (icon) {
+            icon.className = 'fas fa-check-circle';
+        }
+    } else if (status === 'active') {
+        el.className = 'loader-step active';
+        if (icon) {
+            icon.className = 'fas fa-circle-notch fa-spin';
+        }
+    } else if (status === 'pending') {
+        el.className = 'loader-step pending';
+        if (icon) {
+            icon.className = 'far fa-circle';
+        }
+    }
+}
+
 // Initialize
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const urlParams = new URLSearchParams(window.location.search);
     currentQuery = urlParams.get('q') || '';
     
@@ -34,10 +88,22 @@ document.addEventListener('DOMContentLoaded', function() {
         searchQueryInfo.innerHTML = `Showing results for "<strong>${escapeHtml(currentQuery)}</strong>"`;
     }
     
-    loadCategories();
-    loadSearchResults();
     setupEventListeners();
+    await runSearchSequence();
 });
+
+async function runSearchSequence() {
+    renderStreamLoader(true);
+    await new Promise(resolve => setTimeout(resolve, 250)); // simulate DB connection handshake
+    updateStep('step-connect', 'completed');
+    updateStep('step-categories', 'active');
+    
+    await loadCategories();
+    updateStep('step-categories', 'completed');
+    updateStep('step-events', 'active');
+    
+    await loadSearchResults(true);
+}
 
 function setupEventListeners() {
     if (categoryFilter) {
@@ -84,7 +150,18 @@ async function loadCategories() {
     }
 }
 
-async function loadSearchResults() {
+async function loadSearchResults(isInitialLoad = false) {
+    if (!isInitialLoad) {
+        if (searchResultsGrid) {
+            searchResultsGrid.innerHTML = `
+                <div class="stream-loader">
+                    <div class="stream-loader-spinner"></div>
+                    <h3 class="stream-loader-title">Searching registry...</h3>
+                </div>
+            `;
+        }
+    }
+
     try {
         const params = new URLSearchParams({
             q: currentQuery,
@@ -106,6 +183,12 @@ async function loadSearchResults() {
         
         const response = await fetch(`${API.search}?${params}`);
         const data = await response.json();
+        
+        if (isInitialLoad) {
+            updateStep('step-events', 'completed');
+            updateStep('step-render', 'active');
+            await new Promise(resolve => setTimeout(resolve, 200)); // smooth visual transition
+        }
         
         if (data.success) {
             const events = data.events || [];

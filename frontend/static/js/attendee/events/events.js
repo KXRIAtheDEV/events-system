@@ -33,6 +33,62 @@ function showToast(message, type) {
     setTimeout(() => toast.remove(), 3000);
 }
 
+function renderStreamLoader(isSearch = false) {
+    const grid = document.getElementById('eventsGrid');
+    if (!grid) return;
+    
+    const term = isSearch ? "Retrieving matches..." : "Retrieving active events catalog...";
+    
+    grid.innerHTML = `
+        <div class="stream-loader">
+            <div class="stream-loader-spinner"></div>
+            <h3 class="stream-loader-title">${isSearch ? "Searching Event Registry" : "Scanning Event Registry"}</h3>
+            <div class="stream-loader-steps">
+                <div class="loader-step active" id="step-connect">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    <span>Connecting to database...</span>
+                </div>
+                <div class="loader-step pending" id="step-categories">
+                    <i class="far fa-circle"></i>
+                    <span>Loading filter categories...</span>
+                </div>
+                <div class="loader-step pending" id="step-events">
+                    <i class="far fa-circle"></i>
+                    <span>${term}</span>
+                </div>
+                <div class="loader-step pending" id="step-render">
+                    <i class="far fa-circle"></i>
+                    <span>Rendering displays...</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateStep(stepId, status) {
+    const el = document.getElementById(stepId);
+    if (!el) return;
+    
+    const icon = el.querySelector('i');
+    
+    if (status === 'completed') {
+        el.className = 'loader-step completed';
+        if (icon) {
+            icon.className = 'fas fa-check-circle';
+        }
+    } else if (status === 'active') {
+        el.className = 'loader-step active';
+        if (icon) {
+            icon.className = 'fas fa-circle-notch fa-spin';
+        }
+    } else if (status === 'pending') {
+        el.className = 'loader-step pending';
+        if (icon) {
+            icon.className = 'far fa-circle';
+        }
+    }
+}
+
 function formatDate(dateString) {
     if (!dateString) return 'TBA';
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -145,8 +201,36 @@ function handleSearchInput(e) {
     filterEvents();
 }
 
-async function filterEvents() {
+async function filterEvents(isInitialLoad = false) {
+    if (isInitialLoad) {
+        renderStreamLoader(false);
+        await new Promise(resolve => setTimeout(resolve, 250)); // simulate DB connection handshake
+        updateStep('step-connect', 'completed');
+        updateStep('step-categories', 'active');
+        
+        await addFilters();
+        updateStep('step-categories', 'completed');
+        updateStep('step-events', 'active');
+    } else {
+        const grid = document.getElementById('eventsGrid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="stream-loader">
+                    <div class="stream-loader-spinner"></div>
+                    <h3 class="stream-loader-title">Updating stream...</h3>
+                </div>
+            `;
+        }
+    }
+
     await loadEventsFromAPI();
+    
+    if (isInitialLoad) {
+        updateStep('step-events', 'completed');
+        updateStep('step-render', 'active');
+        await new Promise(resolve => setTimeout(resolve, 200)); // smooth visual transition
+    }
+
     filteredEvents = [...eventsCatalog];
     
     // Update stats display
@@ -368,6 +452,6 @@ document.head.appendChild(style);
 window.resetFilters = resetFilters;
 
 document.addEventListener('DOMContentLoaded', async () => { 
-    await addFilters(); 
-    await filterEvents(); 
+    // Initialise and load events catalog with stepped loading screens
+    await filterEvents(true); 
 });

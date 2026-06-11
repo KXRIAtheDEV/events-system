@@ -585,47 +585,21 @@ import dateutil.parser
 from bookings.models import Ticket
 from bookings.email_service import send_attendee_review_request_email, send_organizer_performance_summary_email
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def api_events_check_expired(request):
-    """
-    Checks for completed events and dispatches automated post-event alerts.
-    Utilizes client-passed local time and date from the context frameworks.
-    """
+def _process_expired_events_async(events_ids, client_dt):
+    """Background task to run post-event email dispatches asynchronously"""
+    from django.db import connection
+    import logging
+    logger = logging.getLogger(__name__)
     try:
-        data = json.loads(request.body)
-        client_date = data.get('current_date')
-        client_time = data.get('current_time', '00:00')
-        
-        if not client_date:
-            return JsonResponse({'success': False, 'message': 'Date is required'}, status=400)
-            
-        # Parse client date and time context to obtain a datetime threshold
-        try:
-            client_dt = dateutil.parser.isoparse(f"{client_date}T{client_time}")
-            if timezone.is_naive(client_dt):
-                client_dt = timezone.make_aware(client_dt)
-        except ValueError:
-            client_dt = timezone.now()
-
-        # Query active published events that have passed this end datetime and need notification updates
-        events = Event.objects.filter(
-            status='published',
-            end_date__lte=client_dt
-        ).filter(
-            Q(attendee_reviews_sent=False) | Q(organizer_summary_sent=False)
-        )
-        
+        # Re-query inside thread to keep database sessions distinct
+        events = Event.objects.filter(id__in=events_ids)
         processed_attendees_emails = 0
         processed_organizers_emails = 0
         
         for event in events:
             # 1. Dispatch attendee review requests
             if not event.attendee_reviews_sent:
-                # Find all tickets for this event
                 tickets = Ticket.objects.filter(event=event, status='valid')
-                
-                # Deduplicate attendee contacts
                 attendee_map = {}
                 for ticket in tickets:
                     email = ticket.billing_email or (ticket.attendee.email if ticket.attendee else None)
@@ -634,14 +608,17 @@ def api_events_check_expired(request):
                         attendee_map[email] = name
                         
                 for email, name in attendee_map.items():
-                    send_attendee_review_request_email(
-                        attendee_email=email,
-                        attendee_name=name,
-                        event_title=event.title,
-                        event_id=event.id
-                    )
-                    processed_attendees_emails += 1
-                    
+                    try:
+                        send_attendee_review_request_email(
+                            attendee_email=email,
+                            attendee_name=name,
+                            event_title=event.title,
+                            event_id=event.id
+                        )
+                        processed_attendees_emails += 1
+                    except Exception as email_exc:
+                        logger.error("Failed to send review email to %s: %s", email, email_exc)
+                        
                 event.attendee_reviews_sent = True
                 
             # 2. Dispatch organizer performance summary reports
@@ -650,28 +627,86 @@ def api_events_check_expired(request):
                 total_seats_sold = sum(t.quantity for t in tickets)
                 total_revenue = float(sum(t.quantity * t.price for t in tickets))
                 
-                send_organizer_performance_summary_email(
-                    organizer_email=event.organizer.email,
-                    organizer_name=event.organizer.organization_name or event.organizer.username,
-                    event_title=event.title,
-                    total_attendees=total_seats_sold,
-                    total_revenue=total_revenue
-                )
-                processed_organizers_emails += 1
+                try:
+                    send_organizer_performance_summary_email(
+                        organizer_email=event.organizer.email,
+                        organizer_name=event.organizer.organization_name or event.organizer.username,
+                        event_title=event.title,
+                        total_attendees=total_seats_sold,
+                        total_revenue=total_revenue
+                    )
+                    processed_organizers_emails += 1
+                except Exception as email_exc:
+                    logger.error("Failed to send organizer summary email for event %d: %s", event.id, email_exc)
                 event.organizer_summary_sent = True
                 
             event.save()
             
+        logger.info(
+            "Async post-event alerts completed. Attendees notified: %d, Organizers notified: %d",
+            processed_attendees_emails,
+            processed_organizers_emails
+        )
+    except Exception as exc:
+        logger.exception("Error in background post-event alerts thread: %s", exc)
+    finally:
+        connection.close()
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_events_check_expired(request):
+    """
+    Checks for completed events and dispatches automated post-event alerts in the background.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        data = json.loads(request.body)
+        client_date = data.get('current_date')
+        client_time = data.get('current_time', '00:00')
+        
+        if not client_date:
+            return JsonResponse({'success': False, 'message': 'Date is required'}, status=400)
+            
+        # Parse client date and time context
+        try:
+            client_dt = dateutil.parser.isoparse(f"{client_date}T{client_time}")
+            if timezone.is_naive(client_dt):
+                client_dt = timezone.make_aware(client_dt)
+        except ValueError:
+            client_dt = timezone.now()
+
+        # Query active published events that have passed this end datetime and need notification updates
+        events_to_process = Event.objects.filter(
+            status='published',
+            end_date__lte=client_dt
+        ).filter(
+            Q(attendee_reviews_sent=False) | Q(organizer_summary_sent=False)
+        )
+        
+        events_ids = list(events_to_process.values_list('id', flat=True))
+        
+        if events_ids:
+            # Start background thread
+            import threading
+            thread = threading.Thread(
+                target=_process_expired_events_async,
+                args=(events_ids, client_dt),
+                daemon=True
+            )
+            thread.start()
+            message = f"Post-event automations triggered in the background for {len(events_ids)} events."
+        else:
+            message = "No events require processing."
+            
         return JsonResponse({
             'success': True,
-            'message': f"Post-event automations triggered successfully.",
-            'attendees_notified': processed_attendees_emails,
-            'organizers_notified': processed_organizers_emails
+            'message': message,
         })
         
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.error("Error in api_events_check_expired: %s", e)
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
