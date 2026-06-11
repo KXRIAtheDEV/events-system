@@ -62,6 +62,11 @@ class PaymentOrder(models.Model):
     screenshot = models.ImageField(upload_to='payment_screenshots/', null=True, blank=True)
     submitted_mpesa_name = models.CharField(max_length=150, blank=True)
     ocr_raw_text = models.TextField(blank=True)
+    screenshot_verified = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text='OCR auto-verification result (null = not checked).',
+    )
     verification_message = models.TextField(blank=True)
     ticket = models.ForeignKey(
         'bookings.Ticket', on_delete=models.SET_NULL, null=True, blank=True, related_name='payment_orders'

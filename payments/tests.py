@@ -2,13 +2,14 @@ from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.utils import timezone
 from datetime import timedelta
 
 from events.models import Event, Category
 from bookings.models import Ticket
-from payments.models import PaymentOrder, OrganizerNotification
+from payments.models import PaymentOrder, OrganizerNotification, AttendeeNotification
 from bookings.services import compute_tier_price, compute_order_total, fulfill_payment_order, FulfillmentError
 from payments.screenshot_verifier import verify_screenshot, _amount_matches, _fuzzy_name_match
 
@@ -117,6 +118,71 @@ class PaymentOrderTests(TestCase):
         ticket = Ticket.objects.get(attendee=self.attendee, ticket_type='VIP')
         self.assertEqual(ticket.ticket_number, data['ticket_number'])
         self.assertEqual(ticket.quantity, 1)
+
+    @patch('payments.order_views.analyze_payment_screenshot')
+    def test_verify_screenshot_routes_to_organizer_on_ocr_pass(self, mock_analyze):
+        mock_analyze.return_value = {
+            'success': True,
+            'ocr_text': 'KES 2500 paid to EventHub Digital',
+            'notes': 'Screenshot verification passed.',
+        }
+        order = PaymentOrder.objects.create(
+            attendee=self.attendee,
+            event=self.event,
+            organizer=self.organizer,
+            ticket_type='VIP',
+            quantity=1,
+            unit_price=Decimal('2500'),
+            total_amount=Decimal('2500'),
+            status='pending_payment',
+        )
+        screenshot = SimpleUploadedFile('pay.jpg', b'fake-image-bytes', content_type='image/jpeg')
+        self.client.force_login(self.attendee)
+        response = self.client.post(
+            f'/api/attendee/payment-orders/{order.id}/verify-screenshot/',
+            data={'screenshot': screenshot},
+        )
+        self.assertEqual(response.status_code, 200)
+        body = b''.join(response.streaming_content).decode()
+        self.assertIn('pending_approval', body)
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'manual_review')
+        self.assertTrue(order.screenshot_verified)
+        self.assertFalse(Ticket.objects.filter(attendee=self.attendee).exists())
+        self.assertEqual(OrganizerNotification.objects.filter(payment_order=order).count(), 1)
+        self.assertEqual(AttendeeNotification.objects.filter(payment_order=order).count(), 1)
+
+    @patch('payments.order_views.analyze_payment_screenshot')
+    def test_verify_screenshot_routes_to_organizer_on_ocr_fail(self, mock_analyze):
+        mock_analyze.return_value = {
+            'success': False,
+            'ocr_text': 'KES 500 paid to Someone Else',
+            'notes': 'Payment amount does not match.',
+        }
+        order = PaymentOrder.objects.create(
+            attendee=self.attendee,
+            event=self.event,
+            organizer=self.organizer,
+            ticket_type='Regular',
+            quantity=1,
+            unit_price=Decimal('1000'),
+            total_amount=Decimal('1000'),
+            status='pending_payment',
+        )
+        screenshot = SimpleUploadedFile('pay.jpg', b'fake-image-bytes', content_type='image/jpeg')
+        self.client.force_login(self.attendee)
+        response = self.client.post(
+            f'/api/attendee/payment-orders/{order.id}/verify-screenshot/',
+            data={'screenshot': screenshot},
+        )
+        self.assertEqual(response.status_code, 200)
+        body = b''.join(response.streaming_content).decode()
+        self.assertIn('pending_approval', body)
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'manual_review')
+        self.assertFalse(order.screenshot_verified)
+        self.assertFalse(Ticket.objects.filter(attendee=self.attendee).exists())
+        self.assertEqual(OrganizerNotification.objects.filter(payment_order=order).count(), 1)
 
     def test_reject_manual_review_order(self):
         order = PaymentOrder.objects.create(

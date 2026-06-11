@@ -13,7 +13,7 @@ from events.api_organizer_views import organizer_required
 from events.models import Event
 
 from .models import PaymentOrder, OrganizerNotification, AttendeeNotification
-from .screenshot_verifier import verify_screenshot
+from .screenshot_verifier import verify_screenshot as analyze_payment_screenshot
 
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 MAX_SCREENSHOT_SIZE = 5 * 1024 * 1024
@@ -54,6 +54,7 @@ def _serialize_order(order, include_payment=False):
         'status': order.status,
         'verification_message': order.verification_message,
         'submitted_mpesa_name': order.submitted_mpesa_name,
+        'screenshot_verified': order.screenshot_verified,
         'ticket_number': order.ticket.ticket_number if order.ticket_id else None,
         'created_at': order.created_at.isoformat(),
         'updated_at': order.updated_at.isoformat(),
@@ -63,6 +64,82 @@ def _serialize_order(order, include_payment=False):
         data['mpesa_display_name'] = organizer.mpesa_display_name
         data['payment_options'] = organizer.mpesa_payment_options()
     return data
+
+
+def _notify_organizer_payment_review(order, *, ocr_passed):
+    """Step 2: always notify organizer to approve and issue the ticket."""
+    attendee = order.attendee
+    attendee_name = attendee.get_full_name() or attendee.username
+    if ocr_passed:
+        title = 'Payment ready to approve (auto-verified)'
+        message = (
+            f'{attendee_name} — M-Pesa screenshot auto-verified for '
+            f'{order.event.title} ({order.ticket_type}, KES {order.total_amount}). '
+            f'Approve to issue the ticket.'
+        )
+        notification_type = 'success'
+    else:
+        title = 'Payment approval needed'
+        message = (
+            f'{attendee_name} — screenshot could not be auto-verified for '
+            f'{order.event.title} ({order.ticket_type}, KES {order.total_amount}). '
+            f'Review the screenshot and approve to issue the ticket.'
+        )
+        notification_type = 'warning'
+
+    OrganizerNotification.objects.create(
+        organizer=order.organizer,
+        payment_order=order,
+        title=title,
+        message=message,
+        notification_type=notification_type,
+        requires_action=True,
+        action_type='payment_approval',
+    )
+
+
+def _notify_attendee_payment_review(order, *, ocr_passed):
+    if ocr_passed:
+        message = (
+            f'Your payment for {order.event.title} was verified automatically. '
+            f'The organizer will confirm and issue your ticket shortly.'
+        )
+    else:
+        message = (
+            f'Your payment for {order.event.title} has been sent to the organizer for review. '
+            f'You will be notified when your ticket is issued.'
+        )
+    AttendeeNotification.objects.create(
+        attendee=order.attendee,
+        payment_order=order,
+        title='Payment submitted for review',
+        message=message,
+        notification_type='info',
+    )
+
+
+def _escalate_to_organizer_review(order, *, ocr_passed, verification_message, mpesa_name=''):
+    """Route order to organizer approval (step 2). Tickets are issued only on approve."""
+    order.status = 'manual_review'
+    order.screenshot_verified = ocr_passed
+    order.verification_message = verification_message or (
+        'Screenshot auto-verified. Awaiting organizer approval.'
+        if ocr_passed
+        else 'Screenshot could not be auto-verified. Awaiting organizer approval.'
+    )
+    if mpesa_name:
+        order.submitted_mpesa_name = mpesa_name
+    order.save(
+        update_fields=[
+            'status',
+            'screenshot_verified',
+            'verification_message',
+            'submitted_mpesa_name',
+            'updated_at',
+        ]
+    )
+    _notify_organizer_payment_review(order, ocr_passed=ocr_passed)
+    _notify_attendee_payment_review(order, ocr_passed=ocr_passed)
 
 
 @csrf_exempt
@@ -197,21 +274,25 @@ def verify_screenshot(request, order_id):
         yield _sse_event('reading_text', 'Reading transaction details')
 
         try:
-            result = verify_screenshot(
+            result = analyze_payment_screenshot(
                 order.screenshot,
                 order.organizer.mpesa_display_name,
                 order.total_amount,
                 _organizer_numbers(order.organizer),
             )
         except Exception as exc:
-            order.status = 'failed'
-            order.verification_message = str(exc)
-            order.save(update_fields=['status', 'verification_message', 'updated_at'])
+            order.ocr_raw_text = ''
+            order.save(update_fields=['ocr_raw_text', 'updated_at'])
+            _escalate_to_organizer_review(
+                order,
+                ocr_passed=False,
+                verification_message=f'Automatic verification error: {exc}',
+            )
             yield _sse_event(
-                'failed',
-                'EventHub could not read the screenshot properly, wanna try again?',
-                can_retry=True,
-                reason=str(exc),
+                'pending_approval',
+                'Your payment has been sent to the organizer for approval.',
+                ocr_passed=False,
+                order_id=order.id,
             )
             return
 
@@ -222,41 +303,31 @@ def verify_screenshot(request, order_id):
         time.sleep(0.2)
         yield _sse_event('checking_recipient', 'Verifying recipient name')
 
-        if result['success']:
-            try:
-                ticket = fulfill_payment_order(order)
-                order.refresh_from_db()
-                yield _sse_event(
-                    'success',
-                    'Payment verified! Your ticket has been issued.',
-                    ticket_number=ticket.ticket_number,
-                    ticket_type=order.ticket_type,
-                    order_id=order.id,
-                )
-            except FulfillmentError as exc:
-                order.status = 'failed'
-                order.verification_message = exc.message
-                order.save(update_fields=['status', 'verification_message', 'updated_at'])
-                yield _sse_event('failed', exc.message, can_retry=True)
-            except Exception as exc:
-                order.status = 'failed'
-                order.verification_message = str(exc)
-                order.save(update_fields=['status', 'verification_message', 'updated_at'])
-                yield _sse_event(
-                    'failed',
-                    'EventHub could not read the screenshot properly, wanna try again?',
-                    can_retry=True,
-                )
-        else:
-            order.status = 'failed'
-            order.verification_message = result.get('notes', 'Verification failed.')
-            order.save(update_fields=['status', 'verification_message', 'updated_at'])
-            yield _sse_event(
-                'failed',
-                'EventHub could not read the screenshot properly, wanna try again?',
-                can_retry=True,
-                reason=order.verification_message,
+        ocr_passed = bool(result.get('success'))
+        _escalate_to_organizer_review(
+            order,
+            ocr_passed=ocr_passed,
+            verification_message=result.get('notes', ''),
+        )
+        order.refresh_from_db()
+
+        if ocr_passed:
+            message = (
+                'Screenshot verified! Your payment has been sent to the organizer '
+                'for final approval.'
             )
+        else:
+            message = (
+                'We could not fully verify your screenshot automatically, but your '
+                'payment has been sent to the organizer for approval.'
+            )
+
+        yield _sse_event(
+            'pending_approval',
+            message,
+            ocr_passed=ocr_passed,
+            order_id=order.id,
+        )
 
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
@@ -284,26 +355,23 @@ def submit_mpesa_name(request, order_id):
     except PaymentOrder.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Order not found.'}, status=404)
 
+    if order.status == 'manual_review':
+        order.submitted_mpesa_name = mpesa_name
+        order.save(update_fields=['submitted_mpesa_name', 'updated_at'])
+        return JsonResponse({
+            'success': True,
+            'message': 'M-Pesa name updated for organizer review.',
+            'order': _serialize_order(order),
+        })
+
     if order.status not in ('failed', 'rejected', 'pending_payment'):
         return JsonResponse({'success': False, 'message': 'This order cannot be submitted for manual review.'}, status=400)
 
-    order.submitted_mpesa_name = mpesa_name
-    order.status = 'manual_review'
-    order.verification_message = 'Awaiting organizer approval.'
-    order.save(update_fields=['submitted_mpesa_name', 'status', 'verification_message', 'updated_at'])
-
-    attendee_name = user.get_full_name() or user.username
-    OrganizerNotification.objects.create(
-        organizer=order.organizer,
-        payment_order=order,
-        title='Payment approval needed',
-        message=(
-            f'{attendee_name} submitted M-Pesa name "{mpesa_name}" for '
-            f'{order.event.title} ({order.ticket_type}, KES {order.total_amount}).'
-        ),
-        notification_type='warning',
-        requires_action=True,
-        action_type='payment_approval',
+    _escalate_to_organizer_review(
+        order,
+        ocr_passed=False,
+        verification_message='Submitted with M-Pesa name for organizer approval.',
+        mpesa_name=mpesa_name,
     )
 
     return JsonResponse({
@@ -333,6 +401,9 @@ def organizer_pending_orders(request):
             'quantity': order.quantity,
             'total_amount': float(order.total_amount),
             'submitted_mpesa_name': order.submitted_mpesa_name,
+            'screenshot_verified': order.screenshot_verified,
+            'verification_message': order.verification_message,
+            'has_screenshot': bool(order.screenshot),
             'attendee_name': attendee.get_full_name() or attendee.username,
             'attendee_email': attendee.email,
             'status': order.status,

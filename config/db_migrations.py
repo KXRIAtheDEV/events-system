@@ -50,6 +50,7 @@ PAYMENT_REQUIRED_TABLES = (
 PAYMENTS_0002 = '0002_remove_payment_event_id_payment_event_and_more'
 PAYMENTS_0003 = '0003_remove_payment_legacy_event_id'
 PAYMENTS_0004 = '0004_paymentorder_organizernotification_attendeentification'
+PAYMENTS_0005 = '0005_paymentorder_screenshot_verified'
 
 
 def _applied_migrations(app_label: str) -> set[str]:
@@ -158,6 +159,11 @@ def repair_migration_history() -> list[str]:
     if _table_exists('payments_paymentorder') and PAYMENTS_0004 not in payments_applied:
         if _record_migration('payments', PAYMENTS_0004):
             repairs.append('recorded payments.0004 (payment tables already existed)')
+
+    payment_order_columns = _table_columns('payments_paymentorder') if _table_exists('payments_paymentorder') else set()
+    if 'screenshot_verified' in payment_order_columns and PAYMENTS_0005 not in payments_applied:
+        if _record_migration('payments', PAYMENTS_0005):
+            repairs.append('recorded payments.0005 (screenshot_verified column already existed)')
 
     repairs.extend(repair_payments_schema())
 
@@ -343,9 +349,20 @@ def apply_payment_order_tables_hotfix() -> list[str]:
             applied.append('created payments_attendeenotification')
 
     if _payment_schema_status().get('ready'):
+        payment_cols = _table_columns('payments_paymentorder')
+        if 'screenshot_verified' not in payment_cols:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    'ALTER TABLE payments_paymentorder '
+                    'ADD COLUMN IF NOT EXISTS screenshot_verified boolean NULL'
+                )
+            applied.append('added payments_paymentorder.screenshot_verified')
         if PAYMENTS_0004 not in _applied_migrations('payments'):
             if _record_migration('payments', PAYMENTS_0004):
                 applied.append(f'recorded payments.{PAYMENTS_0004}')
+        if PAYMENTS_0005 not in _applied_migrations('payments'):
+            if _record_migration('payments', PAYMENTS_0005):
+                applied.append(f'recorded payments.{PAYMENTS_0005}')
 
     return applied
 

@@ -30,21 +30,25 @@
             </div>
         </div>
 
-        <div id="checkoutStep4Success" style="display:none;" class="checkout-result success">
-            <i class="fas fa-check-circle"></i>
-            <h4>Ticket issued!</h4>
-            <p id="checkoutSuccessMessage"></p>
-            <p>Ticket: <strong id="checkoutTicketNumber"></strong></p>
-            <span id="checkoutSuccessTier" class="checkout-tier-badge"></span>
-            <button type="button" id="checkoutViewTicketsBtn" class="checkout-primary-btn">View my tickets</button>
+        <div id="checkoutStep4Pending" style="display:none;" class="checkout-result pending">
+            <i class="fas fa-clock"></i>
+            <h4>Awaiting organizer approval</h4>
+            <p id="checkoutPendingMessage"></p>
+            <p id="checkoutPendingHint" class="checkout-hint"></p>
+            <div id="checkoutPendingNameBox" class="checkout-manual-box">
+                <label>Optional: your M-Pesa name (helps the organizer confirm payment)</label>
+                <input type="text" id="checkoutPendingMpesaName" class="checkout-text-input" placeholder="e.g. JOHN DOE">
+                <button type="button" id="checkoutPendingNameBtn" class="checkout-secondary-btn">Save name</button>
+            </div>
+            <button type="button" id="checkoutPendingCloseBtn" class="checkout-primary-btn">Done</button>
         </div>
 
         <div id="checkoutStep4Fail" style="display:none;" class="checkout-result fail">
             <i class="fas fa-exclamation-circle"></i>
-            <p id="checkoutFailMessage">EventHub could not read the screenshot properly, wanna try again?</p>
+            <p id="checkoutFailMessage">Something went wrong. Please try again.</p>
             <div class="checkout-fail-actions">
                 <button type="button" id="checkoutRetryBtn" class="checkout-secondary-btn">Try again</button>
-                <button type="button" id="checkoutManualBtn" class="checkout-secondary-btn">Submit M-Pesa name for organizer approval</button>
+                <button type="button" id="checkoutManualBtn" class="checkout-secondary-btn">Skip screenshot — submit M-Pesa name only</button>
             </div>
             <div id="checkoutManualNameBox" style="display:none;" class="checkout-manual-box">
                 <label>Your M-Pesa name (as shown on the transaction)</label>

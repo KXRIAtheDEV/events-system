@@ -1,5 +1,7 @@
 /**
- * Manual M-Pesa checkout flow with screenshot verification (SSE streaming).
+ * Two-step M-Pesa checkout:
+ * 1) Upload screenshot → automatic OCR check
+ * 2) Organizer approval → ticket issued
  */
 (function () {
     'use strict';
@@ -43,11 +45,23 @@
 
     function showStep(step) {
         currentStep = step;
-        ['checkoutStep1', 'checkoutStep2', 'checkoutStep3', 'checkoutStep4Success', 'checkoutStep4Fail'].forEach(id => {
+        [
+            'checkoutStep1',
+            'checkoutStep2',
+            'checkoutStep3',
+            'checkoutStep4Pending',
+            'checkoutStep4Fail',
+        ].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
-        const map = { 1: 'checkoutStep1', 2: 'checkoutStep2', 3: 'checkoutStep3', 4: 'checkoutStep4Success', 5: 'checkoutStep4Fail' };
+        const map = {
+            1: 'checkoutStep1',
+            2: 'checkoutStep2',
+            3: 'checkoutStep3',
+            4: 'checkoutStep4Pending',
+            5: 'checkoutStep4Fail',
+        };
         const target = document.getElementById(map[step]);
         if (target) target.style.display = 'block';
     }
@@ -133,7 +147,7 @@
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            throw new Error(err.message || 'Verification request failed.');
+            throw new Error(err.message || err.error || 'Verification request failed.');
         }
 
         const reader = response.body.getReader();
@@ -151,12 +165,9 @@
                 if (!line.startsWith('data:')) continue;
                 const payload = JSON.parse(line.slice(5));
                 if (payload.message) renderStreamStep(payload.message);
-                if (payload.step === 'success') return payload;
+                if (payload.step === 'pending_approval') return payload;
                 if (payload.step === 'failed') {
-                    const err = new Error(payload.message || 'Verification failed.');
-                    err.canRetry = payload.can_retry;
-                    err.reason = payload.reason;
-                    throw err;
+                    throw new Error(payload.message || 'Verification failed.');
                 }
             }
         }
@@ -172,9 +183,24 @@
         });
         const data = await response.json();
         if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Could not submit M-Pesa name.');
+            throw new Error(data.message || data.error || 'Could not submit M-Pesa name.');
         }
         return data;
+    }
+
+    function showPendingApproval(result) {
+        const msgEl = document.getElementById('checkoutPendingMessage');
+        const hintEl = document.getElementById('checkoutPendingHint');
+        if (msgEl) {
+            msgEl.textContent = result.message || 'Your payment has been sent to the organizer for approval.';
+        }
+        if (hintEl) {
+            hintEl.textContent = result.ocr_passed
+                ? 'Step 1 complete: screenshot verified. Step 2: the organizer will approve and issue your ticket.'
+                : 'Step 1 could not auto-verify your screenshot. Step 2: the organizer will review and approve your payment.';
+        }
+        showStep(4);
+        window.dispatchEvent(new CustomEvent('checkout-submitted', { detail: result }));
     }
 
     function openCheckoutModal(order) {
@@ -204,6 +230,8 @@
         if (preview) preview.innerHTML = '';
         const manualBox = document.getElementById('checkoutManualNameBox');
         if (manualBox) manualBox.style.display = 'none';
+        const pendingName = document.getElementById('checkoutPendingMpesaName');
+        if (pendingName) pendingName.value = '';
     }
 
     function closeCheckoutModal() {
@@ -264,20 +292,10 @@
                 verifyBtn.disabled = true;
                 try {
                     const result = await verifyScreenshot(currentOrder.id, file);
-                    const successMsg = document.getElementById('checkoutSuccessMessage');
-                    const ticketNum = document.getElementById('checkoutTicketNumber');
-                    const ticketTier = document.getElementById('checkoutSuccessTier');
-                    if (successMsg) successMsg.textContent = result.message || 'Payment verified!';
-                    if (ticketNum) ticketNum.textContent = result.ticket_number || '';
-                    if (ticketTier) {
-                        ticketTier.textContent = result.ticket_type || currentOrder.ticket_type;
-                        ticketTier.className = `checkout-tier-badge ${tierBadgeClass(result.ticket_type || currentOrder.ticket_type)}`;
-                    }
-                    showStep(4);
-                    window.dispatchEvent(new CustomEvent('checkout-success', { detail: result }));
+                    showPendingApproval(result);
                 } catch (e) {
                     const failMsg = document.getElementById('checkoutFailMessage');
-                    if (failMsg) failMsg.textContent = e.message || 'EventHub could not read the screenshot properly, wanna try again?';
+                    if (failMsg) failMsg.textContent = e.message || 'Something went wrong. Please try again.';
                     showStep(5);
                 } finally {
                     verifyBtn.disabled = false;
@@ -314,8 +332,10 @@
                 submitNameBtn.disabled = true;
                 try {
                     await submitMpesaName(currentOrder.id, name);
-                    showToast('Submitted for organizer approval.', 'success');
-                    closeCheckoutModal();
+                    showPendingApproval({
+                        message: 'Submitted for organizer approval.',
+                        ocr_passed: false,
+                    });
                 } catch (e) {
                     showToast(e.message, 'error');
                 } finally {
@@ -324,10 +344,29 @@
             });
         }
 
-        const viewTicketsBtn = document.getElementById('checkoutViewTicketsBtn');
-        if (viewTicketsBtn) viewTicketsBtn.addEventListener('click', () => {
-            window.location.href = '/tickets/';
-        });
+        const pendingCloseBtn = document.getElementById('checkoutPendingCloseBtn');
+        if (pendingCloseBtn) pendingCloseBtn.addEventListener('click', closeCheckoutModal);
+
+        const pendingNameBtn = document.getElementById('checkoutPendingNameBtn');
+        if (pendingNameBtn) {
+            pendingNameBtn.addEventListener('click', async () => {
+                if (!currentOrder) return;
+                const name = document.getElementById('checkoutPendingMpesaName')?.value.trim();
+                if (!name) {
+                    showToast('Please enter your M-Pesa name.', 'error');
+                    return;
+                }
+                pendingNameBtn.disabled = true;
+                try {
+                    await submitMpesaName(currentOrder.id, name);
+                    showToast('M-Pesa name saved for the organizer.', 'success');
+                } catch (e) {
+                    showToast(e.message, 'error');
+                } finally {
+                    pendingNameBtn.disabled = false;
+                }
+            });
+        }
     }
 
     document.addEventListener('DOMContentLoaded', bindCheckoutEvents);

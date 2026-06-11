@@ -341,6 +341,7 @@ function onCartCheckoutSuccess() {
 }
 
 window.addEventListener('checkout-success', onCartCheckoutSuccess);
+window.addEventListener('checkout-submitted', onCartCheckoutSuccess);
 
 function cancelPayment() {
     if (paymentTimeout) {
