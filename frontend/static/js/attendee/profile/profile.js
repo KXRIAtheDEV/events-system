@@ -3,6 +3,7 @@
 // ============================================
 
 let currentUser = null;
+let currentEditField = '';
 
 // DOM Elements
 const profileName = document.getElementById('profileName');
@@ -150,7 +151,8 @@ function displayProfile(profile) {
     const avatarUrl = profile.avatar_url;
     if (profileAvatar) {
         if (avatarUrl) {
-            profileAvatar.style.backgroundImage = `url(${avatarUrl})`;
+            const cacheBust = avatarUrl.includes('?') ? '&' : '?';
+            profileAvatar.style.backgroundImage = `url(${avatarUrl}${cacheBust}t=${Date.now()})`;
             profileAvatar.classList.add('has-image');
         } else {
             profileAvatar.style.backgroundImage = 'none';
@@ -218,6 +220,8 @@ function editField(field) {
         phone: 'Phone Number'
     };
     
+    currentEditField = field;
+    
     const editFieldName = document.getElementById('editFieldName');
     const editLabel = document.getElementById('editLabel');
     const editValue = document.getElementById('editValue');
@@ -230,30 +234,42 @@ function editField(field) {
     if (field === 'email') currentValue = displayEmail?.textContent || '';
     if (field === 'phone') currentValue = displayPhone?.textContent === '-' ? '' : displayPhone?.textContent || '';
     
-    if (editValue) editValue.value = currentValue;
+    if (editValue) {
+        editValue.value = currentValue;
+        editValue.type = field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text';
+    }
     
     const modal = document.getElementById('editModal');
     if (modal) modal.style.display = 'flex';
 }
 
 async function saveEdit() {
-    const editValue = document.getElementById('editValue');
-    const newValue = editValue?.value.trim();
-    if (!newValue) return;
-    
+    const editValueEl = document.getElementById('editValue');
+    const newValue = editValueEl?.value.trim();
     const field = currentEditField;
+    const fieldLabels = { name: 'Name', email: 'Email', phone: 'Phone' };
+
+    if (!field) {
+        showToast('No field selected', 'error');
+        return;
+    }
+    if (!newValue) {
+        showToast(`${fieldLabels[field] || 'Field'} cannot be empty`, 'error');
+        return;
+    }
+
     const updateData = {};
-    
-    if (field === 'name') updateData.full_name = newValue;
+    if (field === 'name') updateData.name = newValue;
     if (field === 'email') updateData.email = newValue;
     if (field === 'phone') updateData.phone = newValue;
-    
+
     try {
-        if (window.AttendeeAPIEndpoints && window.AttendeeAPIEndpoints.profile) {
-            await window.AttendeeAPIEndpoints.profile.update(updateData);
+        let response;
+        if (window.AttendeeAPIEndpoints?.profile) {
+            response = await window.AttendeeAPIEndpoints.profile.update(updateData);
         } else {
             const token = localStorage.getItem('attendee_access_token');
-            await fetch('/api/attendee/profile/update/', {
+            const res = await fetch('/api/attendee/profile/update/', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -261,37 +277,35 @@ async function saveEdit() {
                 },
                 body: JSON.stringify(updateData)
             });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || err.error || 'Failed to update');
+            }
+            response = await res.json();
         }
-        
-        if (window.AccountProfile) {
-            const update = {};
-            if (field === 'name') { update.full_name = newValue; update.name = newValue; }
-            if (field === 'email') update.email = newValue;
-            if (field === 'phone') update.phone = newValue;
-            AccountProfile.save(update);
-        } else {
-            // Fallback
-            const userData = JSON.parse(localStorage.getItem('attendee_user') || '{}');
-            if (field === 'name') { userData.full_name = newValue; userData.name = newValue; }
-            if (field === 'email') userData.email = newValue;
-            if (field === 'phone') userData.phone = newValue;
-            localStorage.setItem('attendee_user', JSON.stringify(userData));
+
+        const updatedUser = response?.user || response;
+        if (updatedUser && (updatedUser.email || updatedUser.full_name || updatedUser.phone)) {
+            if (window.AccountProfile) {
+                AccountProfile.save(updatedUser);
+            } else {
+                localStorage.setItem('attendee_user', JSON.stringify(updatedUser));
+            }
         }
-        
-        showToast(`${field} updated successfully`, 'success');
+
+        showToast(`${fieldLabels[field] || 'Profile'} updated successfully`, 'success');
         await loadProfile();
         closeModal();
     } catch (error) {
         console.error('Update error:', error);
-        showToast('Failed to update', 'error');
+        showToast(error.message || 'Failed to update', 'error');
     }
 }
-
-let currentEditField = '';
 
 function closeModal() {
     const modal = document.getElementById('editModal');
     if (modal) modal.style.display = 'none';
+    currentEditField = '';
 }
 
 async function changePassword(e) {
@@ -317,11 +331,11 @@ async function changePassword(e) {
     }
     
     try {
-        if (window.AttendeeAPIEndpoints && window.AttendeeAPIEndpoints.auth) {
+        if (window.AttendeeAPIEndpoints?.auth) {
             await window.AttendeeAPIEndpoints.auth.changePassword(currentPassword, newPasswordValue);
         } else {
             const token = localStorage.getItem('attendee_access_token');
-            await fetch('/api/attendee/auth/change-password/', {
+            const res = await fetch('/api/attendee/auth/change-password/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -332,13 +346,27 @@ async function changePassword(e) {
                     new_password: newPasswordValue
                 })
             });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                const pwErrors = err.errors?.new_password;
+                throw new Error(
+                    (Array.isArray(pwErrors) ? pwErrors.join(' ') : null)
+                    || err.message || err.error || 'Failed to change password'
+                );
+            }
         }
-        showToast('Password changed successfully', 'success');
+        showToast('Password changed. Please log in again.', 'success');
         document.getElementById('passwordForm')?.reset();
         clearPasswordValidation();
+        setTimeout(() => {
+            localStorage.removeItem('attendee_access_token');
+            localStorage.removeItem('attendee_refresh_token');
+            localStorage.removeItem('attendee_user');
+            window.location.href = '/login/';
+        }, 2000);
     } catch (error) {
         console.error('Password change error:', error);
-        showToast('Failed to change password', 'error');
+        showToast(error.message || 'Failed to change password', 'error');
     }
 }
 
@@ -452,16 +480,25 @@ function confirmDeleteAccount() {
 
 async function deleteAccount() {
     try {
-        const token = localStorage.getItem('attendee_access_token');
-        await fetch('/api/attendee/profile/delete/', {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        if (window.AttendeeAPIEndpoints?.profile?.deleteAccount) {
+            await window.AttendeeAPIEndpoints.profile.deleteAccount();
+        } else {
+            const token = localStorage.getItem('attendee_access_token');
+            const res = await fetch('/api/attendee/profile/delete-account/', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || err.error || 'Failed to delete account');
+            }
+        }
         localStorage.clear();
-        window.location.href = '/';
+        showToast('Account deleted', 'success');
+        setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (error) {
-        localStorage.clear();
-        window.location.href = '/';
+        console.error('Delete account error:', error);
+        showToast(error.message || 'Failed to delete account', 'error');
     }
 }
 
@@ -483,36 +520,52 @@ function setupAvatarUpload() {
 
 async function uploadAvatar(e) {
     const file = e.target.files[0];
+    const input = e.target;
     if (!file) return;
-    
+
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
         showToast('Please select a valid image (JPEG, PNG, WEBP)', 'error');
         return;
     }
-    
+
     if (file.size > 2 * 1024 * 1024) {
         showToast('Image must be less than 2MB', 'error');
         return;
     }
-    
-    const formData = new FormData();
-    formData.append('avatar', file);
-    
+
     try {
-        const token = localStorage.getItem('attendee_access_token');
-        await fetch('/api/attendee/profile/upload-avatar/', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-        });
+        let response;
+        if (window.AttendeeAPIEndpoints?.profile?.uploadAvatar) {
+            response = await window.AttendeeAPIEndpoints.profile.uploadAvatar(file);
+        } else {
+            const formData = new FormData();
+            formData.append('avatar', file);
+            const token = localStorage.getItem('attendee_access_token');
+            const res = await fetch('/api/attendee/profile/upload-avatar/', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || err.error || 'Failed to upload avatar');
+            }
+            response = await res.json();
+        }
+
+        const updatedUser = response?.user;
+        if (updatedUser && window.AccountProfile) {
+            AccountProfile.save(updatedUser);
+        }
+
         showToast('Avatar updated successfully', 'success');
         await loadProfile();
     } catch (error) {
         console.error('Avatar upload error:', error);
-        showToast('Failed to upload avatar', 'error');
+        showToast(error.message || 'Failed to upload avatar', 'error');
     } finally {
-        avatarInput.value = '';
+        input.value = '';
     }
 }
 

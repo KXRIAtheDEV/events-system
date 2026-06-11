@@ -237,8 +237,9 @@ def profile_update(request):
     if user.role == 'organizer' and 'organization_name' in data and not (data.get('organization_name') or '').strip():
         return json_error('Organization name is required for organizers.')
 
-    if 'name' in data:
-        name_parts = (data.get('name') or '').strip().split(' ', 1)
+    name_value = data.get('name') or data.get('full_name')
+    if name_value is not None:
+        name_parts = (name_value or '').strip().split(' ', 1)
         user.first_name = name_parts[0] if len(name_parts) > 0 else ''
         user.last_name = name_parts[1] if len(name_parts) > 1 else ''
 
@@ -341,6 +342,18 @@ def profile_stats(request):
         'total_reviews': total_reviews,
         'favorite_category': favorite_category
     })
+
+
+@csrf_exempt
+@require_http_methods(['DELETE'])
+def profile_delete_account(request):
+    user, error = resolve_authenticated_user(request)
+    if error:
+        return error
+
+    revoke_user_tokens(user)
+    user.delete()
+    return JsonResponse({'message': 'Account deleted successfully.'})
 
 
 @csrf_exempt
